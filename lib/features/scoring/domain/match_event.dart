@@ -30,7 +30,7 @@ class MatchEvent {
     return MatchEvent(
       id: json['id'] as String,
       matchId: json['match_id'] as String,
-      seq: json['seq'] as int,
+      seq: (json['seq'] as num).toInt(),
       type: json['type'] as String,
       teamId: json['team_id'] as String?,
       playerId: json['player_id'] as String?,

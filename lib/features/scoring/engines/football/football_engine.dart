@@ -48,15 +48,16 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
 
       case 'goal':
         final teamId = event.teamId ?? event.payload['team'] as String?;
+        if (teamId == null) return 'Team required for goal';
         final scorerId = event.playerId ?? event.payload['scorer'] as String?;
-        if (teamId == null || scorerId == null) return 'Team and scorer required for goal';
-        if (state.redCardedPlayers.contains(scorerId)) return 'Red-carded player cannot score';
+        if (scorerId != null && state.redCardedPlayers.contains(scorerId)) {
+          return 'Red-carded player cannot score';
+        }
         return null;
 
       case 'own_goal':
         final teamId = event.teamId ?? event.payload['team'] as String?;
-        final playerId = event.playerId ?? event.payload['player'] as String?;
-        if (teamId == null || playerId == null) return 'Team and player required for own goal';
+        if (teamId == null) return 'Team required for own goal';
         return null;
 
       case 'yellow_card':
@@ -145,8 +146,8 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
         return state.copyWith(addedTimeMinutes: times);
 
       case 'goal':
-        final teamId = event.teamId ?? event.payload['team'] as String;
-        final scorerId = event.playerId ?? event.payload['scorer'] as String;
+        final teamId = event.teamId ?? (event.payload['team'] as String?) ?? state.homeId;
+        final scorerId = event.playerId ?? (event.payload['scorer'] as String?) ?? 'player';
         final assistId = event.payload['assist'] as String?;
         final kind = event.payload['kind'] as String? ?? 'open_play';
         final minute = _deriveMinute(state, event);
@@ -169,8 +170,8 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
 
       case 'own_goal':
         // Own goal: point goes to the OPPOSING team; credited to player as own goal
-        final teamId = event.teamId ?? event.payload['team'] as String;
-        final playerId = event.playerId ?? event.payload['player'] as String;
+        final teamId = event.teamId ?? (event.payload['team'] as String?) ?? state.homeId;
+        final playerId = event.playerId ?? (event.payload['player'] as String?) ?? 'player';
         final minute = _deriveMinute(state, event);
 
         final newGoal = GoalRecord(
@@ -190,8 +191,8 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
         );
 
       case 'yellow_card':
-        final teamId = event.teamId ?? event.payload['team'] as String;
-        final playerId = event.playerId ?? event.payload['player'] as String;
+        final teamId = event.teamId ?? (event.payload['team'] as String?) ?? state.homeId;
+        final playerId = event.playerId ?? (event.payload['player'] as String?) ?? 'player';
         final currentCount = (state.yellowCards[playerId] ?? 0) + 1;
         final updatedYellows = Map<String, int>.from(state.yellowCards)..[playerId] = currentCount;
 
@@ -208,8 +209,8 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
         return state.copyWith(yellowCards: updatedYellows);
 
       case 'red_card':
-        final teamId = event.teamId ?? event.payload['team'] as String;
-        final playerId = event.playerId ?? event.payload['player'] as String;
+        final teamId = event.teamId ?? (event.payload['team'] as String?) ?? state.homeId;
+        final playerId = event.playerId ?? (event.payload['player'] as String?) ?? 'player';
         final updatedReds = Set<String>.from(state.redCardedPlayers)..add(playerId);
         final updatedPitch = _removePlayerFromPitch(state.pitchPlayers, teamId, playerId);
         return state.copyWith(
