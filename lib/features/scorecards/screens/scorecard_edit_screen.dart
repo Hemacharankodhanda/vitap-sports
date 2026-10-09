@@ -8,6 +8,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -100,7 +101,7 @@ class ScorecardEditScreen extends ConsumerWidget {
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : !state.isAuthorized
-                ? _buildUnauthorizedView(context, isDark)
+                ? _buildUnauthorizedView(context, isDark, notifier, state)
                 : _buildScorerBody(context, state, notifier),
       ),
       bottomNavigationBar: state.isAuthorized && state.isMatchLive
@@ -109,7 +110,12 @@ class ScorecardEditScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildUnauthorizedView(BuildContext context, bool isDark) {
+  Widget _buildUnauthorizedView(
+    BuildContext context,
+    bool isDark,
+    LiveScorerNotifier notifier,
+    ScorerState state,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.screenMargin),
@@ -128,6 +134,38 @@ class ScorecardEditScreen extends ConsumerWidget {
                 'Only the match creator, participating team captains, or designated scorers can record live events.',
                 style: AppTypography.body,
                 textAlign: TextAlign.center,
+              ),
+              if (state.syncError != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  state.syncError!,
+                  style: AppTypography.caption.copyWith(color: AppColors.error),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Claim / Take Over Scoring',
+                icon: Icons.sports_score_rounded,
+                variant: AppButtonVariant.primary,
+                isLoading: state.isSyncing,
+                onPressed: () async {
+                  HapticFeedback.mediumImpact();
+                  await notifier.takeOverScoring();
+                },
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: 'Back to Match Details',
+                icon: Icons.arrow_back_rounded,
+                variant: AppButtonVariant.secondary,
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go('/matches/${state.matchId}');
+                  }
+                },
               ),
             ],
           ),

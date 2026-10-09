@@ -132,6 +132,8 @@ class BowlerRecord {
   double get oversDecimal =>
       (ballsBowled ~/ 6) + (ballsBowled % 6) / 10.0;
 
+  String get oversString => '${ballsBowled ~/ 6}.${ballsBowled % 6}';
+
   double get economy =>
       ballsBowled > 0 ? (runsConceded / (ballsBowled / 6.0)) : 0.0;
 

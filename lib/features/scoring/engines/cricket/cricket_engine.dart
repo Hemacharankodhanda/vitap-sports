@@ -1,4 +1,5 @@
 /// VIT-AP Sports — Authoritative Cricket Scoring Engine.
+// ignore_for_file: use_null_aware_elements
 library;
 
 import '../../domain/match_event.dart';
@@ -19,9 +20,12 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
     final battingFirstTeamId = extra?['batting_first_team_id'] as String? ?? homeId;
     final bowlingFirstTeamId = battingFirstTeamId == homeId ? awayId : homeId;
 
-    final strikerId = extra?['striker_id'] as String?;
-    final nonStrikerId = extra?['non_striker_id'] as String?;
-    final openingBowlerId = extra?['opening_bowler_id'] as String?;
+    final strikerId = (extra?['striker_id'] as String?) ??
+        (extra?['opening_striker'] as String?);
+    final nonStrikerId = (extra?['non_striker_id'] as String?) ??
+        (extra?['opening_non_striker'] as String?);
+    final openingBowlerId = (extra?['opening_bowler_id'] as String?) ??
+        (extra?['opening_bowler'] as String?);
 
     final firstInnings = CricketInningsState(
       battingTeamId: battingFirstTeamId,
@@ -29,12 +33,10 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       strikerId: strikerId,
       nonStrikerId: nonStrikerId,
       currentBowlerId: openingBowlerId,
-      // ignore: use_null_aware_elements - Experimental null-aware map entries with const values crash Dart AOT constant evaluator
       battingStats: {
         if (strikerId != null) strikerId: const BatterRecord(),
         if (nonStrikerId != null) nonStrikerId: const BatterRecord(),
       },
-      // ignore: use_null_aware_elements
       bowlingStats: {
         if (openingBowlerId != null) openingBowlerId: const BowlerRecord(),
       },
@@ -57,6 +59,7 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
     switch (event.type) {
       case 'set_bowler':
+      case 'select_bowler':
         final bowlerId = event.payload['bowler_id'] as String?;
         if (bowlerId == null) return 'Bowler ID is required';
         if (bowlerId == active.lastOverBowlerId) {
@@ -108,6 +111,7 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
   CricketState apply(CricketState state, MatchEvent event) {
     switch (event.type) {
       case 'set_bowler':
+      case 'select_bowler':
         return _applySetBowler(state, event);
 
       case 'set_batters':
@@ -441,7 +445,7 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       actions.add(const ScoringAction(
         id: 'select_bowler',
         label: 'Select Bowler for Next Over',
-        type: 'select_bowler_prompt',
+        type: 'select_bowler',
         isPrimary: true,
       ));
       return actions;

@@ -176,15 +176,21 @@ class ScorerActionGrid extends StatelessWidget {
     // 1. Cricket Wicket Sheet
     if (action.type == 'wicket') {
       final cricket = state.scoringState as CricketState?;
-      final strikerId = cricket?.activeInnings?.strikerId ?? 'Striker';
-      final nonStrikerId = cricket?.activeInnings?.nonStrikerId ?? 'Non-Striker';
-      final isFreeHit = cricket?.activeInnings?.isFreeHit ?? false;
+      final active = cricket?.activeInnings;
+      final strikerId = active?.strikerId ?? 'Striker';
+      final nonStrikerId = active?.nonStrikerId ?? 'Non-Striker';
+      final isFreeHit = active?.isFreeHit ?? false;
+      final battingTeamId = active?.battingTeamId ?? state.homeId;
+      final bowlingTeamId = active?.bowlingTeamId ?? state.awayId;
 
       final result = await ActionDialogs.showWicketSheet(
         context: context,
         strikerId: strikerId,
         nonStrikerId: nonStrikerId,
         isFreeHit: isFreeHit,
+        battingPlayers: state.playersForTeam(battingTeamId),
+        bowlingPlayers: state.playersForTeam(bowlingTeamId),
+        battingStats: active?.battingStats ?? {},
       );
 
       if (result != null) {
@@ -197,17 +203,29 @@ class ScorerActionGrid extends StatelessWidget {
     }
 
     // 2. Cricket Bowler Selection
-    if (action.type == 'select_bowler') {
+    if (action.type == 'select_bowler' ||
+        action.type == 'set_bowler' ||
+        action.type == 'select_bowler_prompt' ||
+        action.id == 'select_bowler') {
       final cricket = state.scoringState as CricketState?;
-      final previousBowlerId = cricket?.activeInnings?.currentBowlerId;
+      final active = cricket?.activeInnings;
+      final bowlingTeamId = active?.bowlingTeamId ??
+          (active?.battingTeamId == state.homeId ? state.awayId : state.homeId);
+      final bowlingPlayers = state.playersForTeam(bowlingTeamId);
+      final lastBowlerId = active?.lastOverBowlerId ?? active?.currentBowlerId;
+
       final selectedBowler = await ActionDialogs.showBowlerSheet(
         context: context,
-        previousBowlerIds: previousBowlerId != null ? [previousBowlerId] : [],
+        previousBowlerIds: lastBowlerId != null ? [lastBowlerId] : [],
+        lastOverBowlerId: lastBowlerId,
+        bowlingTeamName: bowlingTeamId == state.homeId ? state.homeName : state.awayName,
+        bowlingPlayers: bowlingPlayers,
+        bowlingStats: active?.bowlingStats ?? {},
       );
 
       if (selectedBowler != null) {
         await onRecordAction(
-          type: 'select_bowler',
+          type: 'set_bowler',
           payload: {'bowler_id': selectedBowler},
         );
       }

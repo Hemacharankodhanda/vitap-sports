@@ -118,11 +118,38 @@ class LiveScorerService {
     required Map<String, dynamic> config,
     required Map<String, dynamic> initialScore,
   }) async {
-    await _client.from('matches').update({
-      'status': 'live',
-      'config': config,
-      'score': initialScore,
-    }).eq('id', matchId);
+    try {
+      await _client.rpc(
+        'start_match',
+        params: {
+          'p_match_id': matchId,
+          'p_config': config,
+          'p_initial_score': initialScore,
+        },
+      );
+    } catch (_) {
+      // Fallback to direct update if RPC is not deployed yet
+      await _client.from('matches').update({
+        'status': 'live',
+        'config': config,
+        'score': initialScore,
+      }).eq('id', matchId);
+    }
+  }
+
+  /// Fetches players belonging to a team from team_members table.
+  Future<List<Map<String, dynamic>>> fetchTeamPlayers(String teamId) async {
+    try {
+      final response = await _client
+          .from('team_members')
+          .select('team_id, user_id, role, position, users(id, name, avatar_url)')
+          .eq('team_id', teamId);
+      return (response as List<dynamic>)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   /// Realtime stream of the matches row for live viewer updates.

@@ -40,6 +40,9 @@ class FakeLiveScorerService extends Fake implements LiveScorerService {
       ];
 
   @override
+  Future<List<Map<String, dynamic>>> fetchTeamPlayers(String teamId) async => [];
+
+  @override
   Future<Map<String, dynamic>> recordEvent({
     required String matchId,
     required MatchEvent event,

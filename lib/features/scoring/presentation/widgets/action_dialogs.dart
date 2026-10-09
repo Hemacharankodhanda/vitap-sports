@@ -11,6 +11,8 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_chip.dart';
+import '../../domain/player_option.dart';
+import '../../engines/cricket/cricket_state.dart';
 
 class ActionDialogs {
   ActionDialogs._();
@@ -21,6 +23,9 @@ class ActionDialogs {
     required String strikerId,
     required String nonStrikerId,
     required bool isFreeHit,
+    List<PlayerOption> battingPlayers = const [],
+    List<PlayerOption> bowlingPlayers = const [],
+    Map<String, BatterRecord> battingStats = const {},
   }) async {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
@@ -32,9 +37,21 @@ class ActionDialogs {
         String dismissalType = isFreeHit ? 'run_out' : 'bowled';
         String dismissedBatterId = strikerId;
         final fielderController = TextEditingController();
-        final newBatterController = TextEditingController(text: 'Batter');
+        final newBatterController = TextEditingController();
         int runOutRuns = 0;
         bool battersCrossed = false;
+
+        // Next batters available: from battingPlayers who aren't striker/nonStriker and haven't gotten out
+        final availableNextBatters = battingPlayers.where((p) {
+          if (p.id == strikerId || p.name == strikerId) return false;
+          if (p.id == nonStrikerId || p.name == nonStrikerId) return false;
+          final stats = battingStats[p.id] ?? battingStats[p.name];
+          return stats == null || !stats.isOut;
+        }).toList();
+
+        if (availableNextBatters.isNotEmpty && newBatterController.text.isEmpty) {
+          newBatterController.text = availableNextBatters.first.name;
+        }
 
         return StatefulBuilder(
           builder: (context, setState) {
@@ -117,20 +134,52 @@ class ActionDialogs {
                     ],
 
                     if (dismissalType == 'caught' || dismissalType == 'stumped' || dismissalType == 'run_out') ...[
+                      Text('Fielder', style: AppTypography.body),
+                      const SizedBox(height: AppSpacing.xs),
+                      if (bowlingPlayers.isNotEmpty) ...[
+                        Wrap(
+                          spacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.xs,
+                          children: bowlingPlayers.map((p) {
+                            return AppChip(
+                              label: p.name,
+                              isSelected: fielderController.text == p.name,
+                              onTap: () => setState(() => fielderController.text = p.name),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                      ],
                       TextField(
                         controller: fielderController,
                         decoration: const InputDecoration(
-                          labelText: 'Fielder Name / Number (Optional)',
+                          labelText: 'Fielder Name (Optional)',
                           isDense: true,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],
 
+                    Text('Next Batter', style: AppTypography.body),
+                    const SizedBox(height: AppSpacing.xs),
+                    if (availableNextBatters.isNotEmpty) ...[
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: availableNextBatters.map((p) {
+                          return AppChip(
+                            label: p.name,
+                            isSelected: newBatterController.text == p.name,
+                            onTap: () => setState(() => newBatterController.text = p.name),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                    ],
                     TextField(
                       controller: newBatterController,
                       decoration: const InputDecoration(
-                        labelText: 'Next Batter Name (Optional)',
+                        labelText: 'Next Batter Name',
                         isDense: true,
                       ),
                     ),
@@ -164,10 +213,14 @@ class ActionDialogs {
     );
   }
 
-  /// Prompt for selecting new bowler
+  /// Prompt for selecting new bowler from bowling team squad
   static Future<String?> showBowlerSheet({
     required BuildContext context,
     required List<String> previousBowlerIds,
+    String? lastOverBowlerId,
+    String? bowlingTeamName,
+    List<PlayerOption> bowlingPlayers = const [],
+    Map<String, BowlerRecord> bowlingStats = const {},
   }) async {
     return showModalBottomSheet<String>(
       context: context,
@@ -176,39 +229,137 @@ class ActionDialogs {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
       ),
       builder: (ctx) {
-        final controller = TextEditingController(text: 'Bowler');
+        String? selectedBowler;
+        bool isCustomEntry = false;
+        final customController = TextEditingController();
 
-        return Padding(
-          padding: EdgeInsets.only(
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            top: AppSpacing.lg,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Select Next Bowler', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: const InputDecoration(
-                  labelText: 'Bowler Name or Number',
-                  isDense: true,
+        final restrictedBowlerId = lastOverBowlerId ??
+            (previousBowlerIds.isNotEmpty ? previousBowlerIds.last : null);
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.sports_baseball_rounded, color: AppColors.accent, size: AppSpacing.iconNav),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Select Next Bowler',
+                                  style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                              if (bowlingTeamName != null)
+                                Text('Bowling Team: $bowlingTeamName', style: AppTypography.caption),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    if (bowlingPlayers.isNotEmpty) ...[
+                      Text('Bowling Squad', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
+                        children: bowlingPlayers.map((player) {
+                          final isRestricted = restrictedBowlerId != null &&
+                              (player.id == restrictedBowlerId || player.name == restrictedBowlerId);
+                          final isSelected = selectedBowler == player.name;
+                          final stats = bowlingStats[player.id] ?? bowlingStats[player.name];
+
+                          final labelText = stats != null
+                              ? '${player.name} (${stats.oversString} ov • ${stats.wickets}/${stats.runsConceded})'
+                              : player.name;
+
+                          return Opacity(
+                            opacity: isRestricted ? 0.45 : 1.0,
+                            child: ActionChip(
+                              avatar: isRestricted
+                                  ? const Icon(Icons.block_rounded, size: 14, color: AppColors.error)
+                                  : (isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null),
+                              label: Text(labelText),
+                              backgroundColor: isSelected ? AppColors.accent : null,
+                              labelStyle: TextStyle(
+                                color: isSelected ? Colors.white : null,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              onPressed: isRestricted
+                                  ? () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('A bowler cannot bowl two consecutive overs.'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  : () {
+                                      setState(() {
+                                        selectedBowler = player.name;
+                                        isCustomEntry = false;
+                                      });
+                                    },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+
+                    if (!isCustomEntry)
+                      TextButton.icon(
+                        icon: const Icon(Icons.person_add_rounded, size: 18),
+                        label: const Text('+ Enter Other / Custom Bowler Name'),
+                        onPressed: () {
+                          setState(() {
+                            isCustomEntry = true;
+                            selectedBowler = null;
+                          });
+                        },
+                      )
+                    else ...[
+                      TextField(
+                        controller: customController,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Custom Bowler Name',
+                          hintText: 'e.g. Jasprit Bumrah',
+                          isDense: true,
+                        ),
+                        onChanged: (val) {
+                          setState(() => selectedBowler = val.trim());
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+
+                    const SizedBox(height: AppSpacing.lg),
+                    AppButton(
+                      label: selectedBowler != null && selectedBowler!.isNotEmpty
+                          ? 'Confirm Bowler ($selectedBowler)'
+                          : 'Confirm Bowler',
+                      onPressed: selectedBowler != null && selectedBowler!.isNotEmpty
+                          ? () => Navigator.pop(ctx, selectedBowler)
+                          : null,
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              AppButton(
-                label: 'Confirm Bowler',
-                onPressed: () {
-                  final text = controller.text.trim();
-                  if (text.isNotEmpty) Navigator.pop(ctx, text);
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

@@ -12,6 +12,7 @@ import 'package:uuid/uuid.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../data/live_scorer_service.dart';
 import '../domain/match_event.dart';
+import '../domain/player_option.dart';
 import '../domain/scoring_engine.dart';
 import '../domain/sport_registry.dart';
 
@@ -147,6 +148,8 @@ class ScorerState {
     this.status = 'scheduled',
     this.syncError,
     this.participants = const [],
+    this.homePlayers = const [],
+    this.awayPlayers = const [],
   });
 
   final String matchId;
@@ -167,10 +170,18 @@ class ScorerState {
   final String status;
   final String? syncError;
   final List<Map<String, dynamic>> participants;
+  final List<PlayerOption> homePlayers;
+  final List<PlayerOption> awayPlayers;
 
   bool get isMatchLive => status == 'live';
   bool get isCompleted => status == 'completed' || status == 'abandoned';
   bool get hasPendingWrites => pendingQueue.isNotEmpty;
+
+  List<PlayerOption> playersForTeam(String teamId) {
+    if (teamId == homeId) return homePlayers;
+    if (teamId == awayId) return awayPlayers;
+    return [...homePlayers, ...awayPlayers];
+  }
 
   List<ScoringAction> get availableActions {
     if (scoringState == null || sport.isEmpty) return const [];
@@ -198,6 +209,8 @@ class ScorerState {
     String? syncError,
     bool clearSyncError = false,
     List<Map<String, dynamic>>? participants,
+    List<PlayerOption>? homePlayers,
+    List<PlayerOption>? awayPlayers,
   }) {
     return ScorerState(
       matchId: matchId ?? this.matchId,
@@ -218,6 +231,8 @@ class ScorerState {
       status: status ?? this.status,
       syncError: clearSyncError ? null : (syncError ?? this.syncError),
       participants: participants ?? this.participants,
+      homePlayers: homePlayers ?? this.homePlayers,
+      awayPlayers: awayPlayers ?? this.awayPlayers,
     );
   }
 }
@@ -300,15 +315,109 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
             _currentUserId == scorerId ||
             scorerIds.contains(_currentUserId)) {
           isAuthorized = true;
+        } else if (scorerId == null && (match['status'] == 'scheduled' || match['status'] == 'upcoming')) {
+          // Allow setup and start for scheduled/upcoming unassigned matches
+          isAuthorized = true;
         } else {
-          // Check if captain of participating team
+          // Check if captain of participating team or individual participant
           for (final p in rawParticipants) {
             final team = p['teams'] as Map<String, dynamic>?;
-            if (team != null && team['captain_id'] == _currentUserId) {
+            final userId = p['user_id'] as String?;
+            if ((team != null && team['captain_id'] == _currentUserId) ||
+                userId == _currentUserId) {
               isAuthorized = true;
               break;
             }
           }
+        }
+      }
+
+      // Fetch team players from database (graceful fallback if offline or mock)
+      List<Map<String, dynamic>> homeTeamRaw = const [];
+      List<Map<String, dynamic>> awayTeamRaw = const [];
+      try {
+        if (homeId.isNotEmpty) {
+          homeTeamRaw = await _service.fetchTeamPlayers(homeId);
+        }
+        if (awayId.isNotEmpty) {
+          awayTeamRaw = await _service.fetchTeamPlayers(awayId);
+        }
+      } catch (_) {
+        // Fallback gracefully
+      }
+
+      final homePlayerList = <PlayerOption>[];
+      final awayPlayerList = <PlayerOption>[];
+
+      // 1. From match_participants (squad assigned to match)
+      for (final p in rawParticipants) {
+        final userId = p['user_id'] as String?;
+        final user = p['users'] as Map<String, dynamic>?;
+        final side = p['side'] as String?;
+        final teamId = p['team_id'] as String?;
+        if (userId != null) {
+          final opt = PlayerOption(
+            id: userId,
+            name: user?['name'] as String? ?? 'Player',
+            teamId: teamId ?? (side == 'home' ? homeId : awayId),
+            avatarUrl: user?['avatar_url'] as String?,
+          );
+          if (side == 'home' || teamId == homeId) {
+            if (!homePlayerList.any((x) => x.id == opt.id)) homePlayerList.add(opt);
+          } else if (side == 'away' || teamId == awayId) {
+            if (!awayPlayerList.any((x) => x.id == opt.id)) awayPlayerList.add(opt);
+          }
+        }
+      }
+
+      // 2. From team_members
+      for (final m in homeTeamRaw) {
+        final user = m['users'] as Map<String, dynamic>?;
+        final userId = m['user_id'] as String? ?? user?['id'] as String?;
+        if (userId != null) {
+          final opt = PlayerOption(
+            id: userId,
+            name: user?['name'] as String? ?? 'Player',
+            teamId: homeId,
+            role: m['role'] as String?,
+            avatarUrl: user?['avatar_url'] as String?,
+          );
+          if (!homePlayerList.any((x) => x.id == opt.id)) homePlayerList.add(opt);
+        }
+      }
+
+      for (final m in awayTeamRaw) {
+        final user = m['users'] as Map<String, dynamic>?;
+        final userId = m['user_id'] as String? ?? user?['id'] as String?;
+        if (userId != null) {
+          final opt = PlayerOption(
+            id: userId,
+            name: user?['name'] as String? ?? 'Player',
+            teamId: awayId,
+            role: m['role'] as String?,
+            avatarUrl: user?['avatar_url'] as String?,
+          );
+          if (!awayPlayerList.any((x) => x.id == opt.id)) awayPlayerList.add(opt);
+        }
+      }
+
+      // 3. Fallback defaults if teams have no players in DB yet
+      if (homePlayerList.isEmpty) {
+        for (int i = 1; i <= 11; i++) {
+          homePlayerList.add(PlayerOption(
+            id: 'home_p_$i',
+            name: '$homeName Player $i',
+            teamId: homeId,
+          ));
+        }
+      }
+      if (awayPlayerList.isEmpty) {
+        for (int i = 1; i <= 11; i++) {
+          awayPlayerList.add(PlayerOption(
+            id: 'away_p_$i',
+            name: '$awayName Player $i',
+            teamId: awayId,
+          ));
         }
       }
 
@@ -334,6 +443,8 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
         events: rawEvents,
         scoringState: derivedState,
         participants: rawParticipants,
+        homePlayers: homePlayerList,
+        awayPlayers: awayPlayerList,
         isLoading: false,
       );
     } catch (e) {
@@ -545,6 +656,8 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
         status: 'live',
         config: config,
         scoringState: initialSnapshot,
+        currentScorerId: _currentUserId,
+        isAuthorized: true,
         isSyncing: false,
       );
     } catch (e) {

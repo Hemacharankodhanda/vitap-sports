@@ -29,7 +29,9 @@
 | **Realtime Stream Subscriptions & Data Layer** | **Working** | `live_scorer_service.dart`, `live_scorer_providers.dart`. Subscribes to Realtime first before initial load, stream on `matches`, timeline insert/delete reconciler, offline optimistic event queue with UUID idempotency and retry. Verified in `live_scorer_test.dart`. |
 | **Scorer Screen Shell & Offline Queue** | **Working** | `scorecard_edit_screen.dart`, `live_score_header.dart`, `sport_setup_widget.dart`, `scorer_action_grid.dart`, `action_dialogs.dart`. Dynamic availableActions grid (>= 44pt targets), haptic feedback, setup flows, always-visible Undo, and destructive confirmations. Verified in `scorer_screen_test.dart`. |
 | **Viewer Screen Realtime Timeline** | **Working** | `scorecard_view_screen.dart`. Realtime matches stream, timeline event feed, animated score transitions (`AnimatedScore`), app resume re-sync (`WidgetsBindingObserver`), and shimmer loading. Verified in `viewer_screen_test.dart`. |
-| **Sport-Specific Setup Dialogs** | **Working** | Implemented in `sport_setup_widget.dart` for Cricket, Badminton, and Football. |
+| **Sport-Specific Setup Dialogs** | **Working** | Implemented in `sport_setup_widget.dart` for Cricket, Badminton, and Football with selectable player rosters. |
+| **Selectable Squad Rosters & Bowlers** | **Working** | Implemented in `action_dialogs.dart` (bowler sheet, dismissal sheet) and `sport_setup_widget.dart` (opening striker, non-striker, bowler chips). |
+| **Start Match & Scorer Permissions** | **Working** | Migration `008_start_match_and_scorer_permissions.sql`, `start_match` RPC, unassigned match claiming in `scorecard_edit_screen.dart`, dynamic button in `match_detail_screen.dart`. |
 | **Automated Engine Unit Tests** | **Working** | 31 unit and widget tests passing across all three engines, property folds, undo restoration, offline queue syncing, and viewer/scorer UI. |
 
 ---

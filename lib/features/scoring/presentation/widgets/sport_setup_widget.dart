@@ -1,6 +1,7 @@
 /// VIT-AP Sports — Sport Setup Widget.
 ///
 /// Pre-match configuration flow for Cricket, Badminton, and Football.
+/// Provides selectable squad lists for opening batsmen and bowlers.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_chip.dart';
+import '../../domain/player_option.dart';
 import '../../providers/live_scorer_providers.dart';
 
 class SportSetupWidget extends StatefulWidget {
@@ -35,9 +37,9 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
   late String _cricketTossWinner;
   String _cricketDecision = 'bat'; // 'bat' or 'bowl'
   int _cricketOvers = 6;
-  final TextEditingController _strikerController = TextEditingController(text: 'Batter 1');
-  final TextEditingController _nonStrikerController = TextEditingController(text: 'Batter 2');
-  final TextEditingController _bowlerController = TextEditingController(text: 'Bowler 1');
+  String? _selectedStriker;
+  String? _selectedNonStriker;
+  String? _selectedBowler;
 
   // Badminton state
   String _badmintonFormat = 'singles';
@@ -59,14 +61,47 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     _cricketTossWinner = widget.state.homeId;
     _badmintonTossWinner = widget.state.homeId;
     _footballKickoffTeam = widget.state.homeId;
+    _syncDefaultPlayers();
   }
 
-  @override
-  void dispose() {
-    _strikerController.dispose();
-    _nonStrikerController.dispose();
-    _bowlerController.dispose();
-    super.dispose();
+  String get _battingTeamId {
+    return _cricketDecision == 'bat'
+        ? _cricketTossWinner
+        : (_cricketTossWinner == widget.state.homeId ? widget.state.awayId : widget.state.homeId);
+  }
+
+  String get _bowlingTeamId {
+    return _battingTeamId == widget.state.homeId ? widget.state.awayId : widget.state.homeId;
+  }
+
+  String get _battingTeamName {
+    return _battingTeamId == widget.state.homeId ? widget.state.homeName : widget.state.awayName;
+  }
+
+  String get _bowlingTeamName {
+    return _bowlingTeamId == widget.state.homeId ? widget.state.homeName : widget.state.awayName;
+  }
+
+  List<PlayerOption> get _battingPlayers => widget.state.playersForTeam(_battingTeamId);
+  List<PlayerOption> get _bowlingPlayers => widget.state.playersForTeam(_bowlingTeamId);
+
+  void _syncDefaultPlayers() {
+    final batting = _battingPlayers;
+    final bowling = _bowlingPlayers;
+
+    if (batting.isNotEmpty) {
+      _selectedStriker = batting.first.name;
+      _selectedNonStriker = batting.length > 1 ? batting[1].name : '${batting.first.name} (2)';
+    } else {
+      _selectedStriker = 'Batter 1';
+      _selectedNonStriker = 'Batter 2';
+    }
+
+    if (bowling.isNotEmpty) {
+      _selectedBowler = bowling.first.name;
+    } else {
+      _selectedBowler = 'Bowler 1';
+    }
   }
 
   @override
@@ -122,13 +157,23 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             AppChip(
               label: widget.state.homeName,
               isSelected: _cricketTossWinner == widget.state.homeId,
-              onTap: () => setState(() => _cricketTossWinner = widget.state.homeId),
+              onTap: () {
+                setState(() {
+                  _cricketTossWinner = widget.state.homeId;
+                  _syncDefaultPlayers();
+                });
+              },
             ),
             const SizedBox(width: AppSpacing.sm),
             AppChip(
               label: widget.state.awayName,
               isSelected: _cricketTossWinner == widget.state.awayId,
-              onTap: () => setState(() => _cricketTossWinner = widget.state.awayId),
+              onTap: () {
+                setState(() {
+                  _cricketTossWinner = widget.state.awayId;
+                  _syncDefaultPlayers();
+                });
+              },
             ),
           ],
         ),
@@ -141,13 +186,23 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             AppChip(
               label: 'Bat First',
               isSelected: _cricketDecision == 'bat',
-              onTap: () => setState(() => _cricketDecision = 'bat'),
+              onTap: () {
+                setState(() {
+                  _cricketDecision = 'bat';
+                  _syncDefaultPlayers();
+                });
+              },
             ),
             const SizedBox(width: AppSpacing.sm),
             AppChip(
               label: 'Bowl First',
               isSelected: _cricketDecision == 'bowl',
-              onTap: () => setState(() => _cricketDecision = 'bowl'),
+              onTap: () {
+                setState(() {
+                  _cricketDecision = 'bowl';
+                  _syncDefaultPlayers();
+                });
+              },
             ),
           ],
         ),
@@ -167,27 +222,228 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             );
           }).toList(),
         ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // ─── Selectable Lineup Pickers ───
+        Text(
+          'Opening Batters ($_battingTeamName)',
+          style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        _buildPlayerSelectorTile(
+          label: 'Striker',
+          playerName: _selectedStriker,
+          teamName: _battingTeamName,
+          onTap: () => _openPlayerPicker(
+            title: 'Select Opening Striker',
+            teamName: _battingTeamName,
+            players: _battingPlayers,
+            currentSelection: _selectedStriker,
+            excludePlayerName: _selectedNonStriker,
+            onSelected: (val) => setState(() => _selectedStriker = val),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        _buildPlayerSelectorTile(
+          label: 'Non-Striker',
+          playerName: _selectedNonStriker,
+          teamName: _battingTeamName,
+          onTap: () => _openPlayerPicker(
+            title: 'Select Opening Non-Striker',
+            teamName: _battingTeamName,
+            players: _battingPlayers,
+            currentSelection: _selectedNonStriker,
+            excludePlayerName: _selectedStriker,
+            onSelected: (val) => setState(() => _selectedNonStriker = val),
+          ),
+        ),
         const SizedBox(height: AppSpacing.md),
 
-        // Lineup inputs
-        Text('Opening Striker', style: AppTypography.caption),
-        TextField(
-          controller: _strikerController,
-          decoration: const InputDecoration(isDense: true),
+        Text(
+          'Opening Bowler ($_bowlingTeamName)',
+          style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Text('Opening Non-Striker', style: AppTypography.caption),
-        TextField(
-          controller: _nonStrikerController,
-          decoration: const InputDecoration(isDense: true),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text('Opening Bowler', style: AppTypography.caption),
-        TextField(
-          controller: _bowlerController,
-          decoration: const InputDecoration(isDense: true),
+        const SizedBox(height: AppSpacing.xs),
+        _buildPlayerSelectorTile(
+          label: 'Opening Bowler',
+          playerName: _selectedBowler,
+          teamName: _bowlingTeamName,
+          onTap: () => _openPlayerPicker(
+            title: 'Select Opening Bowler',
+            teamName: _bowlingTeamName,
+            players: _bowlingPlayers,
+            currentSelection: _selectedBowler,
+            onSelected: (val) => setState(() => _selectedBowler = val),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPlayerSelectorTile({
+    required String label,
+    required String? playerName,
+    required String teamName,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          border: Border.all(
+            color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.person_outline_rounded, size: 22, color: AppColors.accent),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: AppTypography.caption),
+                  Text(
+                    playerName != null && playerName.isNotEmpty ? playerName : 'Tap to select player',
+                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.expand_more_rounded,
+              size: 20,
+              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPlayerPicker({
+    required String title,
+    required String teamName,
+    required List<PlayerOption> players,
+    required String? currentSelection,
+    required ValueChanged<String> onSelected,
+    String? excludePlayerName,
+  }) async {
+    final available = players.where((p) => p.name != excludePlayerName).toList();
+    final customCtrl = TextEditingController();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+      ),
+      builder: (ctx) {
+        bool showCustom = false;
+        return StatefulBuilder(
+          builder: (c, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.group_rounded, color: AppColors.accent, size: AppSpacing.iconNav),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(title, style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                              Text('Team: $teamName', style: AppTypography.caption),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    if (available.isNotEmpty) ...[
+                      Text('Squad Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: AppSpacing.xs),
+                      Wrap(
+                        spacing: AppSpacing.sm,
+                        runSpacing: AppSpacing.xs,
+                        children: available.map((p) {
+                          final isSelected = p.name == currentSelection;
+                          return ActionChip(
+                            avatar: isSelected
+                                ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                : null,
+                            label: Text(p.name),
+                            backgroundColor: isSelected ? AppColors.accent : null,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : null,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            onPressed: () {
+                              onSelected(p.name);
+                              Navigator.pop(ctx);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+
+                    if (!showCustom)
+                      TextButton.icon(
+                        icon: const Icon(Icons.person_add_rounded, size: 18),
+                        label: const Text('+ Enter Custom Player Name'),
+                        onPressed: () => setSheetState(() => showCustom = true),
+                      )
+                    else ...[
+                      TextField(
+                        controller: customCtrl,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Custom Player Name',
+                          hintText: 'e.g. Virat Kohli',
+                          isDense: true,
+                        ),
+                        onSubmitted: (val) {
+                          if (val.trim().isNotEmpty) {
+                            onSelected(val.trim());
+                            Navigator.pop(ctx);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton(
+                        label: 'Use This Name',
+                        onPressed: () {
+                          if (customCtrl.text.trim().isNotEmpty) {
+                            onSelected(customCtrl.text.trim());
+                            Navigator.pop(ctx);
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -238,13 +494,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         Row(
           children: [
             AppChip(
-              label: 'Serve',
+              label: 'Serve First',
               isSelected: _badmintonDecision == 'serve',
               onTap: () => setState(() => _badmintonDecision = 'serve'),
             ),
             const SizedBox(width: AppSpacing.sm),
             AppChip(
-              label: 'Receive',
+              label: 'Receive First',
               isSelected: _badmintonDecision == 'receive',
               onTap: () => setState(() => _badmintonDecision = 'receive'),
             ),
@@ -252,22 +508,19 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Games Count', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text('Best Of', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: AppSpacing.xs),
         Row(
-          children: [
-            AppChip(
-              label: 'Best of 3',
-              isSelected: _badmintonBestOf == 3,
-              onTap: () => setState(() => _badmintonBestOf = 3),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            AppChip(
-              label: 'Single Game',
-              isSelected: _badmintonBestOf == 1,
-              onTap: () => setState(() => _badmintonBestOf = 1),
-            ),
-          ],
+          children: [1, 3, 5].map((g) {
+            return Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: AppChip(
+                label: '$g Games',
+                isSelected: _badmintonBestOf == g,
+                onTap: () => setState(() => _badmintonBestOf = g),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -280,13 +533,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         Text('Half Length', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: AppSpacing.xs),
         Row(
-          children: [15, 20, 25, 45].map((mins) {
+          children: [10, 15, 20, 45].map((m) {
             return Padding(
               padding: const EdgeInsets.only(right: AppSpacing.sm),
               child: AppChip(
-                label: '$mins mins',
-                isSelected: _footballHalfLength == mins,
-                onTap: () => setState(() => _footballHalfLength = mins),
+                label: '$m Min',
+                isSelected: _footballHalfLength == m,
+                onTap: () => setState(() => _footballHalfLength = m),
               ),
             );
           }).toList(),
@@ -314,7 +567,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
 
         SwitchListTile.adaptive(
           contentPadding: EdgeInsets.zero,
-          title: Text('Extra Time if Drawn', style: AppTypography.body),
+          title: Text('Extra Time (if drawn)', style: AppTypography.body),
           value: _footballExtraTime,
           onChanged: (val) => setState(() => _footballExtraTime = val),
         ),
@@ -343,9 +596,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         final extra = {
           'toss_winner': _cricketTossWinner,
           'toss_decision': _cricketDecision,
-          'opening_striker': _strikerController.text.trim().isEmpty ? 'Batter 1' : _strikerController.text.trim(),
-          'opening_non_striker': _nonStrikerController.text.trim().isEmpty ? 'Batter 2' : _nonStrikerController.text.trim(),
-          'opening_bowler': _bowlerController.text.trim().isEmpty ? 'Bowler 1' : _bowlerController.text.trim(),
+          'batting_first_team_id': _battingTeamId,
+          'striker_id': _selectedStriker ?? 'Batter 1',
+          'non_striker_id': _selectedNonStriker ?? 'Batter 2',
+          'opening_bowler_id': _selectedBowler ?? 'Bowler 1',
+          'opening_striker': _selectedStriker ?? 'Batter 1',
+          'opening_non_striker': _selectedNonStriker ?? 'Batter 2',
+          'opening_bowler': _selectedBowler ?? 'Bowler 1',
         };
         await widget.onStartMatch(config: config, extra: extra);
       } else if (sport == 'badminton') {

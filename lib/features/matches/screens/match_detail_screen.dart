@@ -174,9 +174,25 @@ class MatchDetailScreen extends ConsumerWidget {
               Consumer(
                 builder: (context, ref, _) {
                   final currentUserId = ref.watch(currentUserIdProvider);
-                  // Show edit button if user created the match, or is the scorer
-                  if (currentUserId != null && 
-                     (match.createdBy == currentUserId || match.scorerId == currentUserId)) {
+                  // Show scoring/action button if user created the match, is the scorer, or if match is unassigned
+                  final isAuthorizedToScore = currentUserId != null &&
+                      (match.createdBy == currentUserId ||
+                       match.scorerId == currentUserId ||
+                       match.scorerId == null);
+
+                  if (isAuthorizedToScore) {
+                    final isScheduled = match.status == 'scheduled' || (match.status != 'live' && match.status != 'completed');
+                    final isLive = match.status == 'live';
+                    final buttonLabel = isScheduled
+                        ? 'Start Match'
+                        : (isLive ? 'Live Scorer' : 'Edit Scorecard');
+                    final buttonIcon = isScheduled
+                        ? Icons.play_arrow_rounded
+                        : (isLive ? Icons.sports_score_rounded : Icons.edit_note_rounded);
+                    final buttonVariant = (isScheduled || isLive)
+                        ? AppButtonVariant.primary
+                        : AppButtonVariant.secondary;
+
                     return Column(
                       children: [
                         if (homeTeam.isNotEmpty && homeTeam.first.teamId != null) ...[
@@ -198,10 +214,10 @@ class MatchDetailScreen extends ConsumerWidget {
                           const SizedBox(height: AppSpacing.sm),
                         ],
                         AppButton(
-                          label: 'Edit Scorecard',
+                          label: buttonLabel,
                           onPressed: () => context.go('/matches/$matchId/scorecard/edit'),
-                          icon: Icons.edit_note_rounded,
-                          variant: match.status == 'live' ? AppButtonVariant.primary : AppButtonVariant.secondary,
+                          icon: buttonIcon,
+                          variant: buttonVariant,
                         ),
                         if (match.createdBy == currentUserId) ...[
                           const SizedBox(height: AppSpacing.sm),

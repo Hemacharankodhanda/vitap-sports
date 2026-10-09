@@ -29,6 +29,9 @@ class FakeWidgetScorerService extends Fake implements LiveScorerService {
   Future<List<MatchEvent>> fetchEvents(String matchId) async => [];
 
   @override
+  Future<List<Map<String, dynamic>>> fetchTeamPlayers(String teamId) async => [];
+
+  @override
   RealtimeChannel subscribeToEvents({
     required String matchId,
     required void Function(MatchEvent event) onInsert,
