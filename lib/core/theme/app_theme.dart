@@ -278,9 +278,9 @@ class AppTheme {
       ),
 
       // ─── Page transitions ─────────────────────────────
-      pageTransitionsTheme: PageTransitionsTheme(
+      pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
         },
       ),
     );
