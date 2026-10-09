@@ -336,6 +336,14 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
   }) async {
     final available = players.where((p) => p.name != excludePlayerName).toList();
     final customCtrl = TextEditingController();
+    bool showCustom = false;
+
+    if (currentSelection != null &&
+        currentSelection.isNotEmpty &&
+        !available.any((p) => p.name == currentSelection)) {
+      customCtrl.text = currentSelection;
+      showCustom = true;
+    }
 
     await showModalBottomSheet<void>(
       context: context,
@@ -344,7 +352,6 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
       ),
       builder: (ctx) {
-        bool showCustom = false;
         return StatefulBuilder(
           builder: (c, setSheetState) {
             return Padding(
@@ -376,65 +383,80 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    if (available.isNotEmpty) ...[
-                      Text('Squad Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: AppSpacing.xs),
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.xs,
-                        children: available.map((p) {
-                          final isSelected = p.name == currentSelection;
-                          return ActionChip(
-                            avatar: isSelected
-                                ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                : null,
-                            label: Text(p.name),
-                            backgroundColor: isSelected ? AppColors.accent : null,
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : null,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                            onPressed: () {
-                              onSelected(p.name);
-                              Navigator.pop(ctx);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
+                    if (!showCustom) ...[
+                      if (available.isNotEmpty) ...[
+                        Text('Squad Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: AppSpacing.xs),
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          children: available.map((p) {
+                            final isSelected = p.name == currentSelection;
+                            return ActionChip(
+                              avatar: isSelected
+                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                  : null,
+                              label: Text(p.name),
+                              backgroundColor: isSelected ? AppColors.accent : null,
+                              labelStyle: TextStyle(
+                                color: isSelected ? Colors.white : null,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              onPressed: () {
+                                onSelected(p.name);
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
 
-                    if (!showCustom)
                       TextButton.icon(
                         icon: const Icon(Icons.person_add_rounded, size: 18),
                         label: const Text('+ Enter Custom Player Name'),
                         onPressed: () => setSheetState(() => showCustom = true),
-                      )
-                    else ...[
+                      ),
+                    ] else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Custom Player Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          TextButton(
+                            onPressed: () => setSheetState(() => showCustom = false),
+                            child: const Text('← Pick from Squad'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
                       TextField(
                         controller: customCtrl,
                         autofocus: true,
                         decoration: const InputDecoration(
-                          labelText: 'Custom Player Name',
+                          labelText: 'Player Name',
                           hintText: 'e.g. Virat Kohli',
                           isDense: true,
                         ),
+                        onChanged: (val) => setSheetState(() {}),
                         onSubmitted: (val) {
-                          if (val.trim().isNotEmpty) {
-                            onSelected(val.trim());
+                          final name = val.trim();
+                          if (name.isNotEmpty) {
+                            onSelected(name);
                             Navigator.pop(ctx);
                           }
                         },
                       ),
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.md),
                       AppButton(
-                        label: 'Use This Name',
-                        onPressed: () {
-                          if (customCtrl.text.trim().isNotEmpty) {
-                            onSelected(customCtrl.text.trim());
-                            Navigator.pop(ctx);
-                          }
-                        },
+                        label: customCtrl.text.trim().isNotEmpty
+                            ? 'Use "${customCtrl.text.trim()}"'
+                            : 'Confirm Player',
+                        onPressed: customCtrl.text.trim().isNotEmpty
+                            ? () {
+                                onSelected(customCtrl.text.trim());
+                                Navigator.pop(ctx);
+                              }
+                            : null,
                       ),
                     ],
                   ],

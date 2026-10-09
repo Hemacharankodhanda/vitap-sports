@@ -19,6 +19,8 @@ class MatchModel {
     this.awayTeamName,
     this.homeScore,
     this.awayScore,
+    this.config,
+    this.score,
   });
 
   final String id;
@@ -37,6 +39,8 @@ class MatchModel {
   final String? awayTeamName;
   final int? homeScore;
   final int? awayScore;
+  final Map<String, dynamic>? config;
+  final Map<String, dynamic>? score;
 
   factory MatchModel.fromJson(Map<String, dynamic> json) {
     final sport = json['sports'] as Map<String, dynamic>?;
@@ -62,6 +66,8 @@ class MatchModel {
           [],
       homeScore: json['home_score'] as int?,
       awayScore: json['away_score'] as int?,
+      config: json['config'] as Map<String, dynamic>?,
+      score: json['score'] as Map<String, dynamic>?,
     );
   }
 

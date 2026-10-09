@@ -27,6 +27,25 @@ class ActionDialogs {
     List<PlayerOption> bowlingPlayers = const [],
     Map<String, BatterRecord> battingStats = const {},
   }) async {
+    String dismissalType = isFreeHit ? 'run_out' : 'bowled';
+    String dismissedBatterId = strikerId;
+    final fielderController = TextEditingController();
+    final newBatterController = TextEditingController();
+    int runOutRuns = 0;
+    bool battersCrossed = false;
+
+    // Next batters available: from battingPlayers who aren't striker/nonStriker and haven't gotten out
+    final availableNextBatters = battingPlayers.where((p) {
+      if (p.id == strikerId || p.name == strikerId) return false;
+      if (p.id == nonStrikerId || p.name == nonStrikerId) return false;
+      final stats = battingStats[p.id] ?? battingStats[p.name];
+      return stats == null || !stats.isOut;
+    }).toList();
+
+    if (availableNextBatters.isNotEmpty && newBatterController.text.isEmpty) {
+      newBatterController.text = availableNextBatters.first.name;
+    }
+
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -34,25 +53,6 @@ class ActionDialogs {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
       ),
       builder: (ctx) {
-        String dismissalType = isFreeHit ? 'run_out' : 'bowled';
-        String dismissedBatterId = strikerId;
-        final fielderController = TextEditingController();
-        final newBatterController = TextEditingController();
-        int runOutRuns = 0;
-        bool battersCrossed = false;
-
-        // Next batters available: from battingPlayers who aren't striker/nonStriker and haven't gotten out
-        final availableNextBatters = battingPlayers.where((p) {
-          if (p.id == strikerId || p.name == strikerId) return false;
-          if (p.id == nonStrikerId || p.name == nonStrikerId) return false;
-          final stats = battingStats[p.id] ?? battingStats[p.name];
-          return stats == null || !stats.isOut;
-        }).toList();
-
-        if (availableNextBatters.isNotEmpty && newBatterController.text.isEmpty) {
-          newBatterController.text = availableNextBatters.first.name;
-        }
-
         return StatefulBuilder(
           builder: (context, setState) {
             final allowedDismissals = isFreeHit
@@ -222,6 +222,13 @@ class ActionDialogs {
     List<PlayerOption> bowlingPlayers = const [],
     Map<String, BowlerRecord> bowlingStats = const {},
   }) async {
+    String? selectedBowler;
+    bool isCustomEntry = false;
+    final customController = TextEditingController();
+
+    final restrictedBowlerId = lastOverBowlerId ??
+        (previousBowlerIds.isNotEmpty ? previousBowlerIds.last : null);
+
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
@@ -229,13 +236,6 @@ class ActionDialogs {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
       ),
       builder: (ctx) {
-        String? selectedBowler;
-        bool isCustomEntry = false;
-        final customController = TextEditingController();
-
-        final restrictedBowlerId = lastOverBowlerId ??
-            (previousBowlerIds.isNotEmpty ? previousBowlerIds.last : null);
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
@@ -331,6 +331,23 @@ class ActionDialogs {
                         },
                       )
                     else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Custom Bowler Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          if (bowlingPlayers.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  isCustomEntry = false;
+                                  selectedBowler = null;
+                                });
+                              },
+                              child: const Text('← Pick from Squad'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
                       TextField(
                         controller: customController,
                         autofocus: true,
@@ -341,6 +358,12 @@ class ActionDialogs {
                         ),
                         onChanged: (val) {
                           setState(() => selectedBowler = val.trim());
+                        },
+                        onSubmitted: (val) {
+                          final name = val.trim();
+                          if (name.isNotEmpty) {
+                            Navigator.pop(ctx, name);
+                          }
                         },
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -373,6 +396,11 @@ class ActionDialogs {
     required String homeTeamName,
     required String awayTeamName,
   }) async {
+    String selectedTeam = homeTeamId;
+    String goalKind = 'open_play';
+    final scorerController = TextEditingController(text: 'Player');
+    final assistController = TextEditingController();
+
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
@@ -380,11 +408,6 @@ class ActionDialogs {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
       ),
       builder: (ctx) {
-        String selectedTeam = homeTeamId;
-        String goalKind = 'open_play';
-        final scorerController = TextEditingController(text: 'Player');
-        final assistController = TextEditingController();
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(

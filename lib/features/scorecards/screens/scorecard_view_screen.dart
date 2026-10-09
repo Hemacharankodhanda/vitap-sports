@@ -113,10 +113,24 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             loading: () => const Center(child: ShimmerList()),
             error: (err, _) => _buildErrorView(context, err.toString()),
             data: (events) {
-              // Derive pure state snapshot from events
+              // Derive pure state snapshot from events or stored match snapshot
               final rawStreamMatch = matchStreamAsync.valueOrNull;
-              final config = (rawStreamMatch?['config'] as Map<String, dynamic>?) ?? {};
-              final derivedState = SportRegistry.fold(
+              final config = (rawStreamMatch?['config'] as Map<String, dynamic>?) ??
+                  matchDetail.config ??
+                  {};
+
+              dynamic derivedState;
+              final engine = SportRegistry.getEngine(sport);
+              if (events.isEmpty && matchDetail.score != null && engine != null) {
+                try {
+                  derivedState = engine.fromSnapshot(
+                    matchDetail.score!,
+                    SportRegistry.parseConfig(sport, config),
+                  );
+                } catch (_) {}
+              }
+
+              derivedState ??= SportRegistry.fold(
                 sportName: sport,
                 configJson: config,
                 events: events,
@@ -334,11 +348,11 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             if (derivedState.activeInnings != null) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Row(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       AnimatedScore(value: derivedState.activeInnings!.totalRuns),
                       Text(
@@ -364,6 +378,33 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                   ),
                 ),
               ],
+              // Active Batters & Bowler
+              if (derivedState.activeInnings!.strikerId != null ||
+                  derivedState.activeInnings!.currentBowlerId != null) ...[
+                const Divider(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (derivedState.activeInnings!.strikerId != null)
+                      Text(
+                        '🏏 ${derivedState.activeInnings!.strikerId}*',
+                        style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    if (derivedState.activeInnings!.nonStrikerId != null)
+                      Text(
+                        '${derivedState.activeInnings!.nonStrikerId}',
+                        style: AppTypography.body.copyWith(color: secondaryText),
+                      ),
+                  ],
+                ),
+                if (derivedState.activeInnings!.currentBowlerId != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '⚾ Bowler: ${derivedState.activeInnings!.currentBowlerId}',
+                    style: AppTypography.caption.copyWith(color: secondaryText),
+                  ),
+                ],
+              ],
             ] else
               const Center(child: Text('Innings setup in progress')),
           ] else ...[
@@ -371,9 +412,9 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                AnimatedScore(value: (rawStreamMatch?['home_score'] as int?) ?? 0),
+                AnimatedScore(value: (rawStreamMatch?['home_score'] as int?) ?? matchDetail.homeScore ?? 0),
                 const Text('-'),
-                AnimatedScore(value: (rawStreamMatch?['away_score'] as int?) ?? 0),
+                AnimatedScore(value: (rawStreamMatch?['away_score'] as int?) ?? matchDetail.awayScore ?? 0),
               ],
             ),
           ],
