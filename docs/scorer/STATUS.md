@@ -1,12 +1,14 @@
 # Live Scorer Implementation Status
 
-## Plan for Iteration 2: Pure Dart Scoring Engines (Football, Badminton, Cricket)
-- [ ] Define core event-sourced contracts: `MatchEvent`, `ScoringEngine<TState, TConfig>`, and `SportRegistry`.
-- [ ] Implement `FootballEngine`: goals, own goals, yellow/red cards (2nd yellow -> red), substitutions, stoppage time, penalty shootouts.
-- [ ] Implement `BadmintonEngine`: rally-point system, 21-pt win-by-2 cap 30, even/odd court serving position tracking, doubles rotation, intervals, walkover/retire.
-- [ ] Implement `CricketEngine`: balls, overs, wides/no-balls with Free Hit, byes/leg-byes, strike rotation, wicket dismissal validation, bowler over limits, maiden detection, target/margin computation.
-- [ ] Implement pure Dart scenario tests for each engine in `test/scoring/` covering all specified rule edge cases + event fold & undo property tests.
-- [ ] Verify zero analyzer errors and 100% test pass.
+## Plan for Iteration 3: Realtime & Riverpod Data Layer
+- [ ] Create `LiveScorerService` (`lib/features/scoring/data/live_scorer_service.dart`) calling Supabase RPCs `record_event`, `undo_event`, `finish_match`.
+- [ ] Implement client-side optimistic event queue with UUID idempotency, retry, and sync status.
+- [ ] Implement Riverpod providers in `lib/features/scoring/providers/live_scorer_providers.dart`:
+  - `matchStreamProvider` (`StreamProvider.autoDispose.family` for `matches` row).
+  - `eventsNotifierProvider`: subscribes to `supabase_realtime` on `match_events` (subscribe first, fetch initial, stream inserts/deletes, cleanup on dispose, reconnect on resume).
+  - `scoringStateProvider`: combines match config + folded events via `SportRegistry.getEngine(sport).fold(events)`.
+- [ ] Write unit/mock tests for `LiveScorerService` and optimistic queue behavior.
+- [ ] Verify `flutter analyze` and `flutter test`.
 
 ---
 
@@ -20,15 +22,15 @@
 | **Matches & Participants** | **Working** | `001_create_tables.sql:65-88`, `match_model.dart:4-100`. Supports team fixtures and pick-up RSVPs. |
 | **Live Scorer Schema (`match_events`)** | **Working** | `006_live_scorer_schema.sql:1-42`. Table created with `uq_match_events_match_seq`, full replica identity, and `matches` scoring columns. |
 | **RPC Functions (`record_event`, etc.)** | **Working** | `006_live_scorer_schema.sql:43-290`. Implemented `record_event`, `undo_event`, and idempotent `finish_match`. Verified in `supabase/tests/rpc_checks.sql`. |
-| **Core `ScoringEngine` Abstraction** | **Missing** | To be implemented in Iteration 2. |
-| **Football Scoring Engine** | **Missing** | To be implemented in Iteration 2. |
-| **Badminton Scoring Engine** | **Missing** | To be implemented in Iteration 2. |
-| **Cricket Scoring Engine** | **Missing** | To be implemented in Iteration 2. |
-| **Realtime Stream Subscriptions** | **Broken** | `scorecards_providers.dart` needs StreamProvider for live matches and match_events notifier. |
-| **Scorer Screen Shell & Offline Queue** | **Missing** | Shell screen driven by `engine.availableActions(state)`. |
-| **Viewer Screen Realtime Timeline** | **Missing** | Viewer screen with live count-up animation and timeline updates. |
-| **Sport-Specific Setup Dialogs** | **Missing** | Toss, playing XI, opening pairs, kickoff flows. |
-| **Automated Engine Unit Tests** | **Missing** | Scenario tests for all three sports. |
+| **Core `ScoringEngine` Abstraction** | **Working** | `lib/features/scoring/domain/scoring_engine.dart`. Pure Dart, immutable, supports `initialState`, `apply`, `validate`, `availableActions`, `isComplete`, `result`, and `fold`. |
+| **Football Scoring Engine** | **Working** | `football_engine.dart`, `football_state.dart`. Own goals, 2nd yellow -> red, substitutions, stoppage time, penalty shootouts with early mathematical termination. Verified in `football_engine_test.dart`. |
+| **Badminton Scoring Engine** | **Working** | `badminton_engine.dart`, `badminton_state.dart`. 21-pt win-by-2 cap 30, even/odd court serving position tracking, doubles rotation, intervals, walkover/retire. Verified in `badminton_engine_test.dart`. |
+| **Cricket Scoring Engine** | **Working** | `cricket_engine.dart`, `cricket_state.dart`. Overs, maidens, wides/no-balls with Free Hit, strike rotation, wicket dismissal validation, bowler over limits, target/margin calculation. Verified in `cricket_engine_test.dart`. |
+| **Realtime Stream Subscriptions** | **Partial** | Planned in Iteration 3 (`live_scorer_providers.dart`). |
+| **Scorer Screen Shell & Offline Queue** | **Missing** | Planned in Iteration 4 (`scorecard_edit_screen.dart`). |
+| **Viewer Screen Realtime Timeline** | **Missing** | Planned in Iteration 5 (`scorecard_view_screen.dart`). |
+| **Sport-Specific Setup Dialogs** | **Missing** | Planned in Iteration 4. |
+| **Automated Engine Unit Tests** | **Working** | 20 scenario and property tests passing across all three sports in `test/scoring/`. |
 
 ---
 
@@ -59,4 +61,22 @@
 - **Verification**:
   - Migration script checked for safe additive execution with re-runnable statements.
   - `flutter test` -> All tests passed.
-- **Next Slice**: Iteration 2: Pure Dart scoring engines for Football, Badminton, and Cricket with complete scenario test suites.
+
+### Iteration 2: Pure Dart Scoring Engines & Comprehensive Test Suites
+- **Goal**: Implement immutable, pure Dart scoring engines for Football, Badminton, and Cricket behind `ScoringEngine` contract, plus property and scenario tests.
+- **Changes**:
+  - Created `lib/features/scoring/domain/match_event.dart`.
+  - Created `lib/features/scoring/domain/scoring_engine.dart`.
+  - Created `lib/features/scoring/domain/sport_registry.dart`.
+  - Created `lib/features/scoring/engines/football/football_state.dart` and `football_engine.dart`.
+  - Created `lib/features/scoring/engines/badminton/badminton_state.dart` and `badminton_engine.dart`.
+  - Created `lib/features/scoring/engines/cricket/cricket_state.dart` and `cricket_engine.dart`.
+  - Created comprehensive test suites:
+    - `test/scoring/football_engine_test.dart`
+    - `test/scoring/badminton_engine_test.dart`
+    - `test/scoring/cricket_engine_test.dart`
+- **Verification**:
+  - `flutter test` -> 20/20 tests passing (100% pass across all 3 engines).
+  - Property tests verified: `fold(all_events)` reproduces state snapshot; `undo` restores exact previous state.
+  - `flutter analyze lib/features/scoring/ test/scoring/` -> 0 errors, 0 warnings.
+- **Next Slice**: Iteration 3: Realtime & Riverpod Data Layer (`LiveScorerService`, offline queue, and Riverpod stream/state providers).
