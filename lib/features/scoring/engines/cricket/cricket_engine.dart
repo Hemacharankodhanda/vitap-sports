@@ -29,12 +29,14 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       strikerId: strikerId,
       nonStrikerId: nonStrikerId,
       currentBowlerId: openingBowlerId,
+      // ignore: use_null_aware_elements - Experimental null-aware map entries with const values crash Dart AOT constant evaluator
       battingStats: {
-        ?strikerId: const BatterRecord(),
-        ?nonStrikerId: const BatterRecord(),
+        if (strikerId != null) strikerId: const BatterRecord(),
+        if (nonStrikerId != null) nonStrikerId: const BatterRecord(),
       },
+      // ignore: use_null_aware_elements
       bowlingStats: {
-        ?openingBowlerId: const BowlerRecord(),
+        if (openingBowlerId != null) openingBowlerId: const BowlerRecord(),
       },
     );
 

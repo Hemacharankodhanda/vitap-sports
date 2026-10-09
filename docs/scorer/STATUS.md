@@ -83,3 +83,9 @@
 ### Iteration 6: Architecture Documentation & Exit Criteria Verification
 - **Goal**: Create comprehensive architecture and extension guide in `docs/scorer/README.md` and verify all exit criteria.
 - **Changes**: Created `docs/scorer/README.md` and finalized `docs/scorer/STATUS.md`.
+
+### Iteration 7: Release Kernel Compilation Fix & Production Build Verification
+- **Goal**: Resolve `:app:compileFlutterBuildRelease` failure during `flutter build apk --release`.
+- **Root Cause**: In Dart's experimental null-aware elements feature (`?expr: expr`), when used with a `const` constructor value (`?strikerId: const BatterRecord()`), the CFE AOT kernel compiler desugared it into an internal `BlockExpression` with a synthetic variable inside an `IfStatement` in constant evaluation context, causing `ConstantEvaluator._recordConstructorCoverage` to crash with `Null check operator used on a null value`.
+- **Resolution**: Replaced experimental null-aware entries with standard conditional collection elements (`if (strikerId != null) strikerId: const BatterRecord()`) in `CricketEngine.initialState`.
+- **Verification**: `flutter assemble` and `flutter build apk --release` succeeded cleanly (`build\app\outputs\flutter-apk\app-release.apk` generated, 56.3MB). All 31 tests passing.
