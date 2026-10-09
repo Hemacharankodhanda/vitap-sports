@@ -1,12 +1,12 @@
 # Live Scorer Implementation Status
 
-## Plan for Iteration 4: Unified Scorer Screen UI
-- [ ] Connect `scorecard_edit_screen.dart` to `liveScorerNotifierProvider` driven dynamically by `engine.availableActions(state)`.
-- [ ] Build sport-specific match setup flows (Football lineups & kickoff; Badminton singles/doubles & first server; Cricket toss, opening pair, opening bowler).
-- [ ] Implement large tap targets (Apple HIG compliant >= 44pt), haptic feedback (`HapticFeedback.lightImpact`), and always-visible Undo.
-- [ ] Implement clear confirmation dialogs for destructive actions (Finish Match, Abandon).
-- [ ] Display subtle "syncing / offline queued" banner with manual retry trigger.
-- [ ] Implement "Take Over Scoring" flow for creator/captains when another scorer is assigned.
+## Plan for Iteration 5: Realtime Viewer Screen UI & Event Timeline
+- [ ] Connect `scorecard_view_screen.dart` to `liveMatchStreamProvider` and `liveEventsNotifierProvider`.
+- [ ] Implement animated score transitions using count-up typography (`TweenAnimationBuilder` / `AnimatedScore`).
+- [ ] Display live chronological timeline of events (goals, wickets, cards, rally points, boundaries) with instant insertion and undo removal.
+- [ ] Implement lifecycle observer (`WidgetsBindingObserver`) for automatic re-sync on app resume.
+- [ ] Show shimmer loading states and retry views matching existing design system tokens.
+- [ ] Write unit & widget tests for `ScorecardViewScreen` and timeline updates.
 - [ ] Verify `flutter analyze` and `flutter test`.
 
 ---
@@ -26,10 +26,10 @@
 | **Badminton Scoring Engine** | **Working** | `badminton_engine.dart`, `badminton_state.dart`. 21-pt win-by-2 cap 30, even/odd court serving position tracking, doubles rotation, intervals, walkover/retire. Verified in `badminton_engine_test.dart`. |
 | **Cricket Scoring Engine** | **Working** | `cricket_engine.dart`, `cricket_state.dart`. Overs, maidens, wides/no-balls with Free Hit, strike rotation, wicket dismissal validation, bowler over limits, target/margin calculation. Verified in `cricket_engine_test.dart`. |
 | **Realtime Stream Subscriptions & Data Layer** | **Working** | `live_scorer_service.dart`, `live_scorer_providers.dart`. Subscribes to Realtime first before initial load, stream on `matches`, timeline insert/delete reconciler, offline optimistic event queue with UUID idempotency and retry. Verified in `live_scorer_test.dart`. |
-| **Scorer Screen Shell & Offline Queue** | **Partial** | Queue logic working in `live_scorer_providers.dart`. Shell UI planned for Iteration 4. |
+| **Scorer Screen Shell & Offline Queue** | **Working** | `scorecard_edit_screen.dart`, `live_score_header.dart`, `sport_setup_widget.dart`, `scorer_action_grid.dart`, `action_dialogs.dart`. Dynamic availableActions grid (>= 44pt targets), haptic feedback, setup flows, always-visible Undo, and destructive confirmations. Verified in `scorer_screen_test.dart`. |
 | **Viewer Screen Realtime Timeline** | **Missing** | Planned in Iteration 5 (`scorecard_view_screen.dart`). |
-| **Sport-Specific Setup Dialogs** | **Missing** | Planned in Iteration 4. |
-| **Automated Engine Unit Tests** | **Working** | 26 unit tests passing across all three engines, property folds, undo restoration, and offline queue syncing in `test/scoring/`. |
+| **Sport-Specific Setup Dialogs** | **Working** | Implemented in `sport_setup_widget.dart` for Cricket, Badminton, and Football. |
+| **Automated Engine Unit Tests** | **Working** | 29 tests passing across all three engines, property folds, undo restoration, offline queue syncing, and widget rendering. |
 
 ---
 
@@ -81,13 +81,23 @@
 - **Changes**:
   - Created `supabase/migrations/007_take_over_scoring.sql` for safe scorer delegation.
   - Created `lib/features/scoring/data/live_scorer_service.dart`.
-  - Created `lib/features/scoring/providers/live_scorer_providers.dart`:
-    - `liveMatchStreamProvider`: auto-disposing Realtime row stream.
-    - `LiveEventsNotifier`: subscribes to Realtime first before initial query to prevent dropped events, tracks inserts and deletes with replica identity full.
-    - `LiveScorerNotifier`: drives state via `SportRegistry.fold()`, optimistic local apply, sequential queue flush, idempotency, undo, and atomic match finish.
+  - Created `lib/features/scoring/providers/live_scorer_providers.dart`.
   - Enhanced `SportRegistry` with `parseConfig`, `initialState`, and `fold` helpers.
-  - Created unit tests in `test/scoring/live_scorer_test.dart` for queue retention, network retry, optimistic local state, and undo.
+  - Created unit tests in `test/scoring/live_scorer_test.dart`.
 - **Verification**:
-  - `flutter test` -> 26/26 tests passing (100% pass across all 4 test suites).
+  - `flutter test` -> 26/26 tests passing.
   - `flutter analyze lib/features/scoring/ test/scoring/` -> 0 errors, 0 warnings.
-- **Next Slice**: Iteration 4: Unified Scorer Screen UI (`scorecard_edit_screen.dart`, setup flows, availableActions grid, haptics, undo).
+
+### Iteration 4: Unified Scorer Screen UI with Dynamic Action Grid & Setup Flows
+- **Goal**: Implement unified scorer shell screen driven by `engine.availableActions(state)` with large touch targets, haptics, always-visible Undo, and sport setup flows.
+- **Changes**:
+  - Created `lib/features/scoring/presentation/widgets/live_score_header.dart`.
+  - Created `lib/features/scoring/presentation/widgets/sport_setup_widget.dart`.
+  - Created `lib/features/scoring/presentation/widgets/action_dialogs.dart`.
+  - Created `lib/features/scoring/presentation/widgets/scorer_action_grid.dart`.
+  - Rebuilt `lib/features/scorecards/screens/scorecard_edit_screen.dart` into an Apple HIG-aligned shell with 8pt grid, haptics, and sync status.
+  - Created widget test suite in `test/scoring/scorer_screen_test.dart`.
+- **Verification**:
+  - `flutter test` -> 29/29 tests passing.
+  - `flutter analyze` on scoring and scorecard edit screen -> 0 errors, 0 warnings.
+- **Next Slice**: Iteration 5: Realtime Viewer Screen UI (`scorecard_view_screen.dart`, timeline, count-up animations, resume handling).

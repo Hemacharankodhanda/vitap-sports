@@ -1,170 +1,297 @@
-/// VIT-AP Sports — Scorecard edit screen (scorer-only).
+/// VIT-AP Sports — Live Scorecard Edit Screen (Scorer Shell).
+///
+/// Single shell screen driven by pure Dart scoring engines (Football, Badminton, Cricket).
+/// Features large tap targets (>= 44pt), haptic feedback, optimistic local apply,
+/// offline retry queue, and always-visible Undo.
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../matches/data/models/match_model.dart';
-import '../../matches/providers/match_providers.dart';
-import '../data/models/cricket_scorecard_model.dart';
-import '../providers/scorecard_providers.dart';
-import 'cricket_scoring_dashboard.dart';
+import '../../scoring/presentation/widgets/action_dialogs.dart';
+import '../../scoring/presentation/widgets/live_score_header.dart';
+import '../../scoring/presentation/widgets/scorer_action_grid.dart';
+import '../../scoring/presentation/widgets/sport_setup_widget.dart';
+import '../../scoring/providers/live_scorer_providers.dart';
 
-class ScorecardEditScreen extends ConsumerStatefulWidget {
-  const ScorecardEditScreen({super.key, required this.matchId});
+class ScorecardEditScreen extends ConsumerWidget {
+  const ScorecardEditScreen({
+    super.key,
+    required this.matchId,
+  });
+
   final String matchId;
 
   @override
-  ConsumerState<ScorecardEditScreen> createState() =>
-      _ScorecardEditScreenState();
-}
-
-class _ScorecardEditScreenState extends ConsumerState<ScorecardEditScreen> {
-  int _homeScore = 0;
-  int _awayScore = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final matchAsync = ref.watch(matchDetailProvider(widget.matchId));
-    final scorecardAsync = ref.watch(scorecardDataProvider(widget.matchId));
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(liveScorerNotifierProvider(matchId));
+    final notifier = ref.read(liveScorerNotifierProvider(matchId).notifier);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(title: const Text('Edit Scorecard')),
-      body: matchAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, _) => Center(child: Text('Error: $err')),
-        data: (match) {
-          if (match == null) return const Center(child: Text('Match not found'));
-          
-          return scorecardAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('Error loading scorecard: $err')),
-            data: (scorecardData) {
-              
-              if (match.sportName == 'Cricket') {
-                final state = scorecardData != null 
-                    ? CricketScorecardState.fromJson(scorecardData)
-                    : null;
-                return CricketScoringDashboard(
-                  match: match,
-                  initialState: state,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              state.sport.isEmpty ? 'Live Scorer' : '${state.sport.toUpperCase()} Scorer',
+              style: AppTypography.headline.copyWith(fontSize: 16),
+            ),
+            if (state.homeName.isNotEmpty && state.awayName.isNotEmpty)
+              Text(
+                '${state.homeName} vs ${state.awayName}',
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                ),
+              ),
+          ],
+        ),
+        actions: [
+          // Offline / Sync Status Indicator
+          if (state.isSyncing) ...[
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            ),
+          ] else if (state.hasPendingWrites || state.syncError != null) ...[
+            IconButton(
+              tooltip: state.syncError ?? 'Pending writes queued',
+              icon: const Icon(Icons.cloud_off_rounded, color: AppColors.warning),
+              onPressed: () => notifier.retryPendingQueue(),
+            ),
+          ],
+
+          // Take Over Scoring Action
+          if (state.isAuthorized &&
+              state.currentScorerId != null &&
+              state.status != 'completed') ...[
+            TextButton(
+              onPressed: () async {
+                HapticFeedback.mediumImpact();
+                final confirm = await ActionDialogs.confirmDestructive(
+                  context: context,
+                  title: 'Take Over Scoring?',
+                  message: 'You will become the active scorer for this live match.',
+                  confirmLabel: 'Take Over',
                 );
-              }
-              
-              // Fallback to basic scoring for other sports
-              return _buildBasicScoring(match);
-            },
-          );
-        },
+                if (confirm) {
+                  await notifier.takeOverScoring();
+                }
+              },
+              child: const Text('Take Over'),
+            ),
+          ],
+        ],
+      ),
+      body: SafeArea(
+        child: state.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : !state.isAuthorized
+                ? _buildUnauthorizedView(context, isDark)
+                : _buildScorerBody(context, state, notifier),
+      ),
+      bottomNavigationBar: state.isAuthorized && state.isMatchLive
+          ? _buildBottomBar(context, state, notifier)
+          : null,
+    );
+  }
+
+  Widget _buildUnauthorizedView(BuildContext context, bool isDark) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        child: AppCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lock_outline_rounded, size: 48, color: AppColors.warning),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Scoring Restricted',
+                style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Only the match creator, participating team captains, or designated scorers can record live events.',
+                style: AppTypography.body,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildBasicScoring(MatchModel match) {
+  Widget _buildScorerBody(
+    BuildContext context,
+    ScorerState state,
+    LiveScorerNotifier notifier,
+  ) {
     return ListView(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.screenMargin,
         vertical: AppSpacing.lg,
       ),
       children: [
-        AppCard(
-          child: Column(
-            children: [
-              Text('Update Score', style: AppTypography.headline),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text('Home', style: AppTypography.body),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                if (_homeScore > 0) {
-                                  setState(() => _homeScore--);
-                                }
-                              },
-                              icon: const Icon(Icons.remove_circle_outline_rounded),
-                            ),
-                            Text(
-                              '$_homeScore',
-                              style: AppTypography.scoreMedium,
-                            ),
-                            IconButton(
-                              onPressed: () => setState(() => _homeScore++),
-                              icon: const Icon(Icons.add_circle_outline_rounded),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+        // Offline / Sync Banner
+        if (state.syncError != null) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(25),
+              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              border: Border.all(color: AppColors.warning.withAlpha(80)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 18),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    state.syncError!,
+                    style: AppTypography.caption.copyWith(color: AppColors.warning),
                   ),
-                  Text(
-                    '-',
-                    style: AppTypography.title.copyWith(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? AppColors.darkTextTertiary
-                          : AppColors.lightTextTertiary,
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text('Away', style: AppTypography.body),
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                if (_awayScore > 0) {
-                                  setState(() => _awayScore--);
-                                }
-                              },
-                              icon: const Icon(Icons.remove_circle_outline_rounded),
-                            ),
-                            Text(
-                              '$_awayScore',
-                              style: AppTypography.scoreMedium,
-                            ),
-                            IconButton(
-                              onPressed: () => setState(() => _awayScore++),
-                              icon: const Icon(Icons.add_circle_outline_rounded),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+                TextButton(
+                  onPressed: () => notifier.retryPendingQueue(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        AppButton(
-          label: 'Update Score',
-          onPressed: () {
-            // TODO: Write to Supabase matches table
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Score updated!')),
-            );
-          },
-        ),
+        ],
+
+        // 1. Live Score Header
+        LiveScoreHeader(state: state),
+        const SizedBox(height: AppSpacing.lg),
+
+        // 2. Pre-Match Setup (if match scheduled)
+        if (state.status == 'scheduled' || state.status == 'upcoming') ...[
+          SportSetupWidget(
+            state: state,
+            onStartMatch: ({required config, extra}) async {
+              HapticFeedback.mediumImpact();
+              await notifier.startMatch(config: config, extra: extra);
+            },
+          ),
+        ] else if (state.status == 'live') ...[
+          // 3. Dynamic Action Grid
+          ScorerActionGrid(
+            state: state,
+            onRecordAction: ({required type, teamId, playerId, payload = const {}}) async {
+              await notifier.recordAction(
+                type: type,
+                teamId: teamId,
+                playerId: playerId,
+                payload: payload,
+              );
+            },
+          ),
+        ] else if (state.status == 'completed') ...[
+          // 4. Completed Match State
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              children: [
+                const Icon(Icons.emoji_events_outlined, size: 48, color: AppColors.accent),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'Match Completed',
+                  style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'All results, team win/loss records, and player statistics have been finalized atomically.',
+                  style: AppTypography.body,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
+    );
+  }
+
+  Widget _buildBottomBar(
+    BuildContext context,
+    ScorerState state,
+    LiveScorerNotifier notifier,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.screenMargin,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Always-Visible Undo Button
+          Expanded(
+            flex: 1,
+            child: AppButton(
+              label: 'Undo',
+              icon: Icons.undo_rounded,
+              variant: AppButtonVariant.secondary,
+              onPressed: state.events.isEmpty
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      notifier.undo();
+                    },
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+
+          // Finish Match Button (Destructive Confirmation)
+          Expanded(
+            flex: 2,
+            child: AppButton(
+              label: 'Finish Match',
+              icon: Icons.check_circle_outline_rounded,
+              variant: AppButtonVariant.destructive,
+              onPressed: () async {
+                HapticFeedback.heavyImpact();
+                final confirm = await ActionDialogs.confirmDestructive(
+                  context: context,
+                  title: 'Complete Match?',
+                  message:
+                      'Are you sure you want to finish this match? Results will be permanently written to team standings and player statistics.',
+                  confirmLabel: 'Finish Match',
+                );
+
+                if (confirm) {
+                  await notifier.finishMatch();
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
