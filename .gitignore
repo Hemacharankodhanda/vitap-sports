@@ -1,65 +1,178 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-node_modules/
+# ------------------------------------------------------------------------------
+# Flutter / Dart / Pub
+# ------------------------------------------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+build/
+coverage/
+**/doc/api/
+.fvm/
+**/ios/Flutter/.last_build_id
+ephemeral/
+
+# ------------------------------------------------------------------------------
+# Application Binaries & Packaging (Never commit compiled apps or libraries)
+# ------------------------------------------------------------------------------
+*.apk
+*.ap_
+*.aab
+*.ipa
+*.app
+*.exe
+*.dll
+*.so
+*.dylib
+*.dex
+
+# ------------------------------------------------------------------------------
+# Symbolication & Obfuscation
+# ------------------------------------------------------------------------------
+app.*.symbols
+app.*.map.json
+
+# ------------------------------------------------------------------------------
+# Android
+# ------------------------------------------------------------------------------
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/key.properties
+android/**/build/
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+**/android/captures/
+.cxx/
+**/android/.cxx/
+**/android/app/.cxx/
+*.hprof
+
+# Keystores & Signing credentials (security risk if committed)
+*.keystore
+*.jks
+**/*.keystore
+**/*.jks
+
+# ------------------------------------------------------------------------------
+# iOS & macOS
+# ------------------------------------------------------------------------------
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/.symlinks/
+**/ios/Pods/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.*
+**/macos/Pods/
+**/macos/.symlinks/
+DerivedData/
+*.xcuserdatad/
+*.xcuserstate
+*.moved-aside
+
+# ------------------------------------------------------------------------------
+# Windows & Linux Desktop
+# ------------------------------------------------------------------------------
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# ------------------------------------------------------------------------------
+# Web
+# ------------------------------------------------------------------------------
+web/build/
+.vite/
 dist/
 dist-ssr/
-.env
-.env.*
-!.env.example
-.vite/
-.DS_Store
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+node_modules/
 .eslintcache
-migrate_working_dir/
-.vscode
-supabase/
 
-
-# IntelliJ related
+# ------------------------------------------------------------------------------
+# IDEs & Text Editors
+# ------------------------------------------------------------------------------
+# IntelliJ & Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
+vitap_sports.iml
+android/vitap_sports_android.iml
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Visual Studio Code
+.vscode/
+*.code-workspace
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
+# Other Editors
+.atom/
+.history
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
 
-# Symbolication related
-app.*.symbols
+# ------------------------------------------------------------------------------
+# Operating System & Cache Files
+# ------------------------------------------------------------------------------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 
-# Obfuscation related
-app.*.map.json
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Linux
+.directory
 
-# Markdown files
+# ------------------------------------------------------------------------------
+# Environment, Secrets & Credentials
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+
+# ------------------------------------------------------------------------------
+# Logs & Crash Dumps
+# ------------------------------------------------------------------------------
+*.log
+*.class
+*.pyc
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.buildlog/
+migrate_working_dir/
+
+# ------------------------------------------------------------------------------
+# Supabase & Database Local Artifacts
+# ------------------------------------------------------------------------------
+.temp/
+supabase/.temp/
+supabase/
+
+# ------------------------------------------------------------------------------
+# Markdown Files (Existing policy)
+# ------------------------------------------------------------------------------
 **/*.md
 !/README.md
