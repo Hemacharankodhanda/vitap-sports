@@ -151,6 +151,39 @@ class FootballState {
   final bool isDraw;
   final String? forfeitTeamId;
 
+  Map<String, dynamic> get playerStats {
+    final stats = <String, Map<String, dynamic>>{};
+    
+    void add(String pid, String key, dynamic val) {
+      stats.putIfAbsent(pid, () => {});
+      if (val is int) {
+        stats[pid]![key] = (stats[pid]![key] as int? ?? 0) + val;
+      } else if (val is bool) {
+        stats[pid]![key] = (stats[pid]![key] as bool? ?? false) || val;
+      }
+    }
+
+    for (final goal in goals) {
+      if (goal.isOwnGoal) {
+        add(goal.scorerId, 'own_goals', 1);
+      } else {
+        add(goal.scorerId, 'goals', 1);
+        if (goal.assistId != null) {
+          add(goal.assistId!, 'assists', 1);
+        }
+      }
+    }
+
+    for (final entry in yellowCards.entries) {
+      add(entry.key, 'yellow_cards', entry.value);
+    }
+    for (final pid in redCardedPlayers) {
+      add(pid, 'red_cards', 1);
+    }
+
+    return stats;
+  }
+
   FootballState copyWith({
     String? homeId,
     String? awayId,
@@ -221,6 +254,7 @@ class FootballState {
         'winner_id': winnerId,
         'is_draw': isDraw,
         'forfeit_team_id': forfeitTeamId,
+        'player_stats': playerStats,
       };
 
   factory FootballState.fromJson(Map<String, dynamic> json) {

@@ -61,6 +61,16 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     _cricketTossWinner = widget.state.homeId;
     _badmintonTossWinner = widget.state.homeId;
     _footballKickoffTeam = widget.state.homeId;
+
+    final formatStr = widget.state.matchData?['format'] as String?;
+    if (formatStr != null && formatStr.contains('Overs')) {
+      final oversStr = formatStr.split('Overs')[0].trim();
+      final parsed = int.tryParse(oversStr);
+      if (parsed != null) {
+        _cricketOvers = parsed;
+      }
+    }
+
     _syncDefaultPlayers();
   }
 
@@ -115,7 +125,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         children: [
           Row(
             children: [
-              const Icon(Icons.tune_rounded, size: AppSpacing.iconNav, color: AppColors.accent),
+              Icon(Icons.tune_rounded, size: AppSpacing.iconNav, color: Theme.of(context).colorScheme.primary),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Pre-Match Setup',
@@ -208,22 +218,6 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Overs Per Innings', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: AppSpacing.xs),
-        Row(
-          children: [4, 6, 10, 20].map((ov) {
-            return Padding(
-              padding: const EdgeInsets.only(right: AppSpacing.sm),
-              child: AppChip(
-                label: '$ov Ov',
-                isSelected: _cricketOvers == ov,
-                onTap: () => setState(() => _cricketOvers = ov),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-
         // ─── Selectable Lineup Pickers ───
         Text(
           'Opening Batters ($_battingTeamName)',
@@ -301,7 +295,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.person_outline_rounded, size: 22, color: AppColors.accent),
+            Icon(Icons.person_outline_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
@@ -368,7 +362,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.group_rounded, color: AppColors.accent, size: AppSpacing.iconNav),
+                        Icon(Icons.group_rounded, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Column(
@@ -397,7 +391,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                                   ? const Icon(Icons.check, size: 14, color: Colors.white)
                                   : null,
                               label: Text(p.name),
-                              backgroundColor: isSelected ? AppColors.accent : null,
+                              backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : null,
                               labelStyle: TextStyle(
                                 color: isSelected ? Colors.white : null,
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

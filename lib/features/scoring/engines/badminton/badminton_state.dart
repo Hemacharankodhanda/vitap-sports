@@ -96,6 +96,7 @@ class BadmintonState {
     this.winnerId,
     this.retireTeamId,
     this.walkoverTeamId,
+    this.playerStats = const {},
   });
 
   final String homeId;
@@ -116,6 +117,7 @@ class BadmintonState {
   final String? winnerId;
   final String? retireTeamId;
   final String? walkoverTeamId;
+  final Map<String, Map<String, int>> playerStats; // playerId -> {'points_won': 0, 'service_points_won': 0}
 
   BadmintonGame get currentGame =>
       currentGameIndex < games.length ? games[currentGameIndex] : const BadmintonGame();
@@ -139,6 +141,7 @@ class BadmintonState {
     String? winnerId,
     String? retireTeamId,
     String? walkoverTeamId,
+    Map<String, Map<String, int>>? playerStats,
   }) {
     return BadmintonState(
       homeId: homeId ?? this.homeId,
@@ -158,6 +161,7 @@ class BadmintonState {
       winnerId: winnerId ?? this.winnerId,
       retireTeamId: retireTeamId ?? this.retireTeamId,
       walkoverTeamId: walkoverTeamId ?? this.walkoverTeamId,
+      playerStats: playerStats ?? this.playerStats,
     );
   }
 
@@ -179,6 +183,7 @@ class BadmintonState {
         'winner_id': winnerId,
         'retire_team_id': retireTeamId,
         'walkover_team_id': walkoverTeamId,
+        'player_stats': playerStats,
       };
 
   factory BadmintonState.fromJson(Map<String, dynamic> json) {
@@ -194,6 +199,11 @@ class BadmintonState {
 
     final triggered = (json['interval_triggered_at_11'] as Map<String, dynamic>?)?.map(
           (k, v) => MapEntry(int.tryParse(k) ?? 0, v as bool),
+        ) ??
+        const {};
+
+    final pStats = (json['player_stats'] as Map<String, dynamic>?)?.map(
+          (k, v) => MapEntry(k, (v as Map<String, dynamic>).cast<String, int>()),
         ) ??
         const {};
 
@@ -218,6 +228,7 @@ class BadmintonState {
       winnerId: json['winner_id'] as String?,
       retireTeamId: json['retire_team_id'] as String?,
       walkoverTeamId: json['walkover_team_id'] as String?,
+      playerStats: pStats,
     );
   }
 }

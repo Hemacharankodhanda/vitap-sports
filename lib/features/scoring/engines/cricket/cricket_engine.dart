@@ -440,6 +440,17 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
     final actions = <ScoringAction>[];
 
+    // Batters selection needed
+    if (active.strikerId == null || active.nonStrikerId == null) {
+      actions.add(const ScoringAction(
+        id: 'set_batters',
+        label: 'Select Batters',
+        type: 'set_batters',
+        isPrimary: true,
+      ));
+      return actions;
+    }
+
     // Bowler selection needed
     if (active.currentBowlerId == null) {
       actions.add(const ScoringAction(

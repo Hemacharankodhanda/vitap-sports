@@ -50,7 +50,7 @@ class SectionHeader extends StatelessWidget {
                 child: Text(
                   actionLabel!,
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

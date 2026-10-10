@@ -54,11 +54,11 @@ class LiveScoreHeader extends StatelessWidget {
 
           // Sport-specific Scoreboard View
           if (sport == 'cricket' && state.scoringState is CricketState)
-            _buildCricketScore(state.scoringState as CricketState, isDark)
+            _buildCricketScore(context, state.scoringState as CricketState, isDark)
           else if (sport == 'badminton' && state.scoringState is BadmintonState)
-            _buildBadmintonScore(state.scoringState as BadmintonState, isDark)
+            _buildBadmintonScore(context, state.scoringState as BadmintonState, isDark)
           else if (sport == 'football' && state.scoringState is FootballState)
-            _buildFootballScore(state.scoringState as FootballState, isDark)
+            _buildFootballScore(context, state.scoringState as FootballState, isDark)
           else
             _buildFallbackScore(isDark),
         ],
@@ -125,7 +125,7 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildCricketScore(CricketState cricket, bool isDark) {
+  Widget _buildCricketScore(BuildContext context, CricketState cricket, bool isDark) {
     final currentInnings = cricket.activeInnings;
     if (currentInnings == null) return _buildFallbackScore(isDark);
 
@@ -186,7 +186,7 @@ class LiveScoreHeader extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.accent.withAlpha(20),
+              color: Theme.of(context).colorScheme.primary.withAlpha(20),
               borderRadius: BorderRadius.circular(AppSpacing.xs),
             ),
             child: Text(
@@ -195,7 +195,7 @@ class LiveScoreHeader extends StatelessWidget {
                   : 'Target: ${cricket.target}',
               style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w600,
-                color: AppColors.accent,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
@@ -270,7 +270,7 @@ class LiveScoreHeader extends StatelessWidget {
                   color: isWicket
                       ? AppColors.error
                       : isBoundary
-                          ? AppColors.accent
+                          ? Theme.of(context).colorScheme.primary
                           : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -291,7 +291,7 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildBadmintonScore(BadmintonState badminton, bool isDark) {
+  Widget _buildBadmintonScore(BuildContext context, BadmintonState badminton, bool isDark) {
     final currentGame = badminton.currentGame;
     final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
@@ -323,7 +323,7 @@ class LiveScoreHeader extends StatelessWidget {
             ),
             Text(
               'G${badminton.currentGameIndex + 1}',
-              style: AppTypography.headline.copyWith(color: AppColors.accent),
+              style: AppTypography.headline.copyWith(color: Theme.of(context).colorScheme.primary),
             ),
             Column(
               children: [
@@ -394,7 +394,7 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildFootballScore(FootballState football, bool isDark) {
+  Widget _buildFootballScore(BuildContext context, FootballState football, bool isDark) {
     final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
     return Column(
@@ -425,7 +425,7 @@ class LiveScoreHeader extends StatelessWidget {
                 Text(
                   _formatFootballPeriod(football.currentPeriod),
                   style: AppTypography.body.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -463,7 +463,7 @@ class LiveScoreHeader extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.accent.withAlpha(20),
+              color: Theme.of(context).colorScheme.primary.withAlpha(20),
               borderRadius: BorderRadius.circular(AppSpacing.xs),
             ),
             child: Text(
@@ -471,7 +471,7 @@ class LiveScoreHeader extends StatelessWidget {
               '${football.shootoutCompleted ? " (Finished)" : ""}',
               style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.accent,
+                color: Theme.of(context).colorScheme.primary,
               ),
               textAlign: TextAlign.center,
             ),

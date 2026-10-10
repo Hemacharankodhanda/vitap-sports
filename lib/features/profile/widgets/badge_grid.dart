@@ -51,7 +51,7 @@ class BadgeGrid extends ConsumerWidget {
         return Container(
           decoration: BoxDecoration(
             color: badge.earned
-                ? AppColors.accentSurface
+                ? Theme.of(context).colorScheme.primary.withAlpha(20)
                 : (isDark
                     ? AppColors.darkSurfaceVariant
                     : AppColors.lightSurfaceVariant),
@@ -65,7 +65,7 @@ class BadgeGrid extends ConsumerWidget {
                 badge.icon,
                 size: AppSpacing.iconLarge,
                 color: badge.earned
-                    ? AppColors.accent
+                    ? Theme.of(context).colorScheme.primary
                     : (isDark
                         ? AppColors.darkTextTertiary
                         : AppColors.lightTextTertiary),
@@ -75,7 +75,7 @@ class BadgeGrid extends ConsumerWidget {
                 badge.name,
                 style: AppTypography.caption.copyWith(
                   color: badge.earned
-                      ? AppColors.accent
+                      ? Theme.of(context).colorScheme.primary
                       : (isDark
                           ? AppColors.darkTextTertiary
                           : AppColors.lightTextTertiary),

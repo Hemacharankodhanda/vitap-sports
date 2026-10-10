@@ -246,7 +246,7 @@ class ScorecardEditScreen extends ConsumerWidget {
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               children: [
-                const Icon(Icons.emoji_events_outlined, size: 48, color: AppColors.accent),
+                Icon(Icons.emoji_events_outlined, size: 48, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Match Completed',

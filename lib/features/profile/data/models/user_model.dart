@@ -16,6 +16,7 @@ class UserModel {
     this.wins = 0,
     this.losses = 0,
     this.mvpCount = 0,
+    this.careerStatsRaw,
   });
 
   final String id;
@@ -31,9 +32,32 @@ class UserModel {
   final int wins;
   final int losses;
   final int mvpCount;
+  final List<Map<String, dynamic>>? careerStatsRaw;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final sportsData = json['user_sports'] as List<dynamic>?;
+    
+    int totalMatches = json['matches_played'] as int? ?? 0;
+    int totalWins = json['wins'] as int? ?? 0;
+    int totalLosses = json['losses'] as int? ?? 0;
+    int totalMvps = json['mvp_count'] as int? ?? 0;
+    
+    final careerStats = json['career_stats'] as List<dynamic>?;
+    if (careerStats != null) {
+      // Overwrite the legacy flat counts with derived aggregates
+      totalMatches = 0;
+      totalWins = 0;
+      totalLosses = 0;
+      totalMvps = 0;
+      for (final row in careerStats) {
+        totalMatches += (row['matches_played'] as num?)?.toInt() ?? 0;
+        final counters = row['career_counters'] as Map<String, dynamic>? ?? {};
+        totalWins += (counters['matches_won'] as num?)?.toInt() ?? 0;
+        totalLosses += (counters['matches_lost'] as num?)?.toInt() ?? 0;
+        totalMvps += (counters['mvps'] as num?)?.toInt() ?? 0;
+      }
+    }
+
     return UserModel(
       id: json['id'] as String,
       name: json['name'] as String? ?? 'Unknown',
@@ -51,10 +75,11 @@ class UserModel {
               ?.map((e) => UserSport.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      matchesPlayed: json['matches_played'] as int? ?? 0,
-      wins: json['wins'] as int? ?? 0,
-      losses: json['losses'] as int? ?? 0,
-      mvpCount: json['mvp_count'] as int? ?? 0,
+      matchesPlayed: totalMatches,
+      wins: totalWins,
+      losses: totalLosses,
+      mvpCount: totalMvps,
+      careerStatsRaw: careerStats?.cast<Map<String, dynamic>>(),
     );
   }
 
@@ -89,6 +114,7 @@ class UserModel {
       wins: wins,
       losses: losses,
       mvpCount: mvpCount,
+      careerStatsRaw: careerStatsRaw,
     );
   }
 }

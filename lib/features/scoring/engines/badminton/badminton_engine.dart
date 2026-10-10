@@ -131,6 +131,25 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     final currentGame = state.currentGame;
     final isHome = winningTeam == state.homeId;
 
+    // Update player stats
+    final pStats = Map<String, Map<String, int>>.from(state.playerStats);
+    void addStat(String pid, String key, int val) {
+      if (!pStats.containsKey(pid)) {
+        pStats[pid] = {'points_won': 0, 'service_points_won': 0};
+      } else {
+        pStats[pid] = Map<String, int>.from(pStats[pid]!);
+      }
+      pStats[pid]![key] = (pStats[pid]![key] ?? 0) + val;
+    }
+
+    final winningPlayers = state.teamPlayers[winningTeam] ?? [];
+    for (final pid in winningPlayers) {
+      addStat(pid, 'points_won', 1);
+    }
+    if (state.servingTeamId == winningTeam && state.currentServerId != null) {
+      addStat(state.currentServerId!, 'service_points_won', 1);
+    }
+
     final newHomePts = isHome ? currentGame.homePoints + 1 : currentGame.homePoints;
     final newAwayPts = !isHome ? currentGame.awayPoints + 1 : currentGame.awayPoints;
     final winnerScore = isHome ? newHomePts : newAwayPts;
@@ -165,6 +184,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
           isCompleted: true,
           winnerId: winningTeam,
           intervalPrompt: 'Match Won by ${isHome ? "Home" : "Away"}',
+          playerStats: pStats,
         );
       } else {
         // Next game begins; winner of previous game serves first
@@ -193,6 +213,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
           servingTeamId: winningTeam,
           courtPositions: newCourtPositions,
           intervalPrompt: 'interval 120s - change ends',
+          playerStats: pStats,
         );
       }
     }
@@ -255,6 +276,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
       courtPositions: courtPositions,
       intervalPrompt: intervalMsg,
       intervalTriggeredAt11: triggeredMap,
+      playerStats: pStats,
     );
   }
 

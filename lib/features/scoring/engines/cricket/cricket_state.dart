@@ -367,6 +367,60 @@ class CricketState {
           ? innings[currentInningsIndex]
           : null;
 
+  Map<String, dynamic> get playerStats {
+    final stats = <String, Map<String, dynamic>>{};
+    
+    void add(String pid, String key, dynamic val) {
+      stats.putIfAbsent(pid, () => {});
+      if (val is int) {
+        stats[pid]![key] = (stats[pid]![key] as int? ?? 0) + val;
+      } else if (val is bool) {
+        stats[pid]![key] = (stats[pid]![key] as bool? ?? false) || val;
+      }
+    }
+
+    for (final inning in innings) {
+      // Batting
+      for (final entry in inning.battingStats.entries) {
+        final pid = entry.key;
+        final r = entry.value;
+        add(pid, 'runs_scored', r.runs);
+        add(pid, 'balls_faced', r.ballsFaced);
+        add(pid, 'fours', r.fours);
+        add(pid, 'sixes', r.sixes);
+        add(pid, 'is_out', r.isOut);
+        if (r.isOut) add(pid, 'outs', 1);
+        if (r.ballsFaced == 0 && r.isOut) add(pid, 'diamond_ducks', 1);
+        else if (r.runs == 0 && r.isOut && r.ballsFaced == 1) add(pid, 'golden_ducks', 1);
+        else if (r.runs == 0 && r.isOut) add(pid, 'ducks', 1);
+      }
+      
+      // Bowling
+      for (final entry in inning.bowlingStats.entries) {
+        final pid = entry.key;
+        final r = entry.value;
+        add(pid, 'balls_bowled', r.ballsBowled);
+        add(pid, 'runs_conceded', r.runsConceded);
+        add(pid, 'wickets_taken', r.wickets);
+        add(pid, 'maidens', r.maidens);
+        add(pid, 'wides_bowled', r.wides);
+        add(pid, 'no_balls_bowled', r.noBalls);
+      }
+      
+      // Fielding
+      for (final fow in inning.fallOfWickets) {
+        final fielder = fow['fielder_id'] as String?;
+        final type = fow['dismissal_type'] as String?;
+        if (fielder != null) {
+          if (type == 'caught') add(fielder, 'catches', 1);
+          if (type == 'run_out') add(fielder, 'run_outs', 1);
+          if (type == 'stumped') add(fielder, 'stumpings', 1);
+        }
+      }
+    }
+    return stats;
+  }
+
   CricketState copyWith({
     String? homeId,
     String? awayId,
@@ -404,6 +458,7 @@ class CricketState {
         'winner_team_id': winnerTeamId,
         'result_margin': resultMarginText,
         'is_tie': isTie,
+        'player_stats': playerStats,
       };
 
   factory CricketState.fromJson(Map<String, dynamic> json) {

@@ -84,7 +84,7 @@ class MatchDetailScreen extends ConsumerWidget {
                     Text(
                       match.sportName ?? 'Sport',
                       style: AppTypography.headline.copyWith(
-                        color: AppColors.accent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -161,12 +161,21 @@ class MatchDetailScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              // Scorecard buttons
+              // Scorecard and Analysis buttons
               if (match.status == 'live' || match.status == 'completed') ...[
                 AppButton(
                   label: 'View Scorecard',
                   onPressed: () => context.go('/matches/$matchId/scorecard'),
                   icon: Icons.scoreboard_outlined,
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              if (match.status == 'completed') ...[
+                AppButton(
+                  label: 'View Match Analysis',
+                  onPressed: () => context.go('/matches/$matchId/analysis'),
+                  icon: Icons.analytics_outlined,
+                  variant: AppButtonVariant.secondary,
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],

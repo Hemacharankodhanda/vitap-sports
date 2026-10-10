@@ -15,11 +15,11 @@ class AppTheme {
   AppTheme._();
 
   // ─── Light Theme ──────────────────────────────────────────
-  static ThemeData get light {
+  static ThemeData light(Color primaryColor) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.accent,
+      seedColor: primaryColor,
       brightness: Brightness.light,
-      primary: AppColors.accent,
+      primary: primaryColor,
       onPrimary: Colors.white,
       surface: AppColors.lightSurface,
       onSurface: AppColors.lightTextPrimary,
@@ -31,11 +31,11 @@ class AppTheme {
   }
 
   // ─── Dark Theme ───────────────────────────────────────────
-  static ThemeData get dark {
+  static ThemeData dark(Color primaryColor) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.accent,
+      seedColor: primaryColor,
       brightness: Brightness.dark,
-      primary: AppColors.accent,
+      primary: primaryColor,
       onPrimary: Colors.white,
       surface: AppColors.darkSurface,
       onSurface: AppColors.darkTextPrimary,
@@ -89,7 +89,7 @@ class AppTheme {
       // ─── Bottom Navigation ──────────────────────────────
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: surfaceColor,
-        selectedItemColor: AppColors.accent,
+        selectedItemColor: colorScheme.primary,
         unselectedItemColor: secondaryTextColor,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -102,15 +102,15 @@ class AppTheme {
       // ─── Navigation Bar (Material 3) ───────────────────
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: surfaceColor,
-        indicatorColor: AppColors.accentSurface,
+        indicatorColor: colorScheme.primary.withAlpha(50),
         height: AppSpacing.bottomNavHeight,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         elevation: 0,
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(
+            return IconThemeData(
               size: AppSpacing.iconNav,
-              color: AppColors.accent,
+              color: colorScheme.primary,
             );
           }
           return IconThemeData(
@@ -121,7 +121,7 @@ class AppTheme {
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return AppTypography.overline.copyWith(
-              color: AppColors.accent,
+              color: colorScheme.primary,
               fontWeight: FontWeight.w600,
             );
           }
@@ -142,7 +142,7 @@ class AppTheme {
       // ─── Elevated Button (Primary) ─────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
+          backgroundColor: colorScheme.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           minimumSize: const Size(
@@ -176,7 +176,7 @@ class AppTheme {
       // ─── Text Button ───────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: AppColors.accent,
+          foregroundColor: colorScheme.primary,
           textStyle: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
           minimumSize: const Size(
             AppSpacing.minTouchTarget,
@@ -203,7 +203,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.inputRadius),
@@ -221,7 +221,7 @@ class AppTheme {
       // ─── Chip ──────────────────────────────────────────
       chipTheme: ChipThemeData(
         backgroundColor: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-        selectedColor: AppColors.accentSurface,
+        selectedColor: colorScheme.primary.withAlpha(50),
         labelStyle: AppTypography.caption,
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,

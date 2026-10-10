@@ -44,7 +44,7 @@ class MatchCard extends StatelessWidget {
               Text(
                 match.sportName ?? 'Sport',
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),

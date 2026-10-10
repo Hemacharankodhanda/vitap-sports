@@ -45,6 +45,14 @@ class MatchService {
     await _client.from('matches').delete().eq('id', matchId);
   }
 
+  Future<List<Map<String, dynamic>>> getMatchAnalysis(String matchId) async {
+    final data = await _client
+        .from('player_match_stats')
+        .select('*, users(name, avatar_url)')
+        .eq('match_id', matchId);
+    return List<Map<String, dynamic>>.from(data);
+  }
+
   Future<MatchModel> createMatch({
     required String sportId,
     required String venue,

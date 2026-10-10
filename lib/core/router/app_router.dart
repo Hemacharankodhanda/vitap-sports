@@ -16,12 +16,15 @@ import '../../features/free_agents/screens/free_agents_screen.dart';
 import '../../features/leaderboard/screens/leaderboard_screen.dart';
 import '../../features/matches/screens/create_match_screen.dart';
 import '../../features/matches/screens/manage_squad_screen.dart';
+import '../../features/matches/screens/match_analysis_screen.dart';
 import '../../features/matches/screens/match_detail_screen.dart';
 import '../../features/matches/screens/matches_list_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/scorecards/screens/scorecard_edit_screen.dart';
 import '../../features/scorecards/screens/scorecard_view_screen.dart';
+import '../../features/settings/screens/theme_settings_screen.dart';
 import '../../features/teams/screens/create_team_screen.dart';
 import '../../features/teams/screens/recruitment_screen.dart';
 import '../../features/teams/screens/team_detail_screen.dart';
@@ -195,6 +198,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                           matchId: state.pathParameters['id']!,
                         ),
                       ),
+                      GoRoute(
+                        path: 'analysis',
+                        builder: (_, state) => MatchAnalysisScreen(
+                          matchId: state.pathParameters['id']!,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -227,6 +236,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                     ],
                   ),
+                  GoRoute(
+                    path: 'player/:id',
+                    builder: (_, state) => PublicProfileScreen(
+                      playerId: state.pathParameters['id']!,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -243,6 +258,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'edit',
                     builder: (_, __) => const EditProfileScreen(),
+                  ),
+                  GoRoute(
+                    path: 'theme',
+                    builder: (_, __) => const ThemeSettingsScreen(),
                   ),
                 ],
               ),

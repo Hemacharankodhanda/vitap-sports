@@ -53,7 +53,7 @@ class StatsRow extends StatelessWidget {
                       Text(
                         stat.value,
                         style: AppTypography.title.copyWith(
-                          color: AppColors.accent,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xxs),

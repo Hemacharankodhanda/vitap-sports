@@ -178,13 +178,13 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                             vertical: AppSpacing.xxs,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.accent.withAlpha(25),
+                            color: Theme.of(context).colorScheme.primary.withAlpha(25),
                             borderRadius: BorderRadius.circular(AppSpacing.xs),
                           ),
                           child: Text(
                             '${events.length} Events',
                             style: AppTypography.caption.copyWith(
-                              color: AppColors.accent,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -314,7 +314,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Shootout: ${derivedState.shootoutHomeScore} - ${derivedState.shootoutAwayScore} pens',
-                style: AppTypography.caption.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+                style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -332,7 +332,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                 ),
                 Text(
                   'G${derivedState.currentGameIndex + 1}',
-                  style: AppTypography.headline.copyWith(color: AppColors.accent),
+                  style: AppTypography.headline.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
                 Column(
                   children: [
@@ -373,7 +373,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                 Text(
                   derivedState.resultMarginText ?? 'Target: ${derivedState.target}',
                   style: AppTypography.caption.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -537,7 +537,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
       case 'yellow_card':
         return AppColors.warning;
       default:
-        return AppColors.accent;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 

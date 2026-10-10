@@ -143,8 +143,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                     .map((s) => AppChip(
                           label: s['name'] as String,
                           isSelected: _selectedSportId == s['id'],
-                          onTap: () =>
-                              setState(() => _selectedSportId = s['id'] as String),
+                          onTap: () {
+                            if (_selectedSportId != s['id']) {
+                              setState(() {
+                                _selectedSportId = s['id'] as String;
+                                _homeTeamId = null;
+                                _awayTeamId = null;
+                              });
+                            }
+                          },
                         ))
                     .toList(),
               ),
@@ -159,6 +166,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   error: (_, __) => const Text('Failed to load teams'),
                   data: (teams) {
                     final items = teams
+                        .where((t) => t.sportId == _selectedSportId)
                         .map((t) => DropdownMenuItem(
                               value: t.id,
                               child: Text(t.name),

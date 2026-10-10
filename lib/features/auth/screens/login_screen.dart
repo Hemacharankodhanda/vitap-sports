@@ -63,13 +63,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: 88,
                 height: 88,
                 decoration: BoxDecoration(
-                  color: AppColors.accentSurface,
+                  color: Theme.of(context).colorScheme.primary.withAlpha(20),
                   borderRadius: BorderRadius.circular(AppSpacing.xl),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.sports_rounded,
                   size: 44,
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),

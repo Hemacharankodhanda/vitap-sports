@@ -13,6 +13,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/scoring_engine.dart';
 import '../../engines/cricket/cricket_state.dart';
+import '../../engines/badminton/badminton_state.dart';
 import '../../providers/live_scorer_providers.dart';
 import 'action_dialogs.dart';
 
@@ -109,7 +110,7 @@ class ScorerActionGrid extends StatelessWidget {
       bg = AppColors.error;
       fg = Colors.white;
     } else if (action.isPrimary) {
-      bg = AppColors.accent;
+      bg = Theme.of(context).colorScheme.primary;
       fg = Colors.white;
     } else {
       bg = isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
@@ -174,7 +175,7 @@ class ScorerActionGrid extends StatelessWidget {
 
   Future<void> _handleActionTap(BuildContext context, ScoringAction action) async {
     // 1. Cricket Wicket Sheet
-    if (action.type == 'wicket') {
+    if (action.type == 'wicket' || action.id == 'wicket') {
       final cricket = state.scoringState as CricketState?;
       final active = cricket?.activeInnings;
       final strikerId = active?.strikerId ?? 'Striker';
@@ -195,8 +196,13 @@ class ScorerActionGrid extends StatelessWidget {
 
       if (result != null) {
         await onRecordAction(
-          type: 'wicket',
-          payload: result,
+          type: 'delivery',
+          payload: {
+            ...result,
+            'striker_id': strikerId,
+            'non_striker_id': nonStrikerId,
+            'bowler_id': active?.currentBowlerId,
+          },
         );
       }
       return;
@@ -232,7 +238,30 @@ class ScorerActionGrid extends StatelessWidget {
       return;
     }
 
-    // 3. Football Goal Prompt
+    // 3. Cricket Batters Selection
+    if (action.type == 'set_batters' || action.id == 'set_batters') {
+      final cricket = state.scoringState as CricketState?;
+      final active = cricket?.activeInnings;
+      final battingTeamId = active?.battingTeamId ?? state.homeId;
+      final battingPlayers = state.playersForTeam(battingTeamId);
+
+      final result = await ActionDialogs.showBattersSheet(
+        context: context,
+        teamName: battingTeamId == state.homeId ? state.homeName : state.awayName,
+        players: battingPlayers,
+        battingStats: active?.battingStats ?? {},
+      );
+
+      if (result != null) {
+        await onRecordAction(
+          type: 'set_batters',
+          payload: result,
+        );
+      }
+      return;
+    }
+
+    // 4. Football Goal Prompt
     if (action.type == 'goal') {
       final goalData = await ActionDialogs.showGoalSheet(
         context: context,
@@ -250,6 +279,40 @@ class ScorerActionGrid extends StatelessWidget {
           payload: goalData,
         );
       }
+      return;
+    }
+
+    // 4. Inject explicit IDs into Cricket delivery events
+    if (action.type == 'delivery') {
+      final cricket = state.scoringState as CricketState?;
+      final active = cricket?.activeInnings;
+      final payload = Map<String, dynamic>.from(action.payload ?? {});
+      payload['striker_id'] = active?.strikerId;
+      payload['non_striker_id'] = active?.nonStrikerId;
+      payload['bowler_id'] = active?.currentBowlerId;
+      
+      await onRecordAction(
+        type: action.type,
+        teamId: action.teamId,
+        playerId: action.playerId,
+        payload: payload,
+      );
+      return;
+    }
+
+    // 5. Inject explicit IDs into Badminton rally_won events
+    if (action.type == 'rally_won') {
+      final badminton = state.scoringState as BadmintonState?;
+      final payload = Map<String, dynamic>.from(action.payload ?? {});
+      payload['server_id'] = badminton?.currentServerId;
+      payload['receiver_id'] = badminton?.currentReceiverId;
+      
+      await onRecordAction(
+        type: action.type,
+        teamId: action.teamId,
+        playerId: action.playerId,
+        payload: payload,
+      );
       return;
     }
 

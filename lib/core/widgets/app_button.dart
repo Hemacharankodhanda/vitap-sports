@@ -82,9 +82,9 @@ class _AppButtonState extends State<AppButton> {
         return ElevatedButton(
           onPressed: isDisabled ? null : widget.onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.accent.withAlpha(77),
+            disabledBackgroundColor: Theme.of(context).colorScheme.primary.withAlpha(77),
             disabledForegroundColor: Colors.white.withAlpha(128),
             elevation: 0,
             minimumSize: Size(0, _height),
@@ -141,12 +141,12 @@ class _AppButtonState extends State<AppButton> {
         return TextButton(
           onPressed: isDisabled ? null : widget.onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: AppColors.accent,
+            foregroundColor: Theme.of(context).colorScheme.primary,
             minimumSize: Size(0, _height),
             textStyle:
                 AppTypography.body.copyWith(fontWeight: FontWeight.w600),
           ),
-          child: _buildChild(AppColors.accent),
+          child: _buildChild(Theme.of(context).colorScheme.primary),
         );
     }
   }

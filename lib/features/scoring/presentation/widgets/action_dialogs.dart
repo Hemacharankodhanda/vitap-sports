@@ -92,21 +92,25 @@ class ActionDialogs {
                     if (dismissalType == 'run_out') ...[
                       Text('Dismissed Batter', style: AppTypography.body),
                       const SizedBox(height: AppSpacing.xs),
-                      Row(
-                        children: [
-                          AppChip(
-                            label: 'Striker ($strikerId)',
-                            isSelected: dismissedBatterId == strikerId,
-                            onTap: () => setState(() => dismissedBatterId = strikerId),
-                          ),
-                          const SizedBox(width: AppSpacing.sm),
-                          AppChip(
-                            label: 'Non-Striker ($nonStrikerId)',
-                            isSelected: dismissedBatterId == nonStrikerId,
-                            onTap: () => setState(() => dismissedBatterId = nonStrikerId),
-                          ),
-                        ],
-                      ),
+                      Builder(builder: (context) {
+                        final sName = battingPlayers.where((p) => p.id == strikerId || p.name == strikerId).firstOrNull?.name ?? strikerId;
+                        final nsName = battingPlayers.where((p) => p.id == nonStrikerId || p.name == nonStrikerId).firstOrNull?.name ?? nonStrikerId;
+                        return Row(
+                          children: [
+                            AppChip(
+                              label: 'Striker ($sName)',
+                              isSelected: dismissedBatterId == strikerId,
+                              onTap: () => setState(() => dismissedBatterId = strikerId),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            AppChip(
+                              label: 'Non-Striker ($nsName)',
+                              isSelected: dismissedBatterId == nonStrikerId,
+                              onTap: () => setState(() => dismissedBatterId = nonStrikerId),
+                            ),
+                          ],
+                        );
+                      }),
                       const SizedBox(height: AppSpacing.sm),
                       Text('Runs Completed on Ball', style: AppTypography.caption),
                       Row(
@@ -185,23 +189,139 @@ class ActionDialogs {
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
+                      AppButton(
+                        label: 'Confirm Wicket',
+                        variant: AppButtonVariant.destructive,
+                        onPressed: () {
+                          // Find IDs or use custom names
+                          String? finalNewBatterId = newBatterController.text.trim().isEmpty ? null : newBatterController.text.trim();
+                          String? finalFielderId = fielderController.text.trim().isEmpty ? null : fielderController.text.trim();
+                          
+                          // If they match a squad player exactly, use their ID
+                          if (finalNewBatterId != null) {
+                            final matchP = availableNextBatters.where((p) => p.name == finalNewBatterId).firstOrNull;
+                            if (matchP != null) finalNewBatterId = matchP.id;
+                          }
+                          if (finalFielderId != null) {
+                            final matchF = bowlingPlayers.where((p) => p.name == finalFielderId).firstOrNull;
+                            if (matchF != null) finalFielderId = matchF.id;
+                          }
+
+                          Navigator.pop(ctx, {
+                            'dismissal_type': dismissalType,
+                            'dismissed_batter_id': dismissedBatterId,
+                            'new_batter_id': finalNewBatterId,
+                            'fielder_id': finalFielderId,
+                            'runs_completed': runOutRuns,
+                            'batters_crossed': battersCrossed,
+                          });
+                        },
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Prompt for selecting opening batters (e.g., at the start of an innings)
+  static Future<Map<String, String>?> showBattersSheet({
+    required BuildContext context,
+    required String teamName,
+    required List<PlayerOption> players,
+    Map<String, BatterRecord> battingStats = const {},
+  }) async {
+    String? strikerId;
+    String? nonStrikerId;
+    
+    // Auto-select if players available and not out
+    final availableBatters = players.where((p) {
+      final stats = battingStats[p.id] ?? battingStats[p.name];
+      return stats == null || !stats.isOut;
+    }).toList();
+
+    if (availableBatters.isNotEmpty) {
+      strikerId = availableBatters.first.id;
+      if (availableBatters.length > 1) {
+        nonStrikerId = availableBatters[1].id;
+      }
+    }
+
+    return showModalBottomSheet<Map<String, String>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Select Batters - $teamName', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: AppSpacing.md),
+
+                    Text('Striker', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: AppSpacing.xs),
+                    if (availableBatters.isNotEmpty) ...[
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: availableBatters.map((p) {
+                          return AppChip(
+                            label: p.name,
+                            isSelected: strikerId == p.id,
+                            onTap: () => setState(() {
+                              strikerId = p.id;
+                              if (nonStrikerId == p.id) nonStrikerId = null;
+                            }),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+
+                    Text('Non-Striker', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: AppSpacing.xs),
+                    if (availableBatters.isNotEmpty) ...[
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: availableBatters.map((p) {
+                          if (p.id == strikerId) return const SizedBox.shrink();
+                          return AppChip(
+                            label: p.name,
+                            isSelected: nonStrikerId == p.id,
+                            onTap: () => setState(() => nonStrikerId = p.id),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+
                     AppButton(
-                      label: 'Confirm Wicket',
-                      variant: AppButtonVariant.destructive,
-                      onPressed: () {
-                        Navigator.pop(ctx, {
-                          'dismissal_type': dismissalType,
-                          'dismissed_batter_id': dismissedBatterId,
-                          'new_batter_id': newBatterController.text.trim().isEmpty
-                              ? null
-                              : newBatterController.text.trim(),
-                          'fielder_id': fielderController.text.trim().isEmpty
-                              ? null
-                              : fielderController.text.trim(),
-                          'runs_completed': runOutRuns,
-                          'batters_crossed': battersCrossed,
-                        });
-                      },
+                      label: 'Confirm Batters',
+                      onPressed: strikerId != null && nonStrikerId != null
+                          ? () {
+                              Navigator.pop(ctx, {
+                                'striker_id': strikerId!,
+                                'non_striker_id': nonStrikerId!,
+                              });
+                            }
+                          : null,
                     ),
                   ],
                 ),
@@ -252,7 +372,7 @@ class ActionDialogs {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.sports_baseball_rounded, color: AppColors.accent, size: AppSpacing.iconNav),
+                        Icon(Icons.sports_baseball_rounded, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Column(
@@ -278,7 +398,7 @@ class ActionDialogs {
                         children: bowlingPlayers.map((player) {
                           final isRestricted = restrictedBowlerId != null &&
                               (player.id == restrictedBowlerId || player.name == restrictedBowlerId);
-                          final isSelected = selectedBowler == player.name;
+                          final isSelected = selectedBowler == player.id;
                           final stats = bowlingStats[player.id] ?? bowlingStats[player.name];
 
                           final labelText = stats != null
@@ -292,7 +412,7 @@ class ActionDialogs {
                                   ? const Icon(Icons.block_rounded, size: 14, color: AppColors.error)
                                   : (isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null),
                               label: Text(labelText),
-                              backgroundColor: isSelected ? AppColors.accent : null,
+                              backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : null,
                               labelStyle: TextStyle(
                                 color: isSelected ? Colors.white : null,
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -308,7 +428,7 @@ class ActionDialogs {
                                     }
                                   : () {
                                       setState(() {
-                                        selectedBowler = player.name;
+                                        selectedBowler = player.id;
                                         isCustomEntry = false;
                                       });
                                     },
