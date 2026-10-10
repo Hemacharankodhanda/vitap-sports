@@ -31,10 +31,14 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
     
     final res = await Supabase.instance.client
         .from('player_leaderboard')
-        .select()
-        .eq('sport', sportLower);
+        .select();
         
-    List<Map<String, dynamic>> players = List<Map<String, dynamic>>.from(res);
+    List<Map<String, dynamic>> players = List<Map<String, dynamic>>.from(res)
+        .where((row) {
+          final s = (row['sport']?.toString() ?? '').toLowerCase();
+          return s == sportLower || s.contains(sportLower);
+        })
+        .toList();
     
     // Sort logic based on sport
     players.sort((a, b) {

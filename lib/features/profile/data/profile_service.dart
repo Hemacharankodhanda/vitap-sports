@@ -29,8 +29,63 @@ class ProfileService {
         .select('*')
         .eq('player_id', userId);
 
+    // Build sport lookup map: sportId -> sportName
+    final sportIdToName = <String, String>{};
+    final userSportsRaw = response['user_sports'] as List<dynamic>? ?? [];
+    for (final item in userSportsRaw) {
+      if (item is Map) {
+        final sId = item['sport_id']?.toString();
+        final sObj = item['sports'] as Map<String, dynamic>?;
+        final sName = sObj?['name']?.toString();
+        if (sId != null && sName != null) {
+          sportIdToName[sId] = sName;
+        }
+      }
+    }
+
+    // Resolve any remaining sports via sports table
+    try {
+      final sportsData = await _client.from('sports').select('id, name');
+      for (final s in sportsData) {
+        final id = s['id']?.toString();
+        final name = s['name']?.toString();
+        if (id != null && name != null) {
+          sportIdToName[id] = name;
+        }
+      }
+    } catch (_) {}
+
+    final List<Map<String, dynamic>> resolvedStats = [];
+    final Set<String> sportsWithStats = {};
+
+    for (final raw in (statsResponse as List<dynamic>)) {
+      if (raw is Map) {
+        final row = Map<String, dynamic>.from(raw);
+        final rawSport = row['sport']?.toString() ?? 'cricket';
+        final resolvedSport = sportIdToName[rawSport] ?? rawSport;
+        row['sport'] = resolvedSport.toLowerCase();
+        row['sport_display_name'] = resolvedSport;
+        resolvedStats.add(row);
+        sportsWithStats.add(resolvedSport.toLowerCase());
+      }
+    }
+
+    // Provide zeroed stats entry for registered sports without matches yet
+    for (final entry in sportIdToName.values) {
+      if (!sportsWithStats.contains(entry.toLowerCase())) {
+        resolvedStats.add({
+          'player_id': userId,
+          'sport': entry.toLowerCase(),
+          'sport_display_name': entry,
+          'matches_played': 0,
+          'career_counters': <String, dynamic>{},
+        });
+        sportsWithStats.add(entry.toLowerCase());
+      }
+    }
+
     final Map<String, dynamic> mutableResponse = Map<String, dynamic>.from(response);
-    mutableResponse['career_stats'] = statsResponse;
+    mutableResponse['career_stats'] = resolvedStats;
 
     return UserModel.fromJson(mutableResponse);
   }
