@@ -42,6 +42,20 @@ class MatchModel {
   final Map<String, dynamic>? config;
   final Map<String, dynamic>? score;
 
+  String? get homeTeamId {
+    for (final p in participants) {
+      if (p.side == 'home' && p.teamId != null) return p.teamId;
+    }
+    return null;
+  }
+
+  String? get awayTeamId {
+    for (final p in participants) {
+      if (p.side == 'away' && p.teamId != null) return p.teamId;
+    }
+    return null;
+  }
+
   factory MatchModel.fromJson(Map<String, dynamic> json) {
     final sport = json['sports'] as Map<String, dynamic>?;
     final participantsData = json['match_participants'] as List<dynamic>?;
@@ -92,6 +106,7 @@ class MatchParticipant {
     this.rsvpStatus,
     this.teamName,
     this.userName,
+    this.userAvatar,
   });
 
   final String matchId;
@@ -101,6 +116,7 @@ class MatchParticipant {
   final String? rsvpStatus; // confirmed, declined, pending
   final String? teamName;
   final String? userName;
+  final String? userAvatar;
 
   factory MatchParticipant.fromJson(Map<String, dynamic> json) {
     final team = json['teams'] as Map<String, dynamic>?;
@@ -113,6 +129,7 @@ class MatchParticipant {
       rsvpStatus: json['rsvp_status'] as String?,
       teamName: team?['name'] as String?,
       userName: user?['name'] as String?,
+      userAvatar: user?['avatar_url'] as String?,
     );
   }
 }

@@ -3,7 +3,6 @@
 /// Wickets, Overs, Economy, Maidens) and complete match scorecards.
 library;
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +14,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../data/models/match_model.dart';
 import '../providers/match_providers.dart';
 import '../widgets/professional_scorecard.dart';
 
@@ -68,8 +68,13 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                     final counters = entry.value is Map
                         ? Map<String, dynamic>.from(entry.value as Map)
                         : <String, dynamic>{};
-                    final participant = match.participants
-                        .firstWhereOrNull((p) => p.userId == pId || p.userName == pId);
+                    MatchParticipant? participant;
+                    for (final p in match.participants) {
+                      if (p.userId == pId || p.userName == pId) {
+                        participant = p;
+                        break;
+                      }
+                    }
 
                     resolvedPlayerStats.add({
                       'player_id': pId,
