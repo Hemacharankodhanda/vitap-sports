@@ -21,11 +21,14 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
     final bowlingFirstTeamId = battingFirstTeamId == homeId ? awayId : homeId;
 
     final strikerId = (extra?['striker_id'] as String?) ??
-        (extra?['opening_striker'] as String?);
+        (extra?['opening_striker'] as String?) ??
+        'Batter 1';
     final nonStrikerId = (extra?['non_striker_id'] as String?) ??
-        (extra?['opening_non_striker'] as String?);
+        (extra?['opening_non_striker'] as String?) ??
+        'Batter 2';
     final openingBowlerId = (extra?['opening_bowler_id'] as String?) ??
-        (extra?['opening_bowler'] as String?);
+        (extra?['opening_bowler'] as String?) ??
+        'Bowler 1';
 
     final firstInnings = CricketInningsState(
       battingTeamId: battingFirstTeamId,
@@ -34,11 +37,11 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       nonStrikerId: nonStrikerId,
       currentBowlerId: openingBowlerId,
       battingStats: {
-        if (strikerId != null) strikerId: const BatterRecord(),
-        if (nonStrikerId != null) nonStrikerId: const BatterRecord(),
+        strikerId: const BatterRecord(),
+        nonStrikerId: const BatterRecord(),
       },
       bowlingStats: {
-        if (openingBowlerId != null) openingBowlerId: const BowlerRecord(),
+        openingBowlerId: const BowlerRecord(),
       },
     );
 
@@ -129,8 +132,9 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
   }
 
   CricketState _applySetBowler(CricketState state, MatchEvent event) {
-    final active = state.activeInnings!;
-    final bowlerId = event.payload['bowler_id'] as String;
+    final active = state.activeInnings ?? state.innings.firstOrNull;
+    if (active == null) return state;
+    final bowlerId = (event.payload['bowler_id'] as String?) ?? 'Bowler';
     final bowlingStats = Map<String, BowlerRecord>.from(active.bowlingStats);
     if (!bowlingStats.containsKey(bowlerId)) {
       bowlingStats[bowlerId] = const BowlerRecord();
@@ -145,9 +149,10 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
   }
 
   CricketState _applySetBatters(CricketState state, MatchEvent event) {
-    final active = state.activeInnings!;
-    final striker = event.payload['striker_id'] as String;
-    final nonStriker = event.payload['non_striker_id'] as String;
+    final active = state.activeInnings ?? state.innings.firstOrNull;
+    if (active == null) return state;
+    final striker = (event.payload['striker_id'] as String?) ?? 'Batter 1';
+    final nonStriker = (event.payload['non_striker_id'] as String?) ?? 'Batter 2';
 
     final battingStats = Map<String, BatterRecord>.from(active.battingStats);
     if (!battingStats.containsKey(striker)) battingStats[striker] = const BatterRecord();
@@ -164,7 +169,10 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
   CricketState _applyDelivery(CricketState state, MatchEvent event) {
     final config = state.config;
-    final active = state.activeInnings!;
+    final active = state.activeInnings ??
+        (state.innings.isNotEmpty
+            ? state.innings.first
+            : initialState(config, homeId: state.homeId, awayId: state.awayId).activeInnings!);
     final kind = event.payload['kind'] as String? ?? 'normal';
     final runs = event.payload['runs'] as int? ?? 0;
     final isBoundary = event.payload['is_boundary'] as bool? ?? false;
@@ -184,9 +192,9 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
     final battingStats = Map<String, BatterRecord>.from(active.battingStats);
     final bowlingStats = Map<String, BowlerRecord>.from(active.bowlingStats);
-    var striker = active.strikerId!;
-    var nonStriker = active.nonStrikerId!;
-    final bowlerId = active.currentBowlerId!;
+    var striker = active.strikerId ?? (event.payload['striker_id'] as String?) ?? 'Striker';
+    var nonStriker = active.nonStrikerId ?? (event.payload['non_striker_id'] as String?) ?? 'Non-Striker';
+    final bowlerId = active.currentBowlerId ?? (event.payload['bowler_id'] as String?) ?? 'Bowler';
     var currentBowler = bowlingStats[bowlerId] ?? const BowlerRecord();
     var currentStriker = battingStats[striker] ?? const BatterRecord();
 
@@ -281,7 +289,7 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
         bowlerId: creditedToBowler ? bowlerId : null,
         fielderId: fielderId,
       );
-      battingStats[dismissedBatterId!] = outBatterRecord;
+      battingStats[dismissedBatterId ?? striker] = outBatterRecord;
 
       if (creditedToBowler) {
         currentBowler = currentBowler.copyWith(wickets: currentBowler.wickets + 1);
@@ -303,7 +311,7 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       }
     }
 
-    battingStats[active.strikerId!] = currentStriker;
+    battingStats[active.strikerId ?? striker] = currentStriker;
 
     // Bowler stats update
     currentBowler = currentBowler.copyWith(

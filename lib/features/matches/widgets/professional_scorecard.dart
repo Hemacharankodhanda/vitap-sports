@@ -9,24 +9,69 @@ import '../../scoring/engines/badminton/badminton_state.dart';
 import '../data/models/match_model.dart';
 
 class ProfessionalScorecard extends StatelessWidget {
-  const ProfessionalScorecard({super.key, required this.match});
+  const ProfessionalScorecard({
+    super.key,
+    required this.match,
+    this.scoringState,
+  });
+
   final MatchModel match;
+  final dynamic scoringState;
 
   @override
   Widget build(BuildContext context) {
-    if (match.score == null) return const SizedBox.shrink();
+    final sportLower = (match.sportName ?? '').toLowerCase().trim();
+    dynamic resolvedState = scoringState;
 
-    final sportLower = match.sportName?.toLowerCase() ?? '';
-    
-    if (sportLower == 'cricket') {
-      return _CricketScorecard(state: CricketState.fromJson(match.score!), match: match);
-    } else if (sportLower == 'football') {
-      return _FootballScorecard(state: FootballState.fromJson(match.score!), match: match);
-    } else if (sportLower == 'badminton') {
-      return _BadmintonScorecard(state: BadmintonState.fromJson(match.score!), match: match);
+    if (resolvedState == null && match.score != null) {
+      try {
+        if (sportLower == 'cricket' || sportLower.isEmpty) {
+          resolvedState = CricketState.fromJson(Map<String, dynamic>.from(match.score!));
+        } else if (sportLower == 'football') {
+          resolvedState = FootballState.fromJson(Map<String, dynamic>.from(match.score!));
+        } else if (sportLower == 'badminton') {
+          resolvedState = BadmintonState.fromJson(Map<String, dynamic>.from(match.score!));
+        }
+      } catch (e) {
+        debugPrint('Error parsing match.score: $e');
+      }
     }
 
-    return const SizedBox.shrink();
+    if (resolvedState is CricketState) {
+      return _CricketScorecard(state: resolvedState, match: match);
+    } else if (resolvedState is FootballState) {
+      return _FootballScorecard(state: resolvedState, match: match);
+    } else if (resolvedState is BadmintonState) {
+      return _BadmintonScorecard(state: resolvedState, match: match);
+    }
+
+    // Informative card instead of blank screen
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.scoreboard_outlined,
+              size: 40,
+              color: Theme.of(context).colorScheme.primary.withAlpha(160),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Scorecard In Progress',
+              style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Detailed statistics and player scorecards will appear once scoring events are recorded.',
+              style: AppTypography.caption,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -36,21 +81,42 @@ class _CricketScorecard extends StatelessWidget {
   final MatchModel match;
 
   String _getPlayerName(String? id) {
-    if (id == null) return 'Unknown';
+    if (id == null || id.isEmpty) return 'Unknown';
     final p = match.participants.where((e) => e.userId == id).firstOrNull;
-    return p?.userName ?? id;
+    if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
+    return id;
   }
 
   String _getTeamName(String? id) {
-    if (id == null) return 'Team';
-    final p = match.participants.where((e) => e.teamId == id).firstOrNull;
-    return p?.teamName ?? 'Team';
+    if (id == null || id.isEmpty) return 'Team';
+    if (id == 'home') return match.homeTeamName ?? 'Home Team';
+    if (id == 'away') return match.awayTeamName ?? 'Away Team';
+    final p = match.participants.where((e) => e.teamId == id || e.userId == id).firstOrNull;
+    return p?.teamName ?? p?.userName ?? match.homeTeamName ?? match.awayTeamName ?? 'Team';
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
+    if (state.innings.isEmpty) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.sports_cricket_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: AppSpacing.sm),
+              Text('Innings In Progress', style: AppTypography.title),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Deliveries and batter records will update here in real time.', style: AppTypography.caption),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -60,9 +126,10 @@ class _CricketScorecard extends StatelessWidget {
             '${_getTeamName(state.innings[i].battingTeamId)} Innings',
             style: AppTypography.title.copyWith(color: Theme.of(context).colorScheme.primary),
           ),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             '${state.innings[i].totalRuns}/${state.innings[i].totalWickets} (${state.innings[i].overs.toStringAsFixed(1)} Ov)',
-            style: AppTypography.body,
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AppSpacing.md),
           _buildBattingTable(state.innings[i], isDark, context),
@@ -74,6 +141,15 @@ class _CricketScorecard extends StatelessWidget {
   }
 
   Widget _buildBattingTable(CricketInningsState inning, bool isDark, BuildContext context) {
+    if (inning.battingStats.isEmpty) {
+      return AppCard(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Text('No batting entries recorded yet.', style: AppTypography.caption),
+        ),
+      );
+    }
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: SingleChildScrollView(
@@ -123,6 +199,15 @@ class _CricketScorecard extends StatelessWidget {
   }
 
   Widget _buildBowlingTable(CricketInningsState inning, bool isDark, BuildContext context) {
+    if (inning.bowlingStats.isEmpty) {
+      return AppCard(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Text('No bowling entries recorded yet.', style: AppTypography.caption),
+        ),
+      );
+    }
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: SingleChildScrollView(
@@ -172,7 +257,21 @@ class _FootballScorecard extends StatelessWidget {
     final stats = state.playerStats;
 
     if (stats.isEmpty) {
-      return const Center(child: Text('No player statistics recorded.'));
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.sports_soccer_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: AppSpacing.sm),
+              Text('Football Match Stats', style: AppTypography.title),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Goal scorers, assists, and disciplinary cards will appear here as recorded.', style: AppTypography.caption),
+            ],
+          ),
+        ),
+      );
     }
 
     return AppCard(
@@ -211,13 +310,33 @@ class _BadmintonScorecard extends StatelessWidget {
   final MatchModel match;
 
   String _getTeamName(String? id) {
-    if (id == null) return 'Team';
-    final p = match.participants.where((e) => e.teamId == id).firstOrNull;
-    return p?.teamName ?? 'Team';
+    if (id == null || id.isEmpty) return 'Team';
+    if (id == 'home') return match.homeTeamName ?? 'Home Team';
+    if (id == 'away') return match.awayTeamName ?? 'Away Team';
+    final p = match.participants.where((e) => e.teamId == id || e.userId == id).firstOrNull;
+    return p?.teamName ?? p?.userName ?? match.homeTeamName ?? match.awayTeamName ?? 'Team';
   }
 
   @override
   Widget build(BuildContext context) {
+    if (state.games.isEmpty) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.sports_tennis_rounded, size: 40, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(height: AppSpacing.sm),
+              Text('Badminton Match Stats', style: AppTypography.title),
+              const SizedBox(height: AppSpacing.xs),
+              Text('Game scores and rally points will appear here.', style: AppTypography.caption),
+            ],
+          ),
+        ),
+      );
+    }
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: SingleChildScrollView(

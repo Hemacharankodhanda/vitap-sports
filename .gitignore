@@ -61,5 +61,5 @@ app.*.map.json
 /android/app/release
 
 # Markdown files
-*.md
-!README.md
+**/*.md
+!/README.md
