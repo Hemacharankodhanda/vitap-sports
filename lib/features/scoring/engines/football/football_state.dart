@@ -56,9 +56,9 @@ class ShootoutKick {
   final bool scored;
 
   factory ShootoutKick.fromJson(Map<String, dynamic> json) => ShootoutKick(
-        teamId: json['team_id'] as String,
-        playerId: json['player_id'] as String,
-        scored: json['scored'] as bool,
+        teamId: json['team_id']?.toString() ?? '',
+        playerId: json['player_id']?.toString() ?? '',
+        scored: json['scored'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -86,11 +86,11 @@ class GoalRecord {
   final bool isOwnGoal;
 
   factory GoalRecord.fromJson(Map<String, dynamic> json) => GoalRecord(
-        teamId: json['team_id'] as String,
-        scorerId: json['scorer_id'] as String,
-        assistId: json['assist_id'] as String?,
-        kind: json['kind'] as String? ?? 'open_play',
-        minute: json['minute'] as int? ?? 0,
+        teamId: json['team_id']?.toString() ?? '',
+        scorerId: json['scorer_id']?.toString() ?? '',
+        assistId: json['assist_id']?.toString(),
+        kind: json['kind']?.toString() ?? 'open_play',
+        minute: (json['minute'] as num?)?.toInt() ?? 0,
         isOwnGoal: json['is_own_goal'] as bool? ?? false,
       );
 
@@ -258,52 +258,63 @@ class FootballState {
       };
 
   factory FootballState.fromJson(Map<String, dynamic> json) {
+    final goalsRaw = json['goals'];
+    final goalsList = (goalsRaw is List)
+        ? goalsRaw
+            .whereType<Map>()
+            .map((g) => GoalRecord.fromJson(Map<String, dynamic>.from(g)))
+            .toList()
+        : const <GoalRecord>[];
+
+    final kicksRaw = json['shootout_kicks'];
+    final kicksList = (kicksRaw is List)
+        ? kicksRaw
+            .whereType<Map>()
+            .map((k) => ShootoutKick.fromJson(Map<String, dynamic>.from(k)))
+            .toList()
+        : const <ShootoutKick>[];
+
+    Map<String, List<String>> parsePlayerMap(dynamic val) {
+      if (val is! Map) return const {};
+      return val.map((k, v) => MapEntry(
+            k.toString(),
+            (v is List) ? v.map((e) => e.toString()).toList() : <String>[],
+          ));
+    }
+
     return FootballState(
-      homeId: json['home_id'] as String? ?? 'home',
-      awayId: json['away_id'] as String? ?? 'away',
-      homeScore: json['home_score'] as int? ?? 0,
-      awayScore: json['away_score'] as int? ?? 0,
-      currentPeriod: json['current_period'] as String? ?? 'not_started',
-      periodStartTimes: (json['period_start_times'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, v as String)) ??
-          const {},
-      addedTimeMinutes: (json['added_time_minutes'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, v as int)) ??
-          const {},
-      pitchPlayers: (json['pitch_players'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
-          ) ??
-          const {},
-      benchPlayers: (json['bench_players'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
-          ) ??
-          const {},
-      usedSubstitutes: (json['used_substitutes'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
-          ) ??
-          const {},
-      redCardedPlayers: ((json['red_carded_players'] as List<dynamic>?)
-                  ?.cast<String>() ??
-              [])
-          .toSet(),
-      yellowCards: (json['yellow_cards'] as Map<String, dynamic>?)
-              ?.map((k, v) => MapEntry(k, v as int)) ??
-          const {},
-      goals: (json['goals'] as List<dynamic>?)
-              ?.map((g) => GoalRecord.fromJson(g as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      shootoutKicks: (json['shootout_kicks'] as List<dynamic>?)
-              ?.map((k) => ShootoutKick.fromJson(k as Map<String, dynamic>))
-              .toList() ??
-          const [],
-      shootoutHomeScore: json['shootout_home_score'] as int? ?? 0,
-      shootoutAwayScore: json['shootout_away_score'] as int? ?? 0,
+      homeId: json['home_id']?.toString() ?? 'home',
+      awayId: json['away_id']?.toString() ?? 'away',
+      homeScore: (json['home_score'] as num?)?.toInt() ?? 0,
+      awayScore: (json['away_score'] as num?)?.toInt() ?? 0,
+      currentPeriod: json['current_period']?.toString() ?? 'not_started',
+      periodStartTimes: (json['period_start_times'] is Map)
+          ? (json['period_start_times'] as Map)
+              .map((k, v) => MapEntry(k.toString(), v.toString()))
+          : const {},
+      addedTimeMinutes: (json['added_time_minutes'] is Map)
+          ? (json['added_time_minutes'] as Map)
+              .map((k, v) => MapEntry(k.toString(), (v as num?)?.toInt() ?? 0))
+          : const {},
+      pitchPlayers: parsePlayerMap(json['pitch_players']),
+      benchPlayers: parsePlayerMap(json['bench_players']),
+      usedSubstitutes: parsePlayerMap(json['used_substitutes']),
+      redCardedPlayers: (json['red_carded_players'] is List)
+          ? (json['red_carded_players'] as List).map((e) => e.toString()).toSet()
+          : <String>{},
+      yellowCards: (json['yellow_cards'] is Map)
+          ? (json['yellow_cards'] as Map)
+              .map((k, v) => MapEntry(k.toString(), (v as num?)?.toInt() ?? 0))
+          : const {},
+      goals: goalsList,
+      shootoutKicks: kicksList,
+      shootoutHomeScore: (json['shootout_home_score'] as num?)?.toInt() ?? 0,
+      shootoutAwayScore: (json['shootout_away_score'] as num?)?.toInt() ?? 0,
       shootoutCompleted: json['shootout_completed'] as bool? ?? false,
       isCompleted: json['is_completed'] as bool? ?? false,
-      winnerId: json['winner_id'] as String?,
+      winnerId: json['winner_id']?.toString(),
       isDraw: json['is_draw'] as bool? ?? false,
-      forfeitTeamId: json['forfeit_team_id'] as String?,
+      forfeitTeamId: json['forfeit_team_id']?.toString(),
     );
   }
 }

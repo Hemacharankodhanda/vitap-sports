@@ -18,6 +18,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../matches/providers/match_providers.dart';
+import '../../matches/widgets/professional_scorecard.dart';
 import '../../scoring/domain/match_event.dart';
 import '../../scoring/domain/sport_registry.dart';
 import '../../scoring/engines/badminton/badminton_state.dart';
@@ -121,22 +122,37 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
 
               dynamic derivedState;
               final engine = SportRegistry.getEngine(sport);
-              if (events.isEmpty && matchDetail.score != null && engine != null) {
+              final scoreSnapshot = (rawStreamMatch?['score'] as Map?) ?? matchDetail.score;
+
+              if (scoreSnapshot != null && engine != null) {
                 try {
                   derivedState = engine.fromSnapshot(
-                    matchDetail.score!,
+                    Map<String, dynamic>.from(scoreSnapshot),
                     SportRegistry.parseConfig(sport, config),
                   );
-                } catch (_) {}
+                } catch (e) {
+                  debugPrint('Error parsing score snapshot: $e');
+                }
               }
 
-              derivedState ??= SportRegistry.fold(
-                sportName: sport,
-                configJson: config,
-                events: events,
-                homeId: homeId,
-                awayId: awayId,
-              );
+              if (derivedState == null && engine != null) {
+                try {
+                  derivedState = SportRegistry.fold(
+                    sportName: sport,
+                    configJson: config,
+                    events: events,
+                    homeId: homeId,
+                    awayId: awayId,
+                  );
+                } catch (_) {
+                  derivedState = SportRegistry.initialState(
+                    sportName: sport,
+                    configJson: config,
+                    homeId: homeId,
+                    awayId: awayId,
+                  );
+                }
+              }
 
               final matchStatus = rawStreamMatch?['status'] as String? ?? matchDetail.status;
 
@@ -161,6 +177,13 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                       awayName: awayName,
                       status: matchStatus,
                       isDark: isDark,
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 2. Full Professional Scorecard (Batting, Bowling, Sets, Goals)
+                    ProfessionalScorecard(
+                      match: matchDetail,
+                      scoringState: derivedState,
                     ),
                     const SizedBox(height: AppSpacing.xl),
 

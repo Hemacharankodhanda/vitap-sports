@@ -70,9 +70,9 @@ class BadmintonGame {
       };
 
   factory BadmintonGame.fromJson(Map<String, dynamic> json) => BadmintonGame(
-        homePoints: json['home_points'] as int? ?? 0,
-        awayPoints: json['away_points'] as int? ?? 0,
-        winnerId: json['winner_id'] as String?,
+        homePoints: (json['home_points'] as num?)?.toInt() ?? 0,
+        awayPoints: (json['away_points'] as num?)?.toInt() ?? 0,
+        winnerId: json['winner_id']?.toString(),
         isCompleted: json['is_completed'] as bool? ?? false,
       );
 }
@@ -187,47 +187,67 @@ class BadmintonState {
       };
 
   factory BadmintonState.fromJson(Map<String, dynamic> json) {
-    final gamesList = (json['games'] as List<dynamic>?)
-            ?.map((g) => BadmintonGame.fromJson(g as Map<String, dynamic>))
-            .toList() ??
-        const [BadmintonGame()];
+    final gamesRaw = json['games'];
+    final gamesList = (gamesRaw is List)
+        ? gamesRaw
+            .whereType<Map>()
+            .map((g) => BadmintonGame.fromJson(Map<String, dynamic>.from(g)))
+            .toList()
+        : const [BadmintonGame()];
 
-    final courtPos = (json['court_positions'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(k, (v as Map<String, dynamic>).cast<String, String>()),
-        ) ??
-        const {};
+    final courtPos = (json['court_positions'] is Map)
+        ? (json['court_positions'] as Map).map(
+            (k, v) => MapEntry(
+              k.toString(),
+              (v is Map)
+                  ? (v).map((k2, v2) => MapEntry(k2.toString(), v2.toString()))
+                  : <String, String>{},
+            ),
+          )
+        : const <String, Map<String, String>>{};
 
-    final triggered = (json['interval_triggered_at_11'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(int.tryParse(k) ?? 0, v as bool),
-        ) ??
-        const {};
+    final triggered = (json['interval_triggered_at_11'] is Map)
+        ? (json['interval_triggered_at_11'] as Map).map(
+            (k, v) => MapEntry(int.tryParse(k.toString()) ?? 0, v as bool? ?? false),
+          )
+        : const <int, bool>{};
 
-    final pStats = (json['player_stats'] as Map<String, dynamic>?)?.map(
-          (k, v) => MapEntry(k, (v as Map<String, dynamic>).cast<String, int>()),
-        ) ??
-        const {};
+    final pStats = (json['player_stats'] is Map)
+        ? (json['player_stats'] as Map).map(
+            (k, v) => MapEntry(
+              k.toString(),
+              (v is Map)
+                  ? (v).map((k2, v2) => MapEntry(k2.toString(), (v2 as num?)?.toInt() ?? 0))
+                  : <String, int>{},
+            ),
+          )
+        : const <String, Map<String, int>>{};
 
     return BadmintonState(
-      homeId: json['home_id'] as String? ?? 'home',
-      awayId: json['away_id'] as String? ?? 'away',
-      currentGameIndex: json['current_game_index'] as int? ?? 0,
+      homeId: json['home_id']?.toString() ?? 'home',
+      awayId: json['away_id']?.toString() ?? 'away',
+      currentGameIndex: (json['current_game_index'] as num?)?.toInt() ?? 0,
       games: gamesList,
-      homeGamesWon: json['home_games_won'] as int? ?? 0,
-      awayGamesWon: json['away_games_won'] as int? ?? 0,
-      servingTeamId: json['serving_team_id'] as String?,
-      currentServerId: json['current_server_id'] as String?,
-      currentReceiverId: json['current_receiver_id'] as String?,
-      teamPlayers: (json['team_players'] as Map<String, dynamic>?)?.map(
-            (k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()),
-          ) ??
-          const {},
+      homeGamesWon: (json['home_games_won'] as num?)?.toInt() ?? 0,
+      awayGamesWon: (json['away_games_won'] as num?)?.toInt() ?? 0,
+      servingTeamId: json['serving_team_id']?.toString(),
+      currentServerId: json['current_server_id']?.toString(),
+      currentReceiverId: json['current_receiver_id']?.toString(),
+      teamPlayers: (json['team_players'] is Map)
+          ? (json['team_players'] as Map).map(
+              (k, v) => MapEntry(
+                k.toString(),
+                (v is List) ? v.map((e) => e.toString()).toList() : <String>[],
+              ),
+            )
+          : const {},
       courtPositions: courtPos,
-      intervalPrompt: json['interval_prompt'] as String?,
+      intervalPrompt: json['interval_prompt']?.toString(),
       intervalTriggeredAt11: triggered,
       isCompleted: json['is_completed'] as bool? ?? false,
-      winnerId: json['winner_id'] as String?,
-      retireTeamId: json['retire_team_id'] as String?,
-      walkoverTeamId: json['walkover_team_id'] as String?,
+      winnerId: json['winner_id']?.toString(),
+      retireTeamId: json['retire_team_id']?.toString(),
+      walkoverTeamId: json['walkover_team_id']?.toString(),
       playerStats: pStats,
     );
   }

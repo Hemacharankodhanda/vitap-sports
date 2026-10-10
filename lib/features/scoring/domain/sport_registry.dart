@@ -83,12 +83,21 @@ class SportRegistry {
     final engine = getEngine(sportName);
     if (engine == null) return null;
     final config = parseConfig(sportName, configJson);
-    return engine.fold(
-      config,
-      events,
-      homeId: homeId,
-      awayId: awayId,
-      extra: extra,
-    );
+    try {
+      return engine.fold(
+        config,
+        events,
+        homeId: homeId,
+        awayId: awayId,
+        extra: extra,
+      );
+    } catch (_) {
+      return engine.initialState(
+        config,
+        homeId: homeId,
+        awayId: awayId,
+        extra: extra,
+      );
+    }
   }
 }
