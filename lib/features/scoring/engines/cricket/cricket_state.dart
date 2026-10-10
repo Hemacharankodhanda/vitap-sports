@@ -392,7 +392,7 @@ class CricketState {
       if (val is int) {
         stats[pid]![key] = (stats[pid]![key] as int? ?? 0) + val;
       } else if (val is bool) {
-        stats[pid]![key] = (stats[pid]![key] as bool? ?? false) || val;
+        stats[pid]![key] = (stats[pid]![key] as int? ?? 0) + (val ? 1 : 0);
       }
     }
 
@@ -405,7 +405,7 @@ class CricketState {
         add(pid, 'balls_faced', r.ballsFaced);
         add(pid, 'fours', r.fours);
         add(pid, 'sixes', r.sixes);
-        add(pid, 'is_out', r.isOut);
+        add(pid, 'is_out', r.isOut ? 1 : 0);
         if (r.isOut) add(pid, 'outs', 1);
         if (r.ballsFaced == 0 && r.isOut) add(pid, 'diamond_ducks', 1);
         else if (r.runs == 0 && r.isOut && r.ballsFaced == 1) add(pid, 'golden_ducks', 1);
