@@ -22,6 +22,7 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedSport = ref.watch(leaderboardSportProvider);
+    final cricketCategory = ref.watch(cricketCategoryProvider);
     final playersAsync = ref.watch(topPlayersProvider);
     final teamsAsync = ref.watch(topTeamsProvider);
 
@@ -61,60 +62,118 @@ class LeaderboardScreen extends ConsumerWidget {
               }).toList(),
             ),
           ),
+
+          // Cricket category filter (Batting, Bowling, Fielding)
+          if (selectedSport == 'Cricket') ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              height: AppSpacing.chipHeight,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  (label: 'Batting', icon: Icons.sports_cricket_rounded),
+                  (label: 'Bowling', icon: Icons.sports_baseball_rounded),
+                  (label: 'Fielding', icon: Icons.sports_handball_rounded),
+                ].map((category) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: AppChip(
+                      label: category.label,
+                      icon: category.icon,
+                      isSelected: cricketCategory == category.label,
+                      onTap: () => ref.read(cricketCategoryProvider.notifier).state = category.label,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.xl),
 
           // Top Players section
-          const SectionHeader(title: 'Top Players'),
+          SectionHeader(
+            title: selectedSport == 'Cricket'
+                ? 'Top $cricketCategory Leaders'
+                : 'Top Players',
+          ),
           const SizedBox(height: AppSpacing.md),
           playersAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, _) => Text('Error: $err'),
             data: (players) {
               if (players.isEmpty) {
-                return const EmptyState(
+                return EmptyState(
                   icon: Icons.leaderboard_outlined,
                   title: 'No leaderboard data yet',
-                  subtitle: 'Play matches to appear on the leaderboard!',
+                  subtitle: selectedSport == 'Cricket'
+                      ? 'Play cricket matches to appear on the $cricketCategory leaderboard!'
+                      : 'Play matches to appear on the leaderboard!',
                 );
               }
               return Column(
                 children: players.asMap().entries.map((e) {
                   final index = e.key;
-                  final player = e.value as Map<String, dynamic>;
+                  final player = e.value;
                   return AppCard(
                     margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: ListTile(
-                      onTap: () {
-                        if (player['id'] != null) {
-                          context.go('/leaderboard/player/${player['id']}');
-                        }
-                      },
-                      leading: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '#${index + 1}',
-                            style: AppTypography.title.copyWith(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        onTap: () {
+                          if (player['id'] != null) {
+                            context.go('/leaderboard/player/${player['id']}');
+                          }
+                        },
+                        leading: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '#${index + 1}',
+                              style: AppTypography.title.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: index == 0
+                                    ? Colors.amber
+                                    : index == 1
+                                        ? Colors.grey[400]
+                                        : index == 2
+                                            ? Colors.brown[300]
+                                            : null,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            AppAvatar(
+                              imageUrl: player['avatar_url'] as String?,
+                              name: player['name'] as String? ?? 'Player',
+                              size: AppAvatarSize.medium,
+                            ),
+                          ],
+                        ),
+                        title: Text(
+                          player['name'] as String? ?? 'Player',
+                          style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          player['secondary_stat'] as String? ?? '',
+                          style: AppTypography.caption,
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: AppSpacing.xs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                            borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                          ),
+                          child: Text(
+                            player['primary_stat'] as String? ?? '',
+                            style: AppTypography.caption.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: index == 0
-                                  ? Colors.amber
-                                  : index == 1
-                                      ? Colors.grey[400]
-                                      : index == 2
-                                          ? Colors.brown[300]
-                                          : null,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
-                          const SizedBox(width: AppSpacing.md),
-                          AppAvatar(
-                            imageUrl: player['avatar_url'] as String?,
-                            name: player['name'] as String? ?? 'Player',
-                            size: AppAvatarSize.medium,
-                          ),
-                        ],
+                        ),
                       ),
-                      title: Text(player['name'] as String? ?? 'Player', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${player['primary_stat']} • ${player['secondary_stat']}'),
                     ),
                   );
                 }).toList(),
@@ -170,6 +229,23 @@ class LeaderboardScreen extends ConsumerWidget {
                       ),
                       title: Text(team.name, style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
                       subtitle: Text('${team.sportName ?? "Team"} • ${team.wins}W - ${team.losses}L - ${team.draws}D'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withAlpha(20),
+                          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                        ),
+                        child: Text(
+                          '${team.wins} Wins',
+                          style: AppTypography.caption.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 }).toList(),
