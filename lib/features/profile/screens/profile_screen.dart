@@ -12,8 +12,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_avatar.dart';
-import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
@@ -21,6 +19,7 @@ import '../../../core/widgets/section_header.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/badge_grid.dart';
+import '../widgets/player_career_stats_card.dart';
 import '../widgets/stats_row.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -133,99 +132,14 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.sectionGap),
 
-              // ─── Per-Sport Stats ───────────────────────
+              // ─── Per-Sport Career Stats ─────────────────
               if (profile.careerStatsRaw != null && profile.careerStatsRaw!.isNotEmpty) ...[
                 const SectionHeader(title: 'Career Stats'),
                 const SizedBox(height: AppSpacing.md),
-                ...profile.careerStatsRaw!.map((sportRow) {
-                  final sportName = ((sportRow['sport'] as String?) ?? 'Unknown').toUpperCase();
-                  final counters = sportRow['career_counters'] as Map<String, dynamic>? ?? {};
-                  final matches = sportRow['matches_played'] ?? 0;
-                  
-                  // Helper to safely format counters
-                  String val(String key) => (counters[key] ?? 0).toString();
-
-                  List<String> statLines = [];
-                  if (sportName == 'CRICKET') {
-                    final runs = counters['runs_scored'] ?? 0;
-                    final ballsFaced = counters['balls_faced'] ?? 0;
-                    final sr = ballsFaced > 0 ? ((runs / ballsFaced) * 100).toStringAsFixed(1) : '0.0';
-                    final wickets = counters['wickets_taken'] ?? 0;
-                    final fours = counters['fours'] ?? 0;
-                    final sixes = counters['sixes'] ?? 0;
-                    
-                    final runsConceded = counters['runs_conceded'] ?? 0;
-                    final ballsBowled = counters['balls_bowled'] ?? 0;
-                    final oversBowled = ballsBowled / 6.0;
-                    final econ = oversBowled > 0 ? (runsConceded / oversBowled).toStringAsFixed(1) : '0.0';
-                    
-                    statLines.add('Batting: $runs Runs • SR: $sr');
-                    statLines.add('Boundaries: $fours (4s) • $sixes (6s)');
-                    if (wickets > 0 || ballsBowled > 0) {
-                      statLines.add('Bowling: $wickets Wkts • Econ: $econ');
-                    }
-                  } else if (sportName == 'FOOTBALL') {
-                    statLines.add('Goals: ${val('goals')} • Assists: ${val('assists')}');
-                    statLines.add('Saves: ${val('saves')} • Yellow/Red: ${val('yellow_cards')}/${val('red_cards')}');
-                  } else if (sportName == 'BADMINTON') {
-                    statLines.add('Points: ${val('points_won')}');
-                  }
-
-                  return AppCard(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                sportName,
-                                style: AppTypography.title.copyWith(
-                                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              if (statLines.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                ...statLines.map((line) => Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    line,
-                                    style: AppTypography.caption.copyWith(
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                    ),
-                                  ),
-                                )),
-                              ],
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '$matches Matches',
-                              style: AppTypography.body.copyWith(
-                                color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${val('matches_won')}W - ${val('matches_lost')}L',
-                              style: AppTypography.caption.copyWith(
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-                const SizedBox(height: AppSpacing.sectionGap),
+                ...profile.careerStatsRaw!.map(
+                  (sportRow) => PlayerCareerStatsCard(sportRow: sportRow),
+                ),
+                const SizedBox(height: AppSpacing.md),
               ],
 
               // ─── Sports ─────────────────────────────────
