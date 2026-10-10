@@ -81,7 +81,7 @@ class EmptyState extends StatelessWidget {
                 child: Text(
                   actionLabel!,
                   style: AppTypography.body.copyWith(
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

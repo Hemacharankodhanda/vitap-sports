@@ -30,13 +30,13 @@ class AppChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isSelected
-        ? AppColors.accentSurface
+        ? Theme.of(context).colorScheme.primary.withAlpha(20)
         : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant);
     final textColor = isSelected
-        ? AppColors.accent
+        ? Theme.of(context).colorScheme.primary
         : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
     final borderColor = isSelected
-        ? AppColors.accent.withAlpha(77)
+        ? Theme.of(context).colorScheme.primary.withAlpha(77)
         : Colors.transparent;
 
     return GestureDetector(

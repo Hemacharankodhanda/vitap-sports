@@ -53,16 +53,16 @@ class SportFilterBar extends ConsumerWidget implements PreferredSizeWidget {
                   }
                 },
                 backgroundColor: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-                selectedColor: AppColors.accentSurface,
+                selectedColor: Theme.of(context).colorScheme.primary.withAlpha(20),
                 labelStyle: TextStyle(
                   color: isSelected 
-                      ? AppColors.accent 
+                      ? Theme.of(context).colorScheme.primary 
                       : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
                 side: BorderSide(
                   color: isSelected 
-                      ? AppColors.accent 
+                      ? Theme.of(context).colorScheme.primary 
                       : Colors.transparent,
                 ),
                 showCheckmark: false,

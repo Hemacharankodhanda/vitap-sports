@@ -59,7 +59,7 @@ class TeamCard extends StatelessWidget {
                 '${team.wins}W - ${team.losses}L',
                 style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.accent,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],

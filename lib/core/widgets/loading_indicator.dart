@@ -15,11 +15,11 @@ class LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(AppSpacing.xxl),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
         child: CircularProgressIndicator(
-          color: AppColors.accent,
+          color: Theme.of(context).colorScheme.primary,
           strokeWidth: 2.5,
         ),
       ),

@@ -108,11 +108,11 @@ class _QuickActionCard extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.accentSurface,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withAlpha(20),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppColors.accent, size: AppSpacing.iconNav),
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(

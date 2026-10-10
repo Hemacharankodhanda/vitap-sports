@@ -6,9 +6,11 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'package:flutter_animate/flutter_animate.dart';
+
 import '../theme/app_spacing.dart';
 
-class AppCard extends StatelessWidget {
+class AppCard extends StatefulWidget {
   const AppCard({
     super.key,
     required this.child,
@@ -29,44 +31,59 @@ class AppCard extends StatelessWidget {
   final double? elevation;
 
   @override
+  State<AppCard> createState() => _AppCardState();
+}
+
+class _AppCardState extends State<AppCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     Widget card = Container(
-      margin: margin,
+      margin: widget.margin,
       decoration: BoxDecoration(
-        color: color ?? theme.cardTheme.color ?? theme.colorScheme.surface,
+        color: widget.color ?? theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: borderColor != null
-            ? Border.all(color: borderColor!, width: 1)
+        border: widget.borderColor != null
+            ? Border.all(color: widget.borderColor!, width: 1)
             : null,
         boxShadow: [
-          if ((elevation ?? AppSpacing.cardElevation) > 0)
+          if ((widget.elevation ?? AppSpacing.cardElevation) > 0)
             BoxShadow(
               color: Colors.black.withAlpha(13),
-              blurRadius: (elevation ?? AppSpacing.cardElevation) * 4,
-              offset: Offset(0, (elevation ?? AppSpacing.cardElevation)),
+              blurRadius: (widget.elevation ?? AppSpacing.cardElevation) * 4,
+              offset: Offset(0, (widget.elevation ?? AppSpacing.cardElevation)),
             ),
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
         child: Padding(
-          padding: padding ??
+          padding: widget.padding ??
               const EdgeInsets.all(AppSpacing.cardPadding),
-          child: child,
+          child: widget.child,
         ),
       ),
     );
 
-    if (onTap != null) {
+    if (widget.onTap != null) {
       card = GestureDetector(
-        onTap: onTap,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: card,
+        child: AnimatedScale(
+          scale: _isPressed ? 0.98 : 1.0,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
+          child: card,
+        ),
       );
     }
 
-    return card;
+    return card.animate().fade(duration: 300.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic);
   }
 }

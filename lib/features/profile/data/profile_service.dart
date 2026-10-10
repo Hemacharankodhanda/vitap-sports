@@ -15,7 +15,6 @@ class ProfileService {
 
   final SupabaseClient _client;
 
-  /// Fetch the current user's profile with sports.
   Future<UserModel?> getProfile(String userId) async {
     final response = await _client
         .from('users')
@@ -24,7 +23,16 @@ class ProfileService {
         .maybeSingle();
 
     if (response == null) return null;
-    return UserModel.fromJson(response);
+
+    final statsResponse = await _client
+        .from('player_career_stats')
+        .select('*')
+        .eq('player_id', userId);
+
+    final Map<String, dynamic> mutableResponse = Map<String, dynamic>.from(response);
+    mutableResponse['career_stats'] = statsResponse;
+
+    return UserModel.fromJson(mutableResponse);
   }
 
   /// Fetch any user's profile by ID.

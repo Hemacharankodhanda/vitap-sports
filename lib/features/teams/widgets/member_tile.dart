@@ -70,22 +70,22 @@ class MemberTile extends StatelessWidget {
                 vertical: AppSpacing.xxs,
               ),
               decoration: BoxDecoration(
-                color: AppColors.accentSurface,
+                color: Theme.of(context).colorScheme.primary.withAlpha(20),
                 borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.star_rounded,
                     size: 12,
-                    color: AppColors.accent,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: AppSpacing.xxs),
                   Text(
                     'Captain',
                     style: AppTypography.overline.copyWith(
-                      color: AppColors.accent,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

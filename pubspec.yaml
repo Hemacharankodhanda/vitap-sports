@@ -25,6 +25,7 @@ dependencies:
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
   flutter_svg: ^2.0.16
+  flutter_animate: ^4.5.0
 
   # Image Handling
   image_picker: ^1.1.2

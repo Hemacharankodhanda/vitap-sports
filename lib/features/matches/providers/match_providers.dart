@@ -35,3 +35,10 @@ final matchDetailProvider = FutureProvider.family<MatchModel?, String>(
     return service.getMatch(matchId);
   },
 );
+
+final matchAnalysisProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
+  (ref, matchId) async {
+    final service = ref.watch(matchServiceProvider);
+    return service.getMatchAnalysis(matchId);
+  },
+);

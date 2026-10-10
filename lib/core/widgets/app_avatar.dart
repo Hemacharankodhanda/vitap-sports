@@ -77,7 +77,7 @@ class AppAvatar extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: showBorder
-                ? Border.all(color: AppColors.accent, width: 2)
+                ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
                 : null,
             image: DecorationImage(
               image: imageProvider,
@@ -110,9 +110,9 @@ class AppAvatar extends StatelessWidget {
       height: _dimension,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.accentSurface,
+        color: Theme.of(context).colorScheme.primary.withAlpha(20),
         border: showBorder
-            ? Border.all(color: AppColors.accent, width: 2)
+            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
             : null,
       ),
       alignment: Alignment.center,
@@ -121,7 +121,7 @@ class AppAvatar extends StatelessWidget {
         style: AppTypography.body.copyWith(
           fontSize: _fontSize,
           fontWeight: FontWeight.w600,
-          color: AppColors.accent,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );

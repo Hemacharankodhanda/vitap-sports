@@ -12,6 +12,7 @@ import 'core/constants/supabase_constants.dart';
 import 'core/router/app_router.dart';
 import 'core/services/local_prefs_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/app_theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,13 +49,14 @@ class VitapSportsApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeState = ref.watch(themeProvider);
 
     return MaterialApp.router(
       title: 'VIT-AP Sports',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      theme: AppTheme.light(themeState.accentColor.color),
+      darkTheme: AppTheme.dark(themeState.accentColor.color),
+      themeMode: themeState.themeMode,
       routerConfig: router,
     );
   }
