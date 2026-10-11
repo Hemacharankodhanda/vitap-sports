@@ -209,5 +209,121 @@ void main() {
       expect(beforeLast.activeInnings!.totalRuns, equals(5));
       expect(beforeLast.activeInnings!.legalBalls, equals(2));
     });
+
+    test('wicket delivery increments totalWickets and bowler wickets, and marks batter as out', () {
+      var state = engine.initialState(
+        config,
+        homeId: 'team_home',
+        awayId: 'team_away',
+        extra: {'striker_id': 'b1', 'non_striker_id': 'b2', 'opening_bowler_id': 'bowl1'},
+      );
+
+      expect(state.activeInnings!.totalWickets, equals(0));
+      expect(state.activeInnings!.bowlingStats['bowl1']!.wickets, equals(0));
+
+      // Bowled delivery with new batter b3
+      state = engine.apply(state, MatchEvent(
+        id: 'w1',
+        matchId: 'm',
+        seq: 1,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'bowled',
+          'out_batter_id': 'b1',
+          'new_batter_id': 'b3',
+          'runs': 0,
+        },
+      ));
+
+      expect(state.activeInnings!.totalWickets, equals(1));
+      expect(state.activeInnings!.bowlingStats['bowl1']!.wickets, equals(1));
+      expect(state.activeInnings!.battingStats['b1']!.isOut, isTrue);
+      expect(state.activeInnings!.battingStats['b1']!.howOut, equals('bowled'));
+      expect(state.activeInnings!.strikerId, equals('b3'));
+      expect(state.activeInnings!.fallOfWickets.length, equals(1));
+      expect(state.activeInnings!.fallOfWickets.first['wicket'], equals(1));
+      expect(state.activeInnings!.fallOfWickets.first['player_id'], equals('b1'));
+    });
+
+    test('wicket delivery accepts showWicketSheet payload (dismissed_batter_id, runs_completed)', () {
+      var state = engine.initialState(
+        config,
+        homeId: 'team_home',
+        awayId: 'team_away',
+        extra: {'striker_id': 'b1', 'non_striker_id': 'b2', 'opening_bowler_id': 'bowl1'},
+      );
+
+      // Run out of non-striker b2 with 1 run completed
+      state = engine.apply(state, MatchEvent(
+        id: 'w2',
+        matchId: 'm',
+        seq: 1,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'run_out',
+          'dismissed_batter_id': 'b2',
+          'new_batter_id': 'b3',
+          'runs_completed': 1,
+        },
+      ));
+
+      expect(state.activeInnings!.totalWickets, equals(1));
+      expect(state.activeInnings!.totalRuns, equals(1));
+      // Run out is not credited to bowler's wickets tally
+      expect(state.activeInnings!.bowlingStats['bowl1']!.wickets, equals(0));
+      expect(state.activeInnings!.battingStats['b2']!.isOut, isTrue);
+      expect(state.activeInnings!.battingStats['b2']!.howOut, equals('run_out'));
+      // Striker b1 is still not out
+      expect(state.activeInnings!.battingStats['b1']!.isOut, isFalse);
+    });
+
+    test('catches and run-outs correctly populate fielding stats for the fielder', () {
+      var state = engine.initialState(
+        config,
+        homeId: 'team_home',
+        awayId: 'team_away',
+        extra: {'striker_id': 'b1', 'non_striker_id': 'b2', 'opening_bowler_id': 'bowl1'},
+      );
+
+      // 1. Catch by fielder_x
+      state = engine.apply(state, MatchEvent(
+        id: 'w_catch',
+        matchId: 'm',
+        seq: 1,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'caught',
+          'out_batter_id': 'b1',
+          'fielder_id': 'fielder_x',
+          'new_batter_id': 'b3',
+        },
+      ));
+
+      // 2. Run out by fielder_y
+      state = engine.apply(state, MatchEvent(
+        id: 'w_runout',
+        matchId: 'm',
+        seq: 2,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'run_out',
+          'out_batter_id': 'b3',
+          'fielder_id': 'fielder_y',
+          'new_batter_id': 'b4',
+        },
+      ));
+
+      final stats = state.playerStats;
+      expect(stats['fielder_x']?['catches'], equals(1));
+      expect(stats['fielder_y']?['run_outs'], equals(1));
+    });
   });
 }

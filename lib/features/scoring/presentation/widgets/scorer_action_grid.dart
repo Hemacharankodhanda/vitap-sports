@@ -195,10 +195,17 @@ class ScorerActionGrid extends StatelessWidget {
       );
 
       if (result != null) {
+        final outBatterId = result['out_batter_id'] ?? result['dismissed_batter_id'] ?? strikerId;
+        final runs = (result['runs'] as int?) ?? (result['runs_completed'] as int?) ?? 0;
         await onRecordAction(
           type: 'delivery',
           payload: {
             ...result,
+            'is_wicket': true,
+            'kind': result['kind'] ?? 'normal',
+            'runs': runs,
+            'out_batter_id': outBatterId,
+            'dismissed_batter_id': outBatterId,
             'striker_id': strikerId,
             'non_striker_id': nonStrikerId,
             'bowler_id': active?.currentBowlerId,

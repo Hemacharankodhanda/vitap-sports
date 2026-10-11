@@ -425,13 +425,25 @@ class CricketState {
       }
       
       // Fielding
+      final creditedDismissals = <String>{};
       for (final fow in inning.fallOfWickets) {
         final fielder = fow['fielder_id'] as String?;
         final type = fow['dismissal_type'] as String?;
-        if (fielder != null) {
+        final outPlayer = fow['player_id'] as String?;
+        if (fielder != null && fielder.isNotEmpty) {
+          if (outPlayer != null) creditedDismissals.add(outPlayer);
           if (type == 'caught') add(fielder, 'catches', 1);
           if (type == 'run_out') add(fielder, 'run_outs', 1);
           if (type == 'stumped') add(fielder, 'stumpings', 1);
+        }
+      }
+      for (final entry in inning.battingStats.entries) {
+        final r = entry.value;
+        if (r.isOut && r.fielderId != null && r.fielderId!.isNotEmpty && !creditedDismissals.contains(entry.key)) {
+          final fid = r.fielderId!;
+          if (r.howOut == 'caught') add(fid, 'catches', 1);
+          if (r.howOut == 'run_out') add(fid, 'run_outs', 1);
+          if (r.howOut == 'stumped') add(fid, 'stumpings', 1);
         }
       }
     }

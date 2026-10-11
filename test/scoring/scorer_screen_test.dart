@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vitap_sports/features/scorecards/screens/scorecard_edit_screen.dart';
 import 'package:vitap_sports/features/scoring/data/live_scorer_service.dart';
 import 'package:vitap_sports/features/scoring/domain/match_event.dart';
+import 'package:vitap_sports/features/scoring/presentation/widgets/live_score_header.dart';
 import 'package:vitap_sports/features/scoring/providers/live_scorer_providers.dart';
 
 class FakeRealtimeChannel extends Fake implements RealtimeChannel {
@@ -39,6 +40,13 @@ class FakeWidgetScorerService extends Fake implements LiveScorerService {
   }) {
     return FakeRealtimeChannel();
   }
+
+  @override
+  Future<Map<String, dynamic>> recordEvent({
+    required String matchId,
+    required MatchEvent event,
+    required Map<String, dynamic> snapshot,
+  }) async => {'success': true};
 
   @override
   Future<void> unsubscribe(RealtimeChannel channel) async {}
@@ -129,6 +137,50 @@ void main() {
       expect(find.text('Team Alpha vs Team Beta'), findsWidgets);
       expect(find.text('Undo'), findsOneWidget);
       expect(find.text('Finish Match'), findsOneWidget);
+    });
+
+    testWidgets('Tapping Wicket button opens wicket sheet and updates wickets count', (tester) async {
+      final matchData = {
+        'id': testMatchId,
+        'sports': {'name': 'Cricket'},
+        'created_by': currentUserId,
+        'status': 'live',
+        'config': {'overs_per_innings': 20, 'players_per_side': 11},
+        'match_participants': [
+          {'side': 'home', 'team_id': 'team-a', 'teams': {'name': 'Team Alpha'}},
+          {'side': 'away', 'team_id': 'team-b', 'teams': {'name': 'Team Beta'}},
+        ],
+      };
+
+      await tester.pumpWidget(createTestWidget(matchData: matchData));
+      await tester.pumpAndSettle();
+
+      // Initial score is 0/0
+      expect(find.text('0/0'), findsOneWidget);
+      expect(find.text('Wicket'), findsOneWidget);
+
+      // Scroll to Wicket button and tap
+      await tester.ensureVisible(find.text('Wicket'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Wicket'));
+      await tester.pumpAndSettle();
+
+      // Wicket Details sheet is displayed
+      expect(find.text('Wicket Details'), findsOneWidget);
+      expect(find.text('Confirm Wicket'), findsOneWidget);
+
+      // Confirm wicket
+      await tester.ensureVisible(find.text('Confirm Wicket'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm Wicket'));
+      await tester.pumpAndSettle();
+
+      // Scroll back up to verify live score header has 0/1
+      await tester.drag(find.byType(ListView), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      // Score is now 0/1 (1 wicket updated!)
+      expect(find.text('0/1'), findsOneWidget);
     });
   });
 }

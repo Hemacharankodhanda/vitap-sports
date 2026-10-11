@@ -174,12 +174,16 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
             ? state.innings.first
             : initialState(config, homeId: state.homeId, awayId: state.awayId).activeInnings!);
     final kind = event.payload['kind'] as String? ?? 'normal';
-    final runs = event.payload['runs'] as int? ?? 0;
+    final runs = (event.payload['runs'] as int?) ??
+        (event.payload['runs_completed'] as int?) ??
+        0;
     final isBoundary = event.payload['is_boundary'] as bool? ?? false;
     final isWicket = event.payload['is_wicket'] as bool? ?? false;
     final dismissal = event.payload['dismissal_type'] as String?;
     final fielderId = event.payload['fielder_id'] as String?;
-    final dismissedBatterId = event.payload['out_batter_id'] as String? ?? active.strikerId;
+    final dismissedBatterId = event.payload['out_batter_id'] as String? ??
+        event.payload['dismissed_batter_id'] as String? ??
+        active.strikerId;
     final newBatterId = event.payload['new_batter_id'] as String?;
     final battersCrossed = event.payload['batters_crossed'] as bool? ?? false;
 
@@ -280,25 +284,41 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
         'score': active.totalRuns + runsAddedToTeam,
         'overs': (active.legalBalls + (isLegal ? 1 : 0)) ~/ 6 + ((active.legalBalls + (isLegal ? 1 : 0)) % 6) / 10.0,
         'player_id': dismissedBatterId,
+        'dismissal_type': dismissal,
+        'fielder_id': fielderId,
+        'bowler_id': creditedToBowler ? bowlerId : null,
       });
-
-      // Update dismissed batter stats
-      final outBatterRecord = (battingStats[dismissedBatterId] ?? const BatterRecord()).copyWith(
-        isOut: true,
-        howOut: dismissal,
-        bowlerId: creditedToBowler ? bowlerId : null,
-        fielderId: fielderId,
-      );
-      battingStats[dismissedBatterId ?? striker] = outBatterRecord;
 
       if (creditedToBowler) {
         currentBowler = currentBowler.copyWith(wickets: currentBowler.wickets + 1);
       }
 
+      final isStrikerOut = dismissedBatterId == (active.strikerId ?? striker);
+      if (isStrikerOut) {
+        currentStriker = currentStriker.copyWith(
+          isOut: true,
+          howOut: dismissal,
+          bowlerId: creditedToBowler ? bowlerId : null,
+          fielderId: fielderId,
+        );
+        battingStats[dismissedBatterId ?? striker] = currentStriker;
+      } else {
+        final outBatterRecord = (battingStats[dismissedBatterId] ?? const BatterRecord()).copyWith(
+          isOut: true,
+          howOut: dismissal,
+          bowlerId: creditedToBowler ? bowlerId : null,
+          fielderId: fielderId,
+        );
+        if (dismissedBatterId != null) {
+          battingStats[dismissedBatterId] = outBatterRecord;
+        }
+        battingStats[active.strikerId ?? striker] = currentStriker;
+      }
+
       // Replace dismissed batter with new batter
       if (newBatterId != null) {
         battingStats[newBatterId] = const BatterRecord();
-        if (dismissedBatterId == striker) {
+        if (isStrikerOut) {
           striker = newBatterId;
           if (battersCrossed) {
             final tmp = striker;
@@ -309,9 +329,9 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
           nonStriker = newBatterId;
         }
       }
+    } else {
+      battingStats[active.strikerId ?? striker] = currentStriker;
     }
-
-    battingStats[active.strikerId ?? striker] = currentStriker;
 
     // Bowler stats update
     currentBowler = currentBowler.copyWith(
