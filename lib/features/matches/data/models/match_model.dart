@@ -21,6 +21,7 @@ class MatchModel {
     this.awayScore,
     this.config,
     this.score,
+    this.result,
   });
 
   final String id;
@@ -41,6 +42,7 @@ class MatchModel {
   final int? awayScore;
   final Map<String, dynamic>? config;
   final Map<String, dynamic>? score;
+  final Map<String, dynamic>? result;
 
   String? get homeTeamId {
     for (final p in participants) {
@@ -56,9 +58,59 @@ class MatchModel {
     return null;
   }
 
+  String? get winnerTeamId {
+    final wId = result?['winner_team_id'] ??
+        result?['winner_id'] ??
+        score?['winner_team_id'] ??
+        score?['winner_id'];
+    if (wId != null && wId.toString().isNotEmpty) {
+      return wId.toString();
+    }
+    if (status == 'completed' && homeScore != null && awayScore != null) {
+      if (homeScore! > awayScore!) return homeTeamId ?? 'home';
+      if (awayScore! > homeScore!) return awayTeamId ?? 'away';
+    }
+    return null;
+  }
+
+  String? get resultMargin {
+    final margin = result?['result_margin'] ??
+        score?['result_margin'] ??
+        score?['games_summary'];
+    if (margin != null && margin.toString().isNotEmpty) {
+      return margin.toString();
+    }
+    return null;
+  }
+
+  bool get isDraw {
+    if (result?['is_draw'] == true ||
+        result?['is_tie'] == true ||
+        score?['is_draw'] == true ||
+        score?['is_tie'] == true) {
+      return true;
+    }
+    if (status == 'completed' &&
+        homeScore != null &&
+        awayScore != null &&
+        homeScore == awayScore) {
+      return true;
+    }
+    return false;
+  }
+
   factory MatchModel.fromJson(Map<String, dynamic> json) {
     final sport = json['sports'] as Map<String, dynamic>?;
     final participantsData = json['match_participants'] as List<dynamic>?;
+    final resultData = json['result'] is Map
+        ? Map<String, dynamic>.from(json['result'] as Map)
+        : null;
+    final scoreData = json['score'] is Map
+        ? Map<String, dynamic>.from(json['score'] as Map)
+        : null;
+    final configData = json['config'] is Map
+        ? Map<String, dynamic>.from(json['config'] as Map)
+        : null;
 
     return MatchModel(
       id: json['id'] as String,
@@ -80,8 +132,9 @@ class MatchModel {
           [],
       homeScore: json['home_score'] as int?,
       awayScore: json['away_score'] as int?,
-      config: json['config'] as Map<String, dynamic>?,
-      score: json['score'] as Map<String, dynamic>?,
+      config: configData,
+      score: scoreData,
+      result: resultData,
     );
   }
 
@@ -95,6 +148,20 @@ class MatchModel {
         'scorer_id': scorerId,
         'description': description,
       };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MatchModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          status == other.status &&
+          homeScore == other.homeScore &&
+          awayScore == other.awayScore &&
+          winnerTeamId == other.winnerTeamId;
+
+  @override
+  int get hashCode => Object.hash(id, status, homeScore, awayScore, winnerTeamId);
 }
 
 class MatchParticipant {
@@ -132,4 +199,17 @@ class MatchParticipant {
       userAvatar: user?['avatar_url'] as String?,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MatchParticipant &&
+          runtimeType == other.runtimeType &&
+          matchId == other.matchId &&
+          teamId == other.teamId &&
+          userId == other.userId &&
+          side == other.side;
+
+  @override
+  int get hashCode => Object.hash(matchId, teamId, userId, side);
 }

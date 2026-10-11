@@ -1,0 +1,169 @@
+/// VIT-AP Sports — Match Detail Winner & Completed Match Tests.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:vitap_sports/features/auth/providers/auth_provider.dart';
+import 'package:vitap_sports/features/matches/data/models/match_model.dart';
+import 'package:vitap_sports/features/matches/providers/match_providers.dart';
+import 'package:vitap_sports/features/matches/screens/match_detail_screen.dart';
+
+void main() {
+  group('MatchDetailScreen Winner Card Tests', () {
+    const testMatchId = 'm-winner-1';
+
+    testWidgets('Displays winner card and margin on completed match', (tester) async {
+      final completedMatch = MatchModel(
+        id: testMatchId,
+        sportId: 's-cricket',
+        sportName: 'Cricket',
+        venue: 'Main Ground',
+        scheduledAt: DateTime.now().subtract(const Duration(hours: 2)),
+        status: 'completed',
+        createdBy: 'u-1',
+        homeScore: 165,
+        awayScore: 140,
+        result: {
+          'winner_team_id': 'team-1',
+          'loser_team_id': 'team-2',
+          'result_margin': 'Warriors won by 25 runs',
+          'is_draw': false,
+        },
+        participants: const [
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-1',
+            teamName: 'Warriors',
+            side: 'home',
+          ),
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-2',
+            teamName: 'Titans',
+            side: 'away',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserIdProvider.overrideWith((ref) => 'u-1'),
+            matchDetailProvider(testMatchId).overrideWith((ref) async => completedMatch),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: testMatchId),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Check Winner Card presence
+      expect(find.text('Warriors won by 25 runs'), findsOneWidget);
+      expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
+
+      // Verify Scorecard button exists
+      expect(find.text('View Scorecard'), findsOneWidget);
+
+      // Verify "Edit Scorecard" is NOT present on completed match
+      expect(find.text('Edit Scorecard'), findsNothing);
+      expect(find.text('Live Scorer'), findsNothing);
+    });
+
+    testWidgets('Displays match drawn / tied card when is_draw is true', (tester) async {
+      final tiedMatch = MatchModel(
+        id: testMatchId,
+        sportId: 's-football',
+        sportName: 'Football',
+        venue: 'Ground A',
+        scheduledAt: DateTime.now().subtract(const Duration(hours: 2)),
+        status: 'completed',
+        createdBy: 'u-1',
+        homeScore: 2,
+        awayScore: 2,
+        result: {
+          'is_draw': true,
+          'result_margin': 'Full Time 2 - 2',
+        },
+        participants: const [
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-1',
+            teamName: 'Alpha FC',
+            side: 'home',
+          ),
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-2',
+            teamName: 'Beta FC',
+            side: 'away',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserIdProvider.overrideWith((ref) => 'u-1'),
+            matchDetailProvider(testMatchId).overrideWith((ref) async => tiedMatch),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: testMatchId),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Match Drawn / Tied'), findsOneWidget);
+      expect(find.byIcon(Icons.handshake_rounded), findsOneWidget);
+      expect(find.text('Full Time 2 - 2'), findsOneWidget);
+    });
+
+    testWidgets('Hides winner card on live match', (tester) async {
+      final liveMatch = MatchModel(
+        id: testMatchId,
+        sportId: 's-football',
+        sportName: 'Football',
+        venue: 'Ground A',
+        scheduledAt: DateTime.now(),
+        status: 'live',
+        createdBy: 'u-1',
+        homeScore: 1,
+        awayScore: 0,
+        participants: const [
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-1',
+            teamName: 'Alpha FC',
+            side: 'home',
+          ),
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-2',
+            teamName: 'Beta FC',
+            side: 'away',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserIdProvider.overrideWith((ref) => 'u-1'),
+            matchDetailProvider(testMatchId).overrideWith((ref) async => liveMatch),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: testMatchId),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.byIcon(Icons.emoji_events_rounded), findsNothing);
+      expect(find.text('Live Scorer'), findsOneWidget);
+    });
+  });
+}

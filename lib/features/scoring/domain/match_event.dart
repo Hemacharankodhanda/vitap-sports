@@ -27,14 +27,18 @@ class MatchEvent {
   final DateTime createdAt;
 
   factory MatchEvent.fromJson(Map<String, dynamic> json) {
+    final payloadRaw = json['payload'];
+    final payload = (payloadRaw is Map)
+        ? Map<String, dynamic>.from(payloadRaw)
+        : const <String, dynamic>{};
     return MatchEvent(
       id: json['id'] as String,
       matchId: json['match_id'] as String,
-      seq: (json['seq'] as num).toInt(),
-      type: json['type'] as String,
+      seq: (json['seq'] as num?)?.toInt() ?? 0,
+      type: json['type'] as String? ?? 'event',
       teamId: json['team_id'] as String?,
       playerId: json['player_id'] as String?,
-      payload: (json['payload'] as Map<String, dynamic>?) ?? const {},
+      payload: payload,
       createdBy: json['created_by'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String) ?? DateTime.now()

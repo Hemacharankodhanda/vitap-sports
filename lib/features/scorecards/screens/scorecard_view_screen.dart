@@ -70,13 +70,18 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Live Match Scorecard'),
+        title: Text(
+          matchDetailAsync.valueOrNull?.status == 'completed'
+              ? 'Match Scorecard'
+              : 'Live Match Scorecard',
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: AppSpacing.iconNav),
-            tooltip: 'Scorer Screen',
-            onPressed: () => context.go('/matches/${widget.matchId}/scorecard/edit'),
-          ),
+          if (matchDetailAsync.valueOrNull?.status != 'completed')
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, size: AppSpacing.iconNav),
+              tooltip: 'Scorer Screen',
+              onPressed: () => context.go('/matches/${widget.matchId}/scorecard/edit'),
+            ),
         ],
       ),
       body: matchDetailAsync.when(
@@ -89,6 +94,18 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               title: 'Match Not Found',
               subtitle: 'The requested fixture does not exist.',
             );
+          }
+
+          final rawStreamMatch = matchStreamAsync.valueOrNull;
+          final events = eventsAsync.valueOrNull ?? const <MatchEvent>[];
+          final hasScore = (rawStreamMatch?['score'] != null) || (matchDetail.score != null);
+
+          if (eventsAsync.isLoading && events.isEmpty && !hasScore) {
+            return const Center(child: ShimmerList());
+          }
+
+          if (eventsAsync.hasError && events.isEmpty && !hasScore) {
+            return _buildErrorView(context, eventsAsync.error.toString());
           }
 
           String homeName = matchDetail.homeTeamName ?? 'Team 1';
@@ -109,138 +126,131 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
           }
 
           final sport = (matchDetail.sportName ?? 'cricket').toLowerCase();
+          final config = (rawStreamMatch?['config'] as Map<String, dynamic>?) ??
+              matchDetail.config ??
+              {};
 
-          return eventsAsync.when(
-            loading: () => const Center(child: ShimmerList()),
-            error: (err, _) => _buildErrorView(context, err.toString()),
-            data: (events) {
-              // Derive pure state snapshot from events or stored match snapshot
-              final rawStreamMatch = matchStreamAsync.valueOrNull;
-              final config = (rawStreamMatch?['config'] as Map<String, dynamic>?) ??
-                  matchDetail.config ??
-                  {};
+          dynamic derivedState;
+          final engine = SportRegistry.getEngine(sport);
+          final scoreSnapshot = (rawStreamMatch?['score'] as Map?) ?? matchDetail.score;
 
-              dynamic derivedState;
-              final engine = SportRegistry.getEngine(sport);
-              final scoreSnapshot = (rawStreamMatch?['score'] as Map?) ?? matchDetail.score;
+          if (scoreSnapshot != null && engine != null) {
+            try {
+              derivedState = engine.fromSnapshot(
+                Map<String, dynamic>.from(scoreSnapshot),
+                SportRegistry.parseConfig(sport, config),
+              );
+            } catch (e) {
+              debugPrint('Error parsing score snapshot: $e');
+            }
+          }
 
-              if (scoreSnapshot != null && engine != null) {
-                try {
-                  derivedState = engine.fromSnapshot(
-                    Map<String, dynamic>.from(scoreSnapshot),
-                    SportRegistry.parseConfig(sport, config),
-                  );
-                } catch (e) {
-                  debugPrint('Error parsing score snapshot: $e');
-                }
-              }
+          if (derivedState == null && engine != null) {
+            try {
+              derivedState = SportRegistry.fold(
+                sportName: sport,
+                configJson: config,
+                events: events,
+                homeId: homeId,
+                awayId: awayId,
+              );
+            } catch (_) {
+              try {
+                derivedState = SportRegistry.initialState(
+                  sportName: sport,
+                  configJson: config,
+                  homeId: homeId,
+                  awayId: awayId,
+                );
+              } catch (_) {}
+            }
+          }
 
-              if (derivedState == null && engine != null) {
-                try {
-                  derivedState = SportRegistry.fold(
-                    sportName: sport,
-                    configJson: config,
-                    events: events,
-                    homeId: homeId,
-                    awayId: awayId,
-                  );
-                } catch (_) {
-                  derivedState = SportRegistry.initialState(
-                    sportName: sport,
-                    configJson: config,
-                    homeId: homeId,
-                    awayId: awayId,
-                  );
-                }
-              }
+          final matchStatus = rawStreamMatch?['status'] as String? ?? matchDetail.status;
+          final playerNames = ref.watch(matchPlayerNamesProvider(widget.matchId)).valueOrNull ?? const <String, String>{};
 
-              final matchStatus = rawStreamMatch?['status'] as String? ?? matchDetail.status;
-              final playerNames = ref.watch(matchPlayerNamesProvider(matchDetail)).valueOrNull ?? const <String, String>{};
+          return RefreshIndicator(
+            onRefresh: () async {
+              await ref.read(liveEventsNotifierProvider(widget.matchId).notifier).refresh();
+            },
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenMargin,
+                vertical: AppSpacing.lg,
+              ),
+              children: [
+                // 1. Live Animated Score Header
+                _buildAnimatedHeader(
+                  context: context,
+                  sport: sport,
+                  derivedState: derivedState,
+                  rawStreamMatch: rawStreamMatch,
+                  matchDetail: matchDetail,
+                  homeName: homeName,
+                  awayName: awayName,
+                  status: matchStatus,
+                  isDark: isDark,
+                  playerNames: playerNames,
+                ),
+                const SizedBox(height: AppSpacing.lg),
 
-              return RefreshIndicator(
-                onRefresh: () async {
-                  await ref.read(liveEventsNotifierProvider(widget.matchId).notifier).refresh();
-                },
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenMargin,
-                    vertical: AppSpacing.lg,
-                  ),
+                // 2. Full Professional Scorecard (Batting, Bowling, Sets, Goals)
+                ProfessionalScorecard(
+                  match: matchDetail,
+                  scoringState: derivedState,
+                  playerNames: playerNames,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // 3. Timeline Section Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // 1. Live Animated Score Header
-                    _buildAnimatedHeader(
-                      context: context,
-                      sport: sport,
-                      derivedState: derivedState,
-                      rawStreamMatch: rawStreamMatch,
-                      matchDetail: matchDetail,
-                      homeName: homeName,
-                      awayName: awayName,
-                      status: matchStatus,
-                      isDark: isDark,
-                      playerNames: playerNames,
+                    Text(
+                      'Live Timeline',
+                      style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    // 2. Full Professional Scorecard (Batting, Bowling, Sets, Goals)
-                    ProfessionalScorecard(
-                      match: matchDetail,
-                      scoringState: derivedState,
-                      playerNames: playerNames,
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-
-                    // 2. Timeline Section Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Live Timeline',
-                          style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xxs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withAlpha(25),
+                        borderRadius: BorderRadius.circular(AppSpacing.xs),
+                      ),
+                      child: Text(
+                        '${events.length} Events',
+                        style: AppTypography.caption.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.sm,
-                            vertical: AppSpacing.xxs,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withAlpha(25),
-                            borderRadius: BorderRadius.circular(AppSpacing.xs),
-                          ),
-                          child: Text(
-                            '${events.length} Events',
-                            style: AppTypography.caption.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    // 3. Chronological Event Feed (newest first)
-                    if (events.isEmpty)
-                      const EmptyState(
-                        icon: Icons.timeline_outlined,
-                        title: 'No Events Yet',
-                        subtitle: 'Scoring actions will appear here in real time.',
-                      )
-                    else
-                      ...events.reversed.map((event) => _buildTimelineTile(
-                            context: context,
-                            event: event,
-                            homeId: homeId,
-                            homeName: homeName,
-                            awayName: awayName,
-                            sport: sport,
-                            isDark: isDark,
-                            playerNames: playerNames,
-                          )),
                   ],
                 ),
-              );
-            },
+                const SizedBox(height: AppSpacing.md),
+
+                // 4. Chronological Event Feed (newest first)
+                if (events.isEmpty)
+                  const EmptyState(
+                    icon: Icons.timeline_outlined,
+                    title: 'No Events Yet',
+                    subtitle: 'Scoring actions will appear here in real time.',
+                  )
+                else
+                  ...events.reversed.map((event) => _buildTimelineTile(
+                        context: context,
+                        event: event,
+                        homeId: homeId,
+                        homeName: homeName,
+                        awayName: awayName,
+                        sport: sport,
+                        isDark: isDark,
+                        playerNames: playerNames,
+                      )),
+              ],
+            ),
           );
         },
       ),
@@ -644,7 +654,8 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
       final rawBatter = event.payload['out_batter_id'] ?? event.payload['dismissed_batter_id'] ?? "Striker";
       final batter = resolvePlayer(rawBatter.toString());
       final runs = event.payload['runs'] ?? event.payload['runs_completed'];
-      final runsText = runs != null && (runs as num) > 0 ? ' • $runs runs completed' : '';
+      final runsNum = (runs is num) ? runs.toInt() : (int.tryParse(runs?.toString() ?? '') ?? 0);
+      final runsText = runsNum > 0 ? ' • $runsNum runs completed' : '';
       return '$dismissal • Batter: $batter$runsText';
     }
     if (event.payload.containsKey('reason')) {

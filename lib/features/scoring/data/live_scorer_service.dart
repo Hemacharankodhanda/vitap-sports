@@ -34,7 +34,8 @@ class LiveScorerService {
 
     final list = response as List<dynamic>;
     return list
-        .map((e) => MatchEvent.fromJson(e as Map<String, dynamic>))
+        .whereType<Map>()
+        .map((e) => MatchEvent.fromJson(Map<String, dynamic>.from(e)))
         .toList();
   }
 
@@ -145,7 +146,8 @@ class LiveScorerService {
           .select('team_id, user_id, role, position, users(id, name, avatar_url)')
           .eq('team_id', teamId);
       return (response as List<dynamic>)
-          .map((e) => e as Map<String, dynamic>)
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
           .toList();
     } catch (_) {
       return [];

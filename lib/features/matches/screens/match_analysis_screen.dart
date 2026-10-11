@@ -56,7 +56,7 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
               onRetry: () => ref.invalidate(matchAnalysisProvider(widget.matchId)),
             ),
             data: (statsData) {
-              final playerNames = ref.watch(matchPlayerNamesProvider(match)).valueOrNull ?? const <String, String>{};
+              final playerNames = ref.watch(matchPlayerNamesProvider(widget.matchId)).valueOrNull ?? const <String, String>{};
 
               String resolveDisplayName(String pId, MatchParticipant? participant) {
                 if (participant?.userName != null && participant!.userName!.isNotEmpty) {

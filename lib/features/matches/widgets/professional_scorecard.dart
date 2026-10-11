@@ -22,58 +22,88 @@ class ProfessionalScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sportLower = (match.sportName ?? '').toLowerCase().trim();
-    dynamic resolvedState = scoringState;
+    try {
+      final sportLower = (match.sportName ?? '').toLowerCase().trim();
+      dynamic resolvedState = scoringState;
 
-    if (resolvedState == null && match.score != null) {
-      try {
-        if (sportLower == 'cricket' || sportLower.isEmpty) {
-          resolvedState = CricketState.fromJson(Map<String, dynamic>.from(match.score!));
-        } else if (sportLower == 'football') {
-          resolvedState = FootballState.fromJson(Map<String, dynamic>.from(match.score!));
-        } else if (sportLower == 'badminton') {
-          resolvedState = BadmintonState.fromJson(Map<String, dynamic>.from(match.score!));
+      if (resolvedState == null && match.score != null) {
+        try {
+          if (sportLower == 'cricket' || sportLower.isEmpty) {
+            resolvedState = CricketState.fromJson(Map<String, dynamic>.from(match.score!));
+          } else if (sportLower == 'football') {
+            resolvedState = FootballState.fromJson(Map<String, dynamic>.from(match.score!));
+          } else if (sportLower == 'badminton') {
+            resolvedState = BadmintonState.fromJson(Map<String, dynamic>.from(match.score!));
+          }
+        } catch (e) {
+          debugPrint('Error parsing match.score: $e');
         }
-      } catch (e) {
-        debugPrint('Error parsing match.score: $e');
       }
-    }
 
-    if (resolvedState is CricketState) {
-      return _CricketScorecard(state: resolvedState, match: match, playerNames: playerNames);
-    } else if (resolvedState is FootballState) {
-      return _FootballScorecard(state: resolvedState, match: match, playerNames: playerNames);
-    } else if (resolvedState is BadmintonState) {
-      return _BadmintonScorecard(state: resolvedState, match: match);
-    }
+      if (resolvedState is CricketState) {
+        return _CricketScorecard(state: resolvedState, match: match, playerNames: playerNames);
+      } else if (resolvedState is FootballState) {
+        return _FootballScorecard(state: resolvedState, match: match, playerNames: playerNames);
+      } else if (resolvedState is BadmintonState) {
+        return _BadmintonScorecard(state: resolvedState, match: match);
+      }
 
-    // Informative card instead of blank screen
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.scoreboard_outlined,
-              size: 40,
-              color: Theme.of(context).colorScheme.primary.withAlpha(160),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Scorecard In Progress',
-              style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Detailed statistics and player scorecards will appear once scoring events are recorded.',
-              style: AppTypography.caption,
-              textAlign: TextAlign.center,
-            ),
-          ],
+      // Informative card instead of blank screen
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.scoreboard_outlined,
+                size: 40,
+                color: Theme.of(context).colorScheme.primary.withAlpha(160),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Scorecard In Progress',
+                style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Detailed statistics and player scorecards will appear once scoring events are recorded.',
+                style: AppTypography.caption,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e, st) {
+      debugPrint('Error in ProfessionalScorecard.build: $e\n$st');
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.scoreboard_outlined,
+                size: 40,
+                color: Theme.of(context).colorScheme.primary.withAlpha(160),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Scorecard In Progress',
+                style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Scorecard details will appear once loaded.',
+                style: AppTypography.caption,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }
 
