@@ -92,7 +92,7 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Select Squad (${_selectedUserIds.length})'),
+        title: Text('${team.name} Squad (${_selectedUserIds.length})'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),

@@ -91,8 +91,8 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             );
           }
 
-          String homeName = 'Home';
-          String awayName = 'Away';
+          String homeName = matchDetail.homeTeamName ?? 'Team 1';
+          String awayName = matchDetail.awayTeamName ?? 'Team 2';
           String homeId = 'home';
           String awayId = 'away';
 

@@ -178,25 +178,25 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         DropdownButtonFormField<String>(
                           value: _homeTeamId,
                           decoration: const InputDecoration(
-                            labelText: 'Home Team',
+                            labelText: 'Team 1',
                             prefixIcon: Icon(Icons.shield_outlined),
                             border: OutlineInputBorder(),
                           ),
                           items: items,
                           onChanged: (v) => setState(() => _homeTeamId = v),
-                          validator: (v) => v == null ? 'Select Home Team' : null,
+                          validator: (v) => v == null ? 'Select Team 1' : null,
                         ),
                         const SizedBox(height: AppSpacing.md),
                         DropdownButtonFormField<String>(
                           value: _awayTeamId,
                           decoration: const InputDecoration(
-                            labelText: 'Away Team',
+                            labelText: 'Team 2',
                             prefixIcon: Icon(Icons.shield_outlined),
                             border: OutlineInputBorder(),
                           ),
                           items: items,
                           onChanged: (v) => setState(() => _awayTeamId = v),
-                          validator: (v) => v == null ? 'Select Away Team' : null,
+                          validator: (v) => v == null ? 'Select Team 2' : null,
                         ),
                       ],
                     );

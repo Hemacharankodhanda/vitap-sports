@@ -183,7 +183,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
           awayGamesWon: newAwayGamesWon,
           isCompleted: true,
           winnerId: winningTeam,
-          intervalPrompt: 'Match Won by ${isHome ? "Home" : "Away"}',
+          intervalPrompt: 'Match Won',
           playerStats: pStats,
         );
       } else {
@@ -288,7 +288,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
     actions.add(ScoringAction(
       id: 'point_home',
-      label: 'Point Home',
+      label: 'Point (Team 1)',
       type: 'rally_won',
       teamId: state.homeId,
       isPrimary: state.servingTeamId == state.homeId,
@@ -296,7 +296,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
     actions.add(ScoringAction(
       id: 'point_away',
-      label: 'Point Away',
+      label: 'Point (Team 2)',
       type: 'rally_won',
       teamId: state.awayId,
       isPrimary: state.servingTeamId == state.awayId,
@@ -318,7 +318,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
     actions.add(ScoringAction(
       id: 'retire_home',
-      label: 'Retire Home',
+      label: 'Retire (Team 1)',
       type: 'retire',
       teamId: state.homeId,
       isDestructive: true,
@@ -326,7 +326,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
     actions.add(ScoringAction(
       id: 'retire_away',
-      label: 'Retire Away',
+      label: 'Retire (Team 2)',
       type: 'retire',
       teamId: state.awayId,
       isDestructive: true,

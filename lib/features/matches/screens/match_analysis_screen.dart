@@ -77,10 +77,12 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                   }
                 }
                 if (pId.startsWith('home_p_')) {
-                  return '${match.homeTeamName ?? "Home"} Player ${pId.replaceFirst('home_p_', '')}';
+                  final t = match.homeTeamName ?? 'Team 1';
+                  return '$t Player ${pId.replaceFirst('home_p_', '')}';
                 }
                 if (pId.startsWith('away_p_')) {
-                  return '${match.awayTeamName ?? "Away"} Player ${pId.replaceFirst('away_p_', '')}';
+                  final t = match.awayTeamName ?? 'Team 2';
+                  return '$t Player ${pId.replaceFirst('away_p_', '')}';
                 }
                 if (pId.length == 36 && pId.contains('-')) {
                   return 'Player';
@@ -143,8 +145,8 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                   teamNames[p.teamId!] = p.teamName ?? 'Team';
                 }
               }
-              if (match.homeTeamId != null) teamNames[match.homeTeamId!] = match.homeTeamName ?? 'Home Team';
-              if (match.awayTeamId != null) teamNames[match.awayTeamId!] = match.awayTeamName ?? 'Away Team';
+              if (match.homeTeamId != null) teamNames[match.homeTeamId!] = match.homeTeamName ?? 'Team 1';
+              if (match.awayTeamId != null) teamNames[match.awayTeamId!] = match.awayTeamName ?? 'Team 2';
 
               for (final row in resolvedPlayerStats) {
                 final teamId = row['team_id'] as String?;

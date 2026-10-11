@@ -347,27 +347,27 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
     if (state.currentPeriod == 'first_half' || state.currentPeriod == 'second_half' || state.currentPeriod.startsWith('extra_time')) {
       actions.add(ScoringAction(
         id: 'goal_home',
-        label: 'Goal (Home)',
+        label: 'Goal (Team 1)',
         type: 'goal',
         teamId: state.homeId,
         isPrimary: true,
       ));
       actions.add(ScoringAction(
         id: 'goal_away',
-        label: 'Goal (Away)',
+        label: 'Goal (Team 2)',
         type: 'goal',
         teamId: state.awayId,
         isPrimary: true,
       ));
       actions.add(ScoringAction(
         id: 'own_goal_home',
-        label: 'Own Goal by Home',
+        label: 'Own Goal by Team 1',
         type: 'own_goal',
         teamId: state.homeId,
       ));
       actions.add(ScoringAction(
         id: 'own_goal_away',
-        label: 'Own Goal by Away',
+        label: 'Own Goal by Team 2',
         type: 'own_goal',
         teamId: state.awayId,
       ));
@@ -393,14 +393,14 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
     if (state.currentPeriod == 'shootout' && !state.shootoutCompleted) {
       actions.add(ScoringAction(
         id: 'shootout_kick_home',
-        label: 'Shootout Kick (Home)',
+        label: 'Shootout Kick (Team 1)',
         type: 'shootout_kick',
         teamId: state.homeId,
         isPrimary: true,
       ));
       actions.add(ScoringAction(
         id: 'shootout_kick_away',
-        label: 'Shootout Kick (Away)',
+        label: 'Shootout Kick (Team 2)',
         type: 'shootout_kick',
         teamId: state.awayId,
         isPrimary: true,
