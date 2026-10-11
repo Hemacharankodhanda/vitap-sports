@@ -113,11 +113,13 @@ class _CricketScorecard extends StatelessWidget {
     // 4. Default player labels
     if (id.startsWith('home_p_')) {
       final num = id.replaceFirst('home_p_', '');
-      return '${match.homeTeamName ?? "Home"} Player $num';
+      final t = match.homeTeamName ?? 'Team 1';
+      return '$t Player $num';
     }
     if (id.startsWith('away_p_')) {
       final num = id.replaceFirst('away_p_', '');
-      return '${match.awayTeamName ?? "Away"} Player $num';
+      final t = match.awayTeamName ?? 'Team 2';
+      return '$t Player $num';
     }
 
     // 5. Hide ugly UUIDs with fallback
@@ -157,8 +159,8 @@ class _CricketScorecard extends StatelessWidget {
 
   String _getTeamName(String? id) {
     if (id == null || id.isEmpty) return 'Team';
-    if (id == 'home') return match.homeTeamName ?? 'Home Team';
-    if (id == 'away') return match.awayTeamName ?? 'Away Team';
+    if (id == 'home') return match.homeTeamName ?? 'Team 1';
+    if (id == 'away') return match.awayTeamName ?? 'Team 2';
     final p = match.participants.where((e) => e.teamId == id || e.userId == id).firstOrNull;
     return p?.teamName ?? p?.userName ?? match.homeTeamName ?? match.awayTeamName ?? 'Team';
   }
@@ -340,11 +342,13 @@ class _FootballScorecard extends StatelessWidget {
 
     if (id.startsWith('home_p_')) {
       final num = id.replaceFirst('home_p_', '');
-      return '${match.homeTeamName ?? "Home"} Player $num';
+      final t = match.homeTeamName ?? 'Team 1';
+      return '$t Player $num';
     }
     if (id.startsWith('away_p_')) {
       final num = id.replaceFirst('away_p_', '');
-      return '${match.awayTeamName ?? "Away"} Player $num';
+      final t = match.awayTeamName ?? 'Team 2';
+      return '$t Player $num';
     }
 
     if (id.length == 36 && id.contains('-')) {
@@ -413,8 +417,8 @@ class _BadmintonScorecard extends StatelessWidget {
 
   String _getTeamName(String? id) {
     if (id == null || id.isEmpty) return 'Team';
-    if (id == 'home') return match.homeTeamName ?? 'Home Team';
-    if (id == 'away') return match.awayTeamName ?? 'Away Team';
+    if (id == 'home') return match.homeTeamName ?? 'Team 1';
+    if (id == 'away') return match.awayTeamName ?? 'Team 2';
     final p = match.participants.where((e) => e.teamId == id || e.userId == id).firstOrNull;
     return p?.teamName ?? p?.userName ?? match.homeTeamName ?? match.awayTeamName ?? 'Team';
   }

@@ -134,8 +134,8 @@ class ScorerState {
     required this.sport,
     this.homeId = 'home',
     this.awayId = 'away',
-    this.homeName = 'Home',
-    this.awayName = 'Away',
+    this.homeName = 'Team 1',
+    this.awayName = 'Team 2',
     this.matchData,
     this.config = const {},
     this.scoringState,
@@ -256,8 +256,8 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       List<Map<String, dynamic>> participants) {
     String homeId = 'home';
     String awayId = 'away';
-    String homeName = 'Home';
-    String awayName = 'Away';
+    String homeName = 'Team 1';
+    String awayName = 'Team 2';
 
     for (final p in participants) {
       final side = p['side'] as String?;

@@ -100,6 +100,30 @@ class ScorerActionGrid extends StatelessWidget {
     );
   }
 
+  String _formatActionLabel(ScoringAction action) {
+    var label = action.label;
+    final home = state.homeName;
+    final away = state.awayName;
+
+    return label
+        .replaceAll('(Home)', '($home)')
+        .replaceAll('(Away)', '($away)')
+        .replaceAll('(Team 1)', '($home)')
+        .replaceAll('(Team 2)', '($away)')
+        .replaceAll('by Home', 'by $home')
+        .replaceAll('by Away', 'by $away')
+        .replaceAll('by Team 1', 'by $home')
+        .replaceAll('by Team 2', 'by $away')
+        .replaceAll('Point Home', 'Point $home')
+        .replaceAll('Point Away', 'Point $away')
+        .replaceAll('Point (Team 1)', 'Point $home')
+        .replaceAll('Point (Team 2)', 'Point $away')
+        .replaceAll('Retire Home', 'Retire $home')
+        .replaceAll('Retire Away', 'Retire $away')
+        .replaceAll('Retire (Team 1)', 'Retire $home')
+        .replaceAll('Retire (Team 2)', 'Retire $away');
+  }
+
   Widget _buildActionButton(BuildContext context, ScoringAction action, {required bool isLarge}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -142,7 +166,7 @@ class ScorerActionGrid extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  action.label,
+                  _formatActionLabel(action),
                   style: isLarge
                       ? AppTypography.title.copyWith(
                           color: fg,

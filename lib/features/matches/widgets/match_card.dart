@@ -59,8 +59,8 @@ class MatchCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   home.isNotEmpty
-                      ? (home.first.teamName ?? home.first.userName ?? 'Home')
-                      : 'TBD',
+                      ? (home.first.teamName ?? home.first.userName ?? match.homeTeamName ?? 'Team 1')
+                      : (match.homeTeamName ?? 'TBD'),
                   style: AppTypography.headline,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -80,8 +80,8 @@ class MatchCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   away.isNotEmpty
-                      ? (away.first.teamName ?? away.first.userName ?? 'Away')
-                      : 'TBD',
+                      ? (away.first.teamName ?? away.first.userName ?? match.awayTeamName ?? 'Team 2')
+                      : (match.awayTeamName ?? 'TBD'),
                   style: AppTypography.headline,
                   textAlign: TextAlign.end,
                   maxLines: 1,
