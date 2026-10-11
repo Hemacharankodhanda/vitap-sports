@@ -30,6 +30,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   String? _selectedFormat;
   String? _homeTeamId;
   String? _awayTeamId;
+  final Set<String> _homeSelectedUserIds = {};
+  final Set<String> _awaySelectedUserIds = {};
+  bool _homeSquadConfigured = false;
+  bool _awaySquadConfigured = false;
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 17, minute: 0);
   bool _isLoading = false;
@@ -61,6 +65,135 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     if (time != null) setState(() => _selectedTime = time);
   }
 
+  Future<void> _manageSquadForTeam({
+    required String teamId,
+    required String teamName,
+    required bool isTeam1,
+  }) async {
+    final team = await ref.read(teamDetailProvider(teamId).future);
+    if (team == null || !mounted) return;
+
+    final currentSelected = Set<String>.from(
+      isTeam1 ? _homeSelectedUserIds : _awaySelectedUserIds,
+    );
+    final configured = isTeam1 ? _homeSquadConfigured : _awaySquadConfigured;
+    if (!configured) {
+      for (final m in team.members) {
+        currentSelected.add(m.userId);
+      }
+    }
+
+    final result = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+      ),
+      builder: (ctx) {
+        final selected = Set<String>.from(currentSelected);
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.75,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '$teamName Squad (${selected.length})',
+                          style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              if (selected.length == team.members.length) {
+                                selected.clear();
+                              } else {
+                                selected.clear();
+                                for (final m in team.members) {
+                                  selected.add(m.userId);
+                                }
+                              }
+                            });
+                          },
+                          child: Text(
+                            selected.length == team.members.length ? 'Deselect All' : 'Select All',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    if (team.members.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(AppSpacing.lg),
+                        child: Text('No members found in this team.'),
+                      )
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: team.members.length,
+                          itemBuilder: (context, index) {
+                            final member = team.members[index];
+                            final isChecked = selected.contains(member.userId);
+                            return CheckboxListTile(
+                              title: Text(member.userName ?? 'Unknown Player'),
+                              subtitle: Text(member.role.toUpperCase()),
+                              value: isChecked,
+                              onChanged: (val) {
+                                setSheetState(() {
+                                  if (val == true) {
+                                    selected.add(member.userId);
+                                  } else {
+                                    selected.remove(member.userId);
+                                  }
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: AppSpacing.md),
+                    AppButton(
+                      label: 'Done (${selected.length} players)',
+                      onPressed: () => Navigator.of(ctx).pop(selected),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        if (isTeam1) {
+          _homeSelectedUserIds
+            ..clear()
+            ..addAll(result);
+          _homeSquadConfigured = true;
+        } else {
+          _awaySelectedUserIds
+            ..clear()
+            ..addAll(result);
+          _awaySquadConfigured = true;
+        }
+      });
+    }
+  }
+
   Future<void> _handleCreate() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedSportId == null) {
@@ -90,6 +223,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         finalFormat = '${_oversController.text} Overs - ${finalFormat ?? "Match"}';
       }
 
+      Set<String> homePlayerIds = Set<String>.from(_homeSelectedUserIds);
+      if (!_homeSquadConfigured && _homeTeamId != null) {
+        try {
+          final t = await ref.read(teamDetailProvider(_homeTeamId!).future);
+          if (t != null) {
+            homePlayerIds = t.members.map((m) => m.userId).toSet();
+          }
+        } catch (_) {}
+      }
+
+      Set<String> awayPlayerIds = Set<String>.from(_awaySelectedUserIds);
+      if (!_awaySquadConfigured && _awayTeamId != null) {
+        try {
+          final t = await ref.read(teamDetailProvider(_awayTeamId!).future);
+          if (t != null) {
+            awayPlayerIds = t.members.map((m) => m.userId).toSet();
+          }
+        } catch (_) {}
+      }
+
       await ref.read(matchServiceProvider).createMatch(
             sportId: _selectedSportId!,
             venue: _venueController.text.trim(),
@@ -98,6 +251,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             format: finalFormat,
             homeTeamId: _homeTeamId,
             awayTeamId: _awayTeamId,
+            homePlayerIds: homePlayerIds.toList(),
+            awayPlayerIds: awayPlayerIds.toList(),
           );
 
       ref.invalidate(matchesListProvider('upcoming'));
@@ -149,6 +304,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                 _selectedSportId = s['id'] as String;
                                 _homeTeamId = null;
                                 _awayTeamId = null;
+                                _homeSelectedUserIds.clear();
+                                _awaySelectedUserIds.clear();
+                                _homeSquadConfigured = false;
+                                _awaySquadConfigured = false;
                               });
                             }
                           },
@@ -165,15 +324,25 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   loading: () => const CircularProgressIndicator(),
                   error: (_, __) => const Text('Failed to load teams'),
                   data: (teams) {
-                    final items = teams
+                    final filteredTeams = teams
                         .where((t) => t.sportId == _selectedSportId)
+                        .toList();
+                    final items = filteredTeams
                         .map((t) => DropdownMenuItem(
                               value: t.id,
                               child: Text(t.name),
                             ))
                         .toList();
 
+                    final homeTeamObj = filteredTeams
+                        .where((t) => t.id == _homeTeamId)
+                        .firstOrNull;
+                    final awayTeamObj = filteredTeams
+                        .where((t) => t.id == _awayTeamId)
+                        .firstOrNull;
+
                     return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         DropdownButtonFormField<String>(
                           value: _homeTeamId,
@@ -183,9 +352,35 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             border: OutlineInputBorder(),
                           ),
                           items: items,
-                          onChanged: (v) => setState(() => _homeTeamId = v),
+                          onChanged: (v) {
+                            setState(() {
+                              _homeTeamId = v;
+                              _homeSelectedUserIds.clear();
+                              _homeSquadConfigured = false;
+                            });
+                          },
                           validator: (v) => v == null ? 'Select Team 1' : null,
                         ),
+                        if (_homeTeamId != null && homeTeamObj != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.group_outlined, size: 18),
+                              label: Text(
+                                _homeSquadConfigured
+                                    ? 'Manage ${homeTeamObj.name} Squad (${_homeSelectedUserIds.length} players)'
+                                    : 'Manage ${homeTeamObj.name} Squad',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              onPressed: () => _manageSquadForTeam(
+                                teamId: _homeTeamId!,
+                                teamName: homeTeamObj.name,
+                                isTeam1: true,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: AppSpacing.md),
                         DropdownButtonFormField<String>(
                           value: _awayTeamId,
@@ -195,9 +390,35 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             border: OutlineInputBorder(),
                           ),
                           items: items,
-                          onChanged: (v) => setState(() => _awayTeamId = v),
+                          onChanged: (v) {
+                            setState(() {
+                              _awayTeamId = v;
+                              _awaySelectedUserIds.clear();
+                              _awaySquadConfigured = false;
+                            });
+                          },
                           validator: (v) => v == null ? 'Select Team 2' : null,
                         ),
+                        if (_awayTeamId != null && awayTeamObj != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.group_outlined, size: 18),
+                              label: Text(
+                                _awaySquadConfigured
+                                    ? 'Manage ${awayTeamObj.name} Squad (${_awaySelectedUserIds.length} players)'
+                                    : 'Manage ${awayTeamObj.name} Squad',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              onPressed: () => _manageSquadForTeam(
+                                teamId: _awayTeamId!,
+                                teamName: awayTeamObj.name,
+                                isTeam1: false,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     );
                   },
