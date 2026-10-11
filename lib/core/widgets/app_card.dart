@@ -1,16 +1,17 @@
-/// VIT-AP Sports — AppCard widget.
+/// VIT-AP Sports — AppCard and AppGroupedCard widgets.
 ///
-/// Unified card with consistent corner radius, padding, and elevation.
-/// Used for team cards, match cards, player cards — all share this base.
+/// Component specification:
+/// - Standard card: surface, 1 px border, radius 12, padding 16, elevation 0.
+/// - The whole card is tappable with pressed overlay (no bouncy motion or entrance animation).
+/// - Grouped list card: holds rows separated by inset hairlines (16 indent, or 72 with avatar).
 library;
 
 import 'package:flutter/material.dart';
 
-import 'package:flutter_animate/flutter_animate.dart';
-
+import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 
-class AppCard extends StatefulWidget {
+class AppCard extends StatelessWidget {
   const AppCard({
     super.key,
     required this.child,
@@ -31,60 +32,86 @@ class AppCard extends StatefulWidget {
   final double? elevation;
 
   @override
-  State<AppCard> createState() => _AppCardState();
-}
-
-class _AppCardState extends State<AppCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colors = context.appColors;
 
     Widget card = Container(
-      margin: widget.margin,
+      margin: margin,
       decoration: BoxDecoration(
-        color: widget.color ?? theme.cardTheme.color ?? theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        color: color ?? colors.surface,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: widget.borderColor ?? theme.dividerColor,
+          color: borderColor ?? colors.border,
           width: 1,
         ),
-        boxShadow: [
-          if ((widget.elevation ?? 0.0) > 0)
-            BoxShadow(
-              color: Colors.black.withAlpha(13),
-              blurRadius: (widget.elevation!) * 4,
-              offset: Offset(0, widget.elevation!),
-            ),
-        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: widget.padding ??
-              const EdgeInsets.all(AppSpacing.cardPadding),
-          child: widget.child,
+          padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
+          child: child,
         ),
       ),
     );
 
-    if (widget.onTap != null) {
-      card = GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedScale(
-          scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          child: card,
-        ),
+    if (onTap != null) {
+      card = InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: colors.accent.withAlpha(15),
+        highlightColor: colors.textPrimary.withAlpha(12),
+        child: card,
       );
     }
 
-    return card.animate().fade(duration: 300.ms).slideY(begin: 0.05, end: 0, curve: Curves.easeOutCubic);
+    return card;
+  }
+}
+
+/// A card holding rows separated by inset hairlines per component specification.
+class AppGroupedCard extends StatelessWidget {
+  const AppGroupedCard({
+    super.key,
+    required this.children,
+    this.hasAvatars = false,
+    this.margin,
+  });
+
+  final List<Widget> children;
+  final bool hasAvatars;
+  final EdgeInsetsGeometry? margin;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final indent = hasAvatars ? 72.0 : 16.0;
+
+    return Container(
+      margin: margin,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border, width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < children.length; i++) ...[
+              children[i],
+              if (i < children.length - 1)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: indent,
+                  color: colors.border,
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
