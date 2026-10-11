@@ -17,6 +17,7 @@ class AppColors {
 
   // ─── Semantic / Status ────────────────────────────────────
   static const Color live = Color(0xFFDC2626); // Live broadcast red
+  static const Color liveLight = live;
   static const Color liveDark = Color(0xFFF87171);
   static const Color liveSurface = Color(0x14DC2626);
 

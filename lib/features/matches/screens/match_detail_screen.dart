@@ -1,6 +1,7 @@
 /// VIT-AP Sports — Match detail screen.
 library;
 
+import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,7 @@ import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../scoring/providers/live_scorer_providers.dart';
 import '../data/models/match_model.dart';
 import '../providers/match_providers.dart';
 
@@ -33,7 +35,8 @@ class MatchDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final matchAsync = ref.watch(matchDetailProvider(matchId));
+    final initialMatchAsync = ref.watch(matchDetailProvider(matchId));
+    final liveStreamAsync = ref.watch(liveMatchStreamProvider(matchId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -49,16 +52,18 @@ class MatchDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: matchAsync.when(
+      body: initialMatchAsync.when(
         loading: () => const LoadingIndicator(),
         error: (e, _) => ErrorView(
           message: e.toString(),
           onRetry: () => ref.invalidate(matchDetailProvider(matchId)),
         ),
-        data: (match) {
-          if (match == null) {
+        data: (initialMatch) {
+          if (initialMatch == null) {
             return const ErrorView(message: 'Match not found');
           }
+
+          final match = initialMatch.updateFromRealtime(liveStreamAsync.valueOrNull);
 
           final homeTeam = match.participants
               .where((p) => p.side == 'home')
@@ -155,6 +160,85 @@ class MatchDetailScreen extends ConsumerWidget {
                               ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
+
+              // Prominent Real-time Live Score Banner
+              if (match.liveScoreSummary != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                    vertical: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    color: match.status == 'live'
+                        ? (isDark
+                            ? AppColors.liveDark.withAlpha(35)
+                            : AppColors.liveLight.withAlpha(20))
+                        : (isDark
+                            ? AppColors.darkSurfaceVariant
+                            : AppColors.lightSurfaceVariant),
+                    borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    border: match.status == 'live'
+                        ? Border.all(
+                            color: (isDark ? AppColors.liveDark : AppColors.liveLight)
+                                .withAlpha(80),
+                          )
+                        : null,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (match.status == 'live') ...[
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDark ? AppColors.liveDark : AppColors.liveLight,
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.xs),
+                            Text(
+                              'LIVE SCORE',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.1,
+                                color: isDark ? AppColors.liveDark : AppColors.liveLight,
+                              ),
+                            ),
+                          ] else
+                            Text(
+                              'FINAL SCORE',
+                              style: AppTypography.caption.copyWith(
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.1,
+                                color: isDark
+                                    ? AppColors.darkTextSecondary
+                                    : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        match.liveScoreSummary!,
+                        style: AppTypography.headline.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: match.status == 'live'
+                              ? (isDark ? AppColors.liveDark : AppColors.liveLight)
+                              : (isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.lightTextPrimary),
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
