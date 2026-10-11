@@ -182,5 +182,106 @@ void main() {
       // Score is now 0/1 (1 wicket updated!)
       expect(find.text('0/1'), findsOneWidget);
     });
+
+    testWidgets('Tapping Wide button opens extra runs sheet, calculates total runs, and updates score', (tester) async {
+      final matchData = {
+        'id': testMatchId,
+        'sports': {'name': 'Cricket'},
+        'created_by': currentUserId,
+        'status': 'live',
+        'config': {'overs_per_innings': 20, 'players_per_side': 11},
+        'match_participants': [
+          {'side': 'home', 'team_id': 'team-a', 'teams': {'name': 'Team Alpha'}},
+          {'side': 'away', 'team_id': 'team-b', 'teams': {'name': 'Team Beta'}},
+        ],
+      };
+
+      await tester.pumpWidget(createTestWidget(matchData: matchData));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0/0'), findsOneWidget);
+      expect(find.text('Wide'), findsOneWidget);
+
+      // Scroll to Wide and tap
+      await tester.ensureVisible(find.text('Wide'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Wide'));
+      await tester.pumpAndSettle();
+
+      // Verify Wide sheet is displayed with calculation
+      expect(find.text('Wide Delivery (Wd)'), findsOneWidget);
+      expect(find.text('Total Runs on this Delivery:'), findsOneWidget);
+      expect(find.text('Confirm (1 Run)'), findsOneWidget);
+
+      // Tap +1 extra run (e.g. 1 bye taken on wide)
+      await tester.tap(find.text('+1'));
+      await tester.pumpAndSettle();
+
+      // Calculation updates to 2 runs (1 penalty + 1 extra)
+      expect(find.text('Confirm (2 Runs)'), findsOneWidget);
+
+      // Confirm
+      await tester.ensureVisible(find.text('Confirm (2 Runs)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm (2 Runs)'));
+      await tester.pumpAndSettle();
+
+      // Scroll back up to verify live score header has 2/0 (2 runs, 0 wickets, 0.0 overs)
+      await tester.drag(find.byType(ListView).first, const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2/0'), findsOneWidget);
+      expect(find.text('Wd+1'), findsOneWidget);
+    });
+
+    testWidgets('Tapping No Ball button opens extra runs sheet, calculates total runs (1 NB + extras), and updates score', (tester) async {
+      final matchData = {
+        'id': testMatchId,
+        'sports': {'name': 'Cricket'},
+        'created_by': currentUserId,
+        'status': 'live',
+        'config': {'overs_per_innings': 20, 'players_per_side': 11},
+        'match_participants': [
+          {'side': 'home', 'team_id': 'team-a', 'teams': {'name': 'Team Alpha'}},
+          {'side': 'away', 'team_id': 'team-b', 'teams': {'name': 'Team Beta'}},
+        ],
+      };
+
+      await tester.pumpWidget(createTestWidget(matchData: matchData));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0/0'), findsOneWidget);
+      expect(find.text('No Ball'), findsOneWidget);
+
+      // Scroll to No Ball and tap
+      await tester.ensureVisible(find.text('No Ball'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('No Ball'));
+      await tester.pumpAndSettle();
+
+      // Verify No Ball sheet is displayed
+      expect(find.text('No Ball Delivery (Nb)'), findsOneWidget);
+      expect(find.text('Confirm (1 Run)'), findsOneWidget);
+
+      // Tap +4 (boundary off no-ball)
+      await tester.tap(find.text('+4'));
+      await tester.pumpAndSettle();
+
+      // Calculation updates to 5 runs (1 NB + 4 off bat)
+      expect(find.text('Confirm (5 Runs)'), findsOneWidget);
+
+      // Confirm
+      await tester.ensureVisible(find.text('Confirm (5 Runs)'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm (5 Runs)'));
+      await tester.pumpAndSettle();
+
+      // Scroll back up to verify live score header has 5/0 (5 runs, 0 wickets, 0.0 overs)
+      await tester.drag(find.byType(ListView).first, const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('5/0'), findsOneWidget);
+      expect(find.text('Nb+4'), findsOneWidget);
+    });
   });
 }

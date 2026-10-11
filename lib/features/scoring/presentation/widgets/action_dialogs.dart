@@ -4,6 +4,7 @@
 /// with quick tap targets adhering to Apple HIG.
 library;
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -221,6 +222,211 @@ class ActionDialogs {
                           });
                         },
                       ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Prompt for extra runs produced on a Wide or No Ball delivery.
+  ///
+  /// Calculates the total runs on the ball (1 penalty run + extra runs)
+  /// and confirms whether the runs were boundaries (e.g. 4 wides or No Ball hit for 4/6).
+  static Future<Map<String, dynamic>?> showExtraRunsSheet({
+    required BuildContext context,
+    required String kind, // 'wide' or 'no_ball'
+    String? strikerName,
+    String? bowlerName,
+  }) async {
+    final isWide = kind == 'wide';
+    int selectedExtraRuns = 0;
+    bool isBoundary = false;
+
+    return showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
+        final borderStrong = isDark ? AppColors.borderStrongDark : AppColors.borderStrongLight;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            const int basePenalty = 1;
+            final int totalRunsOnBall = basePenalty + selectedExtraRuns;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.md,
+                bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Drag Handle (32 x 4 in borderStrong)
+                    Center(
+                      child: Container(
+                        width: 32,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: borderStrong,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+
+                    // Title
+                    Text(
+                      isWide ? 'Wide Delivery (Wd)' : 'No Ball Delivery (Nb)',
+                      style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isWide
+                          ? '1 penalty run is awarded. Select additional runs produced (byes or overthrows):'
+                          : '1 penalty run is awarded + Free Hit. Select runs produced off bat or extras:',
+                      style: AppTypography.caption.copyWith(
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Extra Runs Chip Selection
+                    Text(
+                      isWide ? 'Additional Extra Runs' : 'Runs off Bat / Extras',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.xs,
+                      children: [0, 1, 2, 3, 4, 5, 6].map((r) {
+                        final isSelected = selectedExtraRuns == r;
+                        return AppChip(
+                          label: r == 0 ? '0 (None)' : '+$r',
+                          isSelected: isSelected,
+                          onTap: () {
+                            setState(() {
+                              selectedExtraRuns = r;
+                              isBoundary = (r == 4 || r == 6);
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Realtime Calculation Breakdown Card
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkSurfaceVariant
+                            : AppColors.lightSurfaceVariant,
+                        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                        border: Border.all(color: borderStrong),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isWide ? 'Wide Penalty:' : 'No Ball Penalty:',
+                                style: AppTypography.body,
+                              ),
+                              Text(
+                                '1 run',
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                isWide ? 'Extra Runs (Byes/Overthrows):' : 'Runs off Bat / Extras:',
+                                style: AppTypography.body,
+                              ),
+                              Text(
+                                '+$selectedExtraRuns ${selectedExtraRuns == 1 ? "run" : "runs"}',
+                                style: AppTypography.body.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Divider(
+                              height: 1,
+                              color: borderStrong,
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Total Runs on this Delivery:',
+                                style: AppTypography.headline.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                '$totalRunsOnBall ${totalRunsOnBall == 1 ? "run" : "runs"}',
+                                style: AppTypography.headline.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (!isWide && selectedExtraRuns > 0 && strikerName != null) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              '$selectedExtraRuns runs credited to $strikerName',
+                              style: AppTypography.caption.copyWith(
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Confirm Action Button
+                    AppButton(
+                      label: 'Confirm ($totalRunsOnBall ${totalRunsOnBall == 1 ? "Run" : "Runs"})',
+                      icon: Icons.check_circle_outline_rounded,
+                      onPressed: () {
+                        Navigator.pop(ctx, {
+                          'runs': selectedExtraRuns,
+                          'is_boundary': isBoundary,
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),

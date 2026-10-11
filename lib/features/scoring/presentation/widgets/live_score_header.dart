@@ -273,8 +273,9 @@ class LiveScoreHeader extends StatelessWidget {
           Wrap(
             spacing: AppSpacing.xs,
             children: currentInnings.thisOverChips.map((b) {
-              final isWicket = b.contains('W');
-              final isBoundary = b == '4' || b == '6';
+              final isWicket = b == 'W' || b.startsWith('W+') || (b.contains('W') && !b.startsWith('Wd'));
+              final isBoundary = b == '4' || b == '6' || b == 'Nb+4' || b == 'Nb+6' || b == 'Wd+4';
+              final isExtra = b.startsWith('Wd') || b.startsWith('Nb') || b.startsWith('B') || b.startsWith('Lb');
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
@@ -284,6 +285,12 @@ class LiveScoreHeader extends StatelessWidget {
                           ? Theme.of(context).colorScheme.primary
                           : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant),
                   borderRadius: BorderRadius.circular(10),
+                  border: isExtra
+                      ? Border.all(
+                          color: isDark ? AppColors.borderStrongDark : AppColors.borderStrongLight,
+                          width: 1,
+                        )
+                      : null,
                 ),
                 child: Text(
                   b,
