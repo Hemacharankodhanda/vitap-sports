@@ -284,6 +284,9 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
         'score': active.totalRuns + runsAddedToTeam,
         'overs': (active.legalBalls + (isLegal ? 1 : 0)) ~/ 6 + ((active.legalBalls + (isLegal ? 1 : 0)) % 6) / 10.0,
         'player_id': dismissedBatterId,
+        'dismissal_type': dismissal,
+        'fielder_id': fielderId,
+        'bowler_id': creditedToBowler ? bowlerId : null,
       });
 
       if (creditedToBowler) {

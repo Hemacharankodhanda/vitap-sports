@@ -280,5 +280,50 @@ void main() {
       // Striker b1 is still not out
       expect(state.activeInnings!.battingStats['b1']!.isOut, isFalse);
     });
+
+    test('catches and run-outs correctly populate fielding stats for the fielder', () {
+      var state = engine.initialState(
+        config,
+        homeId: 'team_home',
+        awayId: 'team_away',
+        extra: {'striker_id': 'b1', 'non_striker_id': 'b2', 'opening_bowler_id': 'bowl1'},
+      );
+
+      // 1. Catch by fielder_x
+      state = engine.apply(state, MatchEvent(
+        id: 'w_catch',
+        matchId: 'm',
+        seq: 1,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'caught',
+          'out_batter_id': 'b1',
+          'fielder_id': 'fielder_x',
+          'new_batter_id': 'b3',
+        },
+      ));
+
+      // 2. Run out by fielder_y
+      state = engine.apply(state, MatchEvent(
+        id: 'w_runout',
+        matchId: 'm',
+        seq: 2,
+        type: 'delivery',
+        payload: {
+          'is_wicket': true,
+          'kind': 'normal',
+          'dismissal_type': 'run_out',
+          'out_batter_id': 'b3',
+          'fielder_id': 'fielder_y',
+          'new_batter_id': 'b4',
+        },
+      ));
+
+      final stats = state.playerStats;
+      expect(stats['fielder_x']?['catches'], equals(1));
+      expect(stats['fielder_y']?['run_outs'], equals(1));
+    });
   });
 }
