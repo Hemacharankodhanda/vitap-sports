@@ -331,8 +331,8 @@ flutter test
 - [x] Authentication with domain restriction
 - [x] Profiles, teams, challenges, pick-up games
 - [x] Leaderboards and activity feed
-- [ ] Live scorer: football, badminton, cricket
-- [ ] Automatic player stats and per-match analysis
+- [x] Live scorer: football, badminton, cricket
+- [x] Automatic player stats and per-match analysis
 - [ ] Tournaments: knockout brackets and league tables
 - [ ] Shareable match cards
 - [ ] Match reminders and availability polls
