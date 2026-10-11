@@ -274,11 +274,11 @@ class MatchDetailScreen extends ConsumerWidget {
     bool isDark,
   ) {
     final homeName = homeTeam.isNotEmpty
-        ? (homeTeam.first.teamName ?? match.homeTeamName ?? 'Team 1')
-        : (match.homeTeamName ?? 'Team 1');
+        ? (homeTeam.first.teamName ?? homeTeam.first.userName ?? match.resolvedHomeTeamName ?? 'Team 1')
+        : (match.resolvedHomeTeamName ?? 'Team 1');
     final awayName = awayTeam.isNotEmpty
-        ? (awayTeam.first.teamName ?? match.awayTeamName ?? 'Team 2')
-        : (match.awayTeamName ?? 'Team 2');
+        ? (awayTeam.first.teamName ?? awayTeam.first.userName ?? match.resolvedAwayTeamName ?? 'Team 2')
+        : (match.resolvedAwayTeamName ?? 'Team 2');
 
     if (match.isDraw) {
       return Container(
@@ -332,37 +332,29 @@ class MatchDetailScreen extends ConsumerWidget {
       );
     }
 
-    String winnerName = 'Winner';
-    final wId = match.winnerTeamId;
+    final winningTeam = match.winningTeamName ??
+        (homeTeam.isNotEmpty ? (homeTeam.first.teamName ?? homeTeam.first.userName) : null) ??
+        homeName;
+    final margin = match.resultMargin?.trim();
 
-    if (wId == 'home' || wId == match.homeTeamId) {
-      winnerName = homeName;
-    } else if (wId == 'away' || wId == match.awayTeamId) {
-      winnerName = awayName;
-    } else if (wId != null) {
-      final p = match.participants
-          .where((e) => e.teamId == wId || e.userId == wId)
-          .firstOrNull;
-      if (p?.teamName != null && p!.teamName!.isNotEmpty) {
-        winnerName = p.teamName!;
-      } else if (p?.userName != null && p!.userName!.isNotEmpty) {
-        winnerName = p.userName!;
-      } else if (match.homeScore != null && match.awayScore != null) {
-        winnerName = match.homeScore! > match.awayScore! ? homeName : awayName;
-      }
-    } else if (match.homeScore != null && match.awayScore != null) {
-      winnerName = match.homeScore! > match.awayScore! ? homeName : awayName;
-    }
-
-    final margin = match.resultMargin;
-    String titleText = '$winnerName Won';
+    String titleText = '$winningTeam Won';
     String? subtitleText;
 
     if (margin != null && margin.isNotEmpty) {
-      if (margin.toLowerCase().contains('won') || margin.toLowerCase().contains('win')) {
-        titleText = margin;
-      } else {
-        subtitleText = margin;
+      final lowerMargin = margin.toLowerCase();
+      if (lowerMargin != 'winner won' &&
+          lowerMargin != 'winner wins' &&
+          lowerMargin != 'winner') {
+        if (lowerMargin.startsWith('won by ')) {
+          subtitleText = margin;
+        } else if (lowerMargin.startsWith('by ')) {
+          subtitleText = 'Won $margin';
+        } else if (lowerMargin.contains('won by ')) {
+          final idx = lowerMargin.indexOf('won by ');
+          subtitleText = margin.substring(idx);
+        } else {
+          subtitleText = margin;
+        }
       }
     }
 

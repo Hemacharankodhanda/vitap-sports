@@ -63,6 +63,9 @@ class AppTheme {
       brightness: brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: backgroundColor,
+      extensions: [
+        isDark ? AppColorsExtension.dark : AppColorsExtension.light,
+      ],
       textTheme: GoogleFonts.interTextTheme(
         AppTypography.textTheme.apply(
           bodyColor: textColor,
@@ -132,10 +135,11 @@ class AppTheme {
       // ─── Cards ──────────────────────────────────────────
       cardTheme: CardThemeData(
         color: surfaceColor,
-        elevation: AppSpacing.cardElevation,
+        elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          side: BorderSide(color: dividerColor, width: 1),
         ),
       ),
 

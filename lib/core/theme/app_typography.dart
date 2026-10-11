@@ -13,94 +13,114 @@ class AppTypography {
 
   static String get _fontFamily => GoogleFonts.inter().fontFamily!;
 
-  // ─── Type Scale ───────────────────────────────────────────
+  // ─── Type Scale (Design Rules) ─────────────────────────────
 
-  /// 28sp / bold — screen titles, hero numbers
+  /// 48sp / 56lh / 700 bold — Display (scores)
+  static TextStyle get scoreDisplay => TextStyle(
+        fontFamily: _fontFamily,
+        fontSize: 48,
+        fontWeight: FontWeight.w700,
+        height: 56 / 48,
+        letterSpacing: -1.0,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+
+  /// 28sp / 36lh / 700 bold — Title large
   static TextStyle get largeTitle => TextStyle(
         fontFamily: _fontFamily,
         fontSize: 28,
         fontWeight: FontWeight.w700,
-        height: 1.2,
+        height: 36 / 28,
         letterSpacing: -0.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  /// 22sp / semibold — section titles, modal headers
+  static TextStyle get titleLarge => largeTitle;
+
+  /// 20sp / 28lh / 600 semibold — Title
   static TextStyle get title => TextStyle(
         fontFamily: _fontFamily,
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.w600,
-        height: 1.3,
+        height: 28 / 20,
         letterSpacing: -0.3,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  /// 17sp / semibold — card titles, list item primary text
+  /// 16sp / 24lh / 600 semibold — Headline
   static TextStyle get headline => TextStyle(
         fontFamily: _fontFamily,
-        fontSize: 17,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
-        height: 1.4,
+        height: 24 / 16,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  /// 15sp / regular — body text, descriptions, form labels
+  /// 15sp / 24lh / 400 regular — Body
   static TextStyle get body => TextStyle(
         fontFamily: _fontFamily,
         fontSize: 15,
         fontWeight: FontWeight.w400,
-        height: 1.5,
+        height: 24 / 15,
       );
 
-  /// 13sp / regular — secondary info, timestamps, metadata
+  /// 14sp / 20lh / 500 medium — Callout
+  static TextStyle get callout => TextStyle(
+        fontFamily: _fontFamily,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        height: 20 / 14,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+
+  /// 12sp / 16lh / 500 medium — Caption
   static TextStyle get caption => TextStyle(
         fontFamily: _fontFamily,
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        height: 1.4,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        height: 16 / 12,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  /// 11sp / medium — tiny labels, badges, chips
+  /// 12sp / 16lh / 500 medium — Overline / Tiny label (sentence or uppercase)
   static TextStyle get overline => TextStyle(
         fontFamily: _fontFamily,
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w500,
-        height: 1.3,
+        height: 16 / 12,
         letterSpacing: 0.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
-  // ─── Score Display ────────────────────────────────────────
-
-  /// 40sp / bold — large score display on scorecards
-  static TextStyle get scoreDisplay => TextStyle(
-        fontFamily: _fontFamily,
-        fontSize: 40,
-        fontWeight: FontWeight.w700,
-        height: 1.1,
-        letterSpacing: -1.0,
-      );
-
-  /// 24sp / bold — medium score display
+  /// 24sp / 32lh / 700 bold — Medium score display
   static TextStyle get scoreMedium => TextStyle(
         fontFamily: _fontFamily,
         fontSize: 24,
         fontWeight: FontWeight.w700,
-        height: 1.2,
+        height: 32 / 24,
         letterSpacing: -0.5,
+        fontFeatures: const [FontFeature.tabularFigures()],
       );
 
   // ─── Utility Modifiers ────────────────────────────────────
 
+  /// Appends tabular figures to any TextStyle
+  static TextStyle tabular(TextStyle base) => base.copyWith(
+        fontFeatures: [
+          ...?base.fontFeatures,
+          const FontFeature.tabularFigures(),
+        ],
+      );
+
   /// Returns the full TextTheme for Material 3 theme data
   static TextTheme get textTheme => TextTheme(
-        displayLarge: largeTitle,
-        displayMedium: title,
+        displayLarge: scoreDisplay,
+        displayMedium: largeTitle,
         headlineMedium: headline,
+        titleMedium: title,
         bodyLarge: body,
         bodyMedium: caption,
-        labelLarge: TextStyle(
-          fontFamily: _fontFamily,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          height: 1.4,
-        ),
+        labelLarge: callout,
         labelMedium: overline,
       );
 }

@@ -449,20 +449,23 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                   children: [
                     if (derivedState.activeInnings!.strikerId != null)
                       Text(
-                        '🏏 ${resolvePlayer(derivedState.activeInnings!.strikerId)}*',
-                        style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                        '${resolvePlayer(derivedState.activeInnings!.strikerId)}*',
+                        style: AppTypography.callout.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                     if (derivedState.activeInnings!.nonStrikerId != null)
                       Text(
                         resolvePlayer(derivedState.activeInnings!.nonStrikerId),
-                        style: AppTypography.body.copyWith(color: secondaryText),
+                        style: AppTypography.caption.copyWith(color: secondaryText),
                       ),
                   ],
                 ),
                 if (derivedState.activeInnings!.currentBowlerId != null) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '⚾ Bowler: ${resolvePlayer(derivedState.activeInnings!.currentBowlerId)}',
+                    'Bowler: ${resolvePlayer(derivedState.activeInnings!.currentBowlerId)}',
                     style: AppTypography.caption.copyWith(color: secondaryText),
                   ),
                 ],
@@ -486,20 +489,43 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
   }
 
   Widget _buildLiveBadge(String status) {
-    final isLive = status == 'live';
+    final isLive = status.toLowerCase() == 'live';
+    final colors = context.appColors;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
       decoration: BoxDecoration(
-        color: isLive ? AppColors.error.withAlpha(30) : AppColors.success.withAlpha(30),
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
-      ),
-      child: Text(
-        status.toUpperCase(),
-        style: AppTypography.caption.copyWith(
-          color: isLive ? AppColors.error : AppColors.success,
-          fontWeight: FontWeight.bold,
-          fontSize: 10,
+        color: isLive ? colors.live.withAlpha(20) : colors.surfaceVariant,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isLive ? colors.live.withAlpha(60) : colors.border,
+          width: 1,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isLive) ...[
+            Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: colors.live,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+          Text(
+            isLive ? 'LIVE' : (status.toLowerCase() == 'completed' ? 'FT' : status.toUpperCase()),
+            style: AppTypography.overline.copyWith(
+              color: isLive ? colors.live : colors.textSecondary,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -46,14 +46,40 @@ class MatchModel {
 
   String? get homeTeamId {
     for (final p in participants) {
-      if (p.side == 'home' && p.teamId != null) return p.teamId;
+      if (p.side == 'home' && (p.teamId != null || p.userId != null)) {
+        return p.teamId ?? p.userId;
+      }
     }
     return null;
   }
 
   String? get awayTeamId {
     for (final p in participants) {
-      if (p.side == 'away' && p.teamId != null) return p.teamId;
+      if (p.side == 'away' && (p.teamId != null || p.userId != null)) {
+        return p.teamId ?? p.userId;
+      }
+    }
+    return null;
+  }
+
+  String? get resolvedHomeTeamName {
+    if (homeTeamName != null && homeTeamName!.isNotEmpty) return homeTeamName;
+    for (final p in participants) {
+      if (p.side == 'home') {
+        if (p.teamName != null && p.teamName!.isNotEmpty) return p.teamName;
+        if (p.userName != null && p.userName!.isNotEmpty) return p.userName;
+      }
+    }
+    return null;
+  }
+
+  String? get resolvedAwayTeamName {
+    if (awayTeamName != null && awayTeamName!.isNotEmpty) return awayTeamName;
+    for (final p in participants) {
+      if (p.side == 'away') {
+        if (p.teamName != null && p.teamName!.isNotEmpty) return p.teamName;
+        if (p.userName != null && p.userName!.isNotEmpty) return p.userName;
+      }
     }
     return null;
   }
@@ -66,11 +92,99 @@ class MatchModel {
     if (wId != null && wId.toString().isNotEmpty) {
       return wId.toString();
     }
+
+    // Cricket innings check
+    final inningsRaw = (score?['innings'] ?? result?['innings']);
+    if (inningsRaw is List && inningsRaw.length >= 2) {
+      final inn1 = inningsRaw[0];
+      final inn2 = inningsRaw[1];
+      if (inn1 is Map && inn2 is Map) {
+        final r1 = (inn1['total_runs'] as num?)?.toInt() ?? 0;
+        final r2 = (inn2['total_runs'] as num?)?.toInt() ?? 0;
+        if (r1 > r2) return inn1['batting_team_id']?.toString() ?? homeTeamId ?? 'home';
+        if (r2 > r1) return inn2['batting_team_id']?.toString() ?? awayTeamId ?? 'away';
+      }
+    }
+
+    // Direct score check
     if (status == 'completed' && homeScore != null && awayScore != null) {
       if (homeScore! > awayScore!) return homeTeamId ?? 'home';
       if (awayScore! > homeScore!) return awayTeamId ?? 'away';
     }
+
+    // Badminton games check
+    if (score != null) {
+      final hGames = (score!['home_games_won'] as num?)?.toInt();
+      final aGames = (score!['away_games_won'] as num?)?.toInt();
+      if (hGames != null && aGames != null) {
+        if (hGames > aGames) return homeTeamId ?? 'home';
+        if (aGames > hGames) return awayTeamId ?? 'away';
+      }
+    }
     return null;
+  }
+
+  String? get winningTeamName {
+    final explicit = result?['winner_team_name']?.toString() ??
+        result?['winner_name']?.toString() ??
+        score?['winner_team_name']?.toString() ??
+        score?['winner_name']?.toString();
+    if (explicit != null &&
+        explicit.trim().isNotEmpty &&
+        explicit.trim().toLowerCase() != 'winner') {
+      return explicit.trim();
+    }
+
+    final hName = resolvedHomeTeamName ?? 'Team 1';
+    final aName = resolvedAwayTeamName ?? 'Team 2';
+
+    final wId = winnerTeamId;
+    if (wId != null) {
+      if (wId == 'home' || wId == homeTeamId) return hName;
+      if (wId == 'away' || wId == awayTeamId) return aName;
+
+      for (final p in participants) {
+        if (p.teamId == wId || p.userId == wId) {
+          if (p.teamName != null && p.teamName!.isNotEmpty) return p.teamName;
+          if (p.userName != null && p.userName!.isNotEmpty) return p.userName;
+          if (p.side == 'home') return hName;
+          if (p.side == 'away') return aName;
+        }
+      }
+    }
+
+    // Check cricket innings
+    final inningsRaw = (score?['innings'] ?? result?['innings']);
+    if (inningsRaw is List && inningsRaw.length >= 2) {
+      final inn1 = inningsRaw[0];
+      final inn2 = inningsRaw[1];
+      if (inn1 is Map && inn2 is Map) {
+        final r1 = (inn1['total_runs'] as num?)?.toInt() ?? 0;
+        final r2 = (inn2['total_runs'] as num?)?.toInt() ?? 0;
+        if (r1 > r2) {
+          final bId = inn1['batting_team_id']?.toString();
+          if (bId == 'away' || bId == awayTeamId) return aName;
+          return hName;
+        } else if (r2 > r1) {
+          final bId = inn2['batting_team_id']?.toString();
+          if (bId == 'home' || bId == homeTeamId) return hName;
+          return aName;
+        }
+      }
+    }
+
+    if (status == 'completed' && homeScore != null && awayScore != null) {
+      if (homeScore! > awayScore!) return hName;
+      if (awayScore! > homeScore!) return aName;
+    }
+
+    if (resultMargin != null) {
+      final m = resultMargin!.toLowerCase();
+      if (hName.isNotEmpty && m.contains(hName.toLowerCase())) return hName;
+      if (aName.isNotEmpty && m.contains(aName.toLowerCase())) return aName;
+    }
+
+    return hName;
   }
 
   String? get resultMargin {
@@ -112,6 +226,24 @@ class MatchModel {
         ? Map<String, dynamic>.from(json['config'] as Map)
         : null;
 
+    String? homeName;
+    String? awayName;
+    if (participantsData != null) {
+      for (final p in participantsData) {
+        if (p is Map) {
+          final side = p['side'] as String?;
+          final team = p['teams'] as Map?;
+          final user = p['users'] as Map?;
+          final name = team?['name']?.toString() ?? user?['name']?.toString();
+          if (side == 'home' && name != null && name.isNotEmpty && homeName == null) {
+            homeName = name;
+          } else if (side == 'away' && name != null && name.isNotEmpty && awayName == null) {
+            awayName = name;
+          }
+        }
+      }
+    }
+
     return MatchModel(
       id: json['id'] as String,
       sportId: json['sport_id'] as String,
@@ -130,6 +262,8 @@ class MatchModel {
               ?.map((e) => MatchParticipant.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      homeTeamName: homeName,
+      awayTeamName: awayName,
       homeScore: json['home_score'] as int?,
       awayScore: json['away_score'] as int?,
       config: configData,

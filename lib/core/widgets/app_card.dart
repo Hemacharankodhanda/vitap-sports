@@ -46,15 +46,16 @@ class _AppCardState extends State<AppCard> {
       decoration: BoxDecoration(
         color: widget.color ?? theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: widget.borderColor != null
-            ? Border.all(color: widget.borderColor!, width: 1)
-            : null,
+        border: Border.all(
+          color: widget.borderColor ?? theme.dividerColor,
+          width: 1,
+        ),
         boxShadow: [
-          if ((widget.elevation ?? AppSpacing.cardElevation) > 0)
+          if ((widget.elevation ?? 0.0) > 0)
             BoxShadow(
               color: Colors.black.withAlpha(13),
-              blurRadius: (widget.elevation ?? AppSpacing.cardElevation) * 4,
-              offset: Offset(0, (widget.elevation ?? AppSpacing.cardElevation)),
+              blurRadius: (widget.elevation!) * 4,
+              offset: Offset(0, widget.elevation!),
             ),
         ],
       ),

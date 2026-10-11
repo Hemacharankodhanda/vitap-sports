@@ -58,8 +58,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Check Winner Card presence
-      expect(find.text('Warriors won by 25 runs'), findsOneWidget);
+      // Check Winner Card presence with winning team name in title and margin in subtitle
+      expect(find.text('Warriors Won'), findsOneWidget);
+      expect(find.text('won by 25 runs'), findsOneWidget);
+      expect(find.text('Winner Won'), findsNothing);
       expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
 
       // Verify Scorecard button exists
@@ -68,6 +70,56 @@ void main() {
       // Verify "Edit Scorecard" is NOT present on completed match
       expect(find.text('Edit Scorecard'), findsNothing);
       expect(find.text('Live Scorer'), findsNothing);
+    });
+
+    testWidgets('Displays winning team name when margin is unprefixed (won by 4 wickets)', (tester) async {
+      final completedMatch = MatchModel(
+        id: testMatchId,
+        sportId: 's-cricket',
+        sportName: 'Cricket',
+        venue: 'Main Ground',
+        scheduledAt: DateTime.now().subtract(const Duration(hours: 2)),
+        status: 'completed',
+        createdBy: 'u-1',
+        result: {
+          'winner_team_id': 'team-2',
+          'result_margin': 'won by 4 wickets',
+          'is_draw': false,
+        },
+        participants: const [
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-1',
+            teamName: 'Warriors',
+            side: 'home',
+          ),
+          MatchParticipant(
+            matchId: testMatchId,
+            teamId: 'team-2',
+            teamName: 'Titans',
+            side: 'away',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserIdProvider.overrideWith((ref) => 'u-1'),
+            matchDetailProvider(testMatchId).overrideWith((ref) async => completedMatch),
+          ],
+          child: const MaterialApp(
+            home: MatchDetailScreen(matchId: testMatchId),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verifies winning team name Titans is shown, NOT "Winner Won"
+      expect(find.text('Titans Won'), findsOneWidget);
+      expect(find.text('won by 4 wickets'), findsOneWidget);
+      expect(find.text('Winner Won'), findsNothing);
     });
 
     testWidgets('Displays match drawn / tied card when is_draw is true', (tester) async {
