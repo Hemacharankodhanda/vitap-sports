@@ -139,6 +139,14 @@ class LiveScoreHeader extends StatelessWidget {
 
     final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
 
+    String playerName(String? id) {
+      if (id == null || id.isEmpty) return 'Player';
+      final match = [...state.homePlayers, ...state.awayPlayers]
+          .where((p) => p.id == id)
+          .firstOrNull;
+      return match?.name ?? id;
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -207,7 +215,7 @@ class LiveScoreHeader extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                '🏏 ${currentInnings.strikerId ?? "Striker"}* '
+                '🏏 ${playerName(currentInnings.strikerId)}* '
                 '${striker != null ? "${striker.runs} (${striker.ballsFaced})" : ""}',
                 style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                 overflow: TextOverflow.ellipsis,
@@ -216,7 +224,7 @@ class LiveScoreHeader extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
-                '${currentInnings.nonStrikerId ?? "Non-Striker"} '
+                '${playerName(currentInnings.nonStrikerId)} '
                 '${nonStriker != null ? "${nonStriker.runs} (${nonStriker.ballsFaced})" : ""}',
                 style: AppTypography.body.copyWith(color: secondaryText),
                 overflow: TextOverflow.ellipsis,
@@ -228,7 +236,7 @@ class LiveScoreHeader extends StatelessWidget {
 
         // Active Bowler
         Text(
-          '⚾ ${currentInnings.currentBowlerId ?? "Bowler"}: '
+          '⚾ ${playerName(currentInnings.currentBowlerId)}: '
           '${bowler != null ? "${bowler.wickets}/${bowler.runsConceded} (${bowler.oversDecimal.toStringAsFixed(1)} ov)" : "Not selected"}',
           style: AppTypography.caption.copyWith(color: secondaryText),
         ),

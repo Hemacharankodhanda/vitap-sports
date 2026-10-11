@@ -100,18 +100,24 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     final bowling = _bowlingPlayers;
 
     if (batting.isNotEmpty) {
-      _selectedStriker = batting.first.name;
-      _selectedNonStriker = batting.length > 1 ? batting[1].name : '${batting.first.name} (2)';
+      _selectedStriker = batting.first.id;
+      _selectedNonStriker = batting.length > 1 ? batting[1].id : null;
     } else {
       _selectedStriker = 'Batter 1';
       _selectedNonStriker = 'Batter 2';
     }
 
     if (bowling.isNotEmpty) {
-      _selectedBowler = bowling.first.name;
+      _selectedBowler = bowling.first.id;
     } else {
       _selectedBowler = 'Bowler 1';
     }
+  }
+
+  String _playerDisplayName(String? id, List<PlayerOption> list, String fallback) {
+    if (id == null || id.isEmpty) return fallback;
+    final match = list.where((p) => p.id == id).firstOrNull;
+    return match?.name ?? id;
   }
 
   @override
@@ -226,28 +232,28 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         const SizedBox(height: AppSpacing.xs),
         _buildPlayerSelectorTile(
           label: 'Striker',
-          playerName: _selectedStriker,
+          playerName: _playerDisplayName(_selectedStriker, _battingPlayers, 'Striker 1'),
           teamName: _battingTeamName,
           onTap: () => _openPlayerPicker(
             title: 'Select Opening Striker',
             teamName: _battingTeamName,
             players: _battingPlayers,
             currentSelection: _selectedStriker,
-            excludePlayerName: _selectedNonStriker,
+            excludePlayerId: _selectedNonStriker,
             onSelected: (val) => setState(() => _selectedStriker = val),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
         _buildPlayerSelectorTile(
           label: 'Non-Striker',
-          playerName: _selectedNonStriker,
+          playerName: _playerDisplayName(_selectedNonStriker, _battingPlayers, 'Non-Striker 2'),
           teamName: _battingTeamName,
           onTap: () => _openPlayerPicker(
             title: 'Select Opening Non-Striker',
             teamName: _battingTeamName,
             players: _battingPlayers,
             currentSelection: _selectedNonStriker,
-            excludePlayerName: _selectedStriker,
+            excludePlayerId: _selectedStriker,
             onSelected: (val) => setState(() => _selectedNonStriker = val),
           ),
         ),
@@ -260,7 +266,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         const SizedBox(height: AppSpacing.xs),
         _buildPlayerSelectorTile(
           label: 'Opening Bowler',
-          playerName: _selectedBowler,
+          playerName: _playerDisplayName(_selectedBowler, _bowlingPlayers, 'Opening Bowler'),
           teamName: _bowlingTeamName,
           onTap: () => _openPlayerPicker(
             title: 'Select Opening Bowler',
@@ -326,15 +332,15 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     required List<PlayerOption> players,
     required String? currentSelection,
     required ValueChanged<String> onSelected,
-    String? excludePlayerName,
+    String? excludePlayerId,
   }) async {
-    final available = players.where((p) => p.name != excludePlayerName).toList();
+    final available = players.where((p) => p.id != excludePlayerId && p.name != excludePlayerId).toList();
     final customCtrl = TextEditingController();
     bool showCustom = false;
 
     if (currentSelection != null &&
         currentSelection.isNotEmpty &&
-        !available.any((p) => p.name == currentSelection)) {
+        !available.any((p) => p.id == currentSelection || p.name == currentSelection)) {
       customCtrl.text = currentSelection;
       showCustom = true;
     }
@@ -385,7 +391,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                           spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.xs,
                           children: available.map((p) {
-                            final isSelected = p.name == currentSelection;
+                            final isSelected = p.id == currentSelection || p.name == currentSelection;
                             return ActionChip(
                               avatar: isSelected
                                   ? const Icon(Icons.check, size: 14, color: Colors.white)
@@ -397,7 +403,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                               ),
                               onPressed: () {
-                                onSelected(p.name);
+                                onSelected(p.id);
                                 Navigator.pop(ctx);
                               },
                             );
@@ -435,7 +441,8 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                         onSubmitted: (val) {
                           final name = val.trim();
                           if (name.isNotEmpty) {
-                            onSelected(name);
+                            final matchP = players.where((p) => p.name.toLowerCase() == name.toLowerCase()).firstOrNull;
+                            onSelected(matchP?.id ?? name);
                             Navigator.pop(ctx);
                           }
                         },
@@ -447,7 +454,9 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                             : 'Confirm Player',
                         onPressed: customCtrl.text.trim().isNotEmpty
                             ? () {
-                                onSelected(customCtrl.text.trim());
+                                final name = customCtrl.text.trim();
+                                final matchP = players.where((p) => p.name.toLowerCase() == name.toLowerCase()).firstOrNull;
+                                onSelected(matchP?.id ?? name);
                                 Navigator.pop(ctx);
                               }
                             : null,

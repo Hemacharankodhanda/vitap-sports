@@ -713,28 +713,55 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
     final result = engine.result(state.scoringState);
     final finalScore = (state.scoringState as dynamic).toJson() as Map<String, dynamic>;
 
-    // Ensure all squad players have an entry in player_stats with their team_id
-    final pStats = Map<String, dynamic>.from(
+    // Remap any player names to their user UUID from squads
+    final allSquadPlayers = [...state.homePlayers, ...state.awayPlayers];
+    final nameToId = <String, String>{};
+    for (final p in allSquadPlayers) {
+      nameToId[p.name.trim().toLowerCase()] = p.id;
+    }
+
+    final rawPStats = Map<String, dynamic>.from(
       (finalScore['player_stats'] as Map<String, dynamic>?) ?? {},
     );
+    final pStats = <String, Map<String, dynamic>>{};
+
+    for (final entry in rawPStats.entries) {
+      var key = entry.key;
+      final val = Map<String, dynamic>.from(entry.value is Map ? entry.value as Map : {});
+      if (nameToId.containsKey(key.trim().toLowerCase())) {
+        key = nameToId[key.trim().toLowerCase()]!;
+      }
+
+      if (pStats.containsKey(key)) {
+        final existing = pStats[key]!;
+        for (final vEntry in val.entries) {
+          if (vEntry.value is int) {
+            existing[vEntry.key] = ((existing[vEntry.key] as int?) ?? 0) + (vEntry.value as int);
+          } else if (vEntry.value is num) {
+            existing[vEntry.key] = ((existing[vEntry.key] as num?) ?? 0) + (vEntry.value as num);
+          } else {
+            existing[vEntry.key] = vEntry.value;
+          }
+        }
+      } else {
+        pStats[key] = val;
+      }
+    }
+
     for (final p in state.homePlayers) {
       if (!pStats.containsKey(p.id)) {
         pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
-      } else if (pStats[p.id] is Map &&
-          (pStats[p.id]['team_id'] == null ||
-              pStats[p.id]['team_id'].toString().isEmpty)) {
-        pStats[p.id] = Map<String, dynamic>.from(pStats[p.id] as Map)
-          ..['team_id'] = p.teamId;
+      } else if (pStats[p.id]!['team_id'] == null ||
+          pStats[p.id]!['team_id'].toString().isEmpty) {
+        pStats[p.id]!['team_id'] = p.teamId;
       }
     }
     for (final p in state.awayPlayers) {
       if (!pStats.containsKey(p.id)) {
         pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
-      } else if (pStats[p.id] is Map &&
-          (pStats[p.id]['team_id'] == null ||
-              pStats[p.id]['team_id'].toString().isEmpty)) {
-        pStats[p.id] = Map<String, dynamic>.from(pStats[p.id] as Map)
-          ..['team_id'] = p.teamId;
+      } else if (pStats[p.id]!['team_id'] == null ||
+          pStats[p.id]!['team_id'].toString().isEmpty) {
+        pStats[p.id]!['team_id'] = p.teamId;
       }
     }
     finalScore['player_stats'] = pStats;
