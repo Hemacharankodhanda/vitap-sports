@@ -396,11 +396,19 @@ class CricketState {
       }
     }
 
+    void setTeam(String pid, String? teamId) {
+      if (teamId != null && teamId.isNotEmpty) {
+        stats.putIfAbsent(pid, () => {});
+        stats[pid]!['team_id'] = teamId;
+      }
+    }
+
     for (final inning in innings) {
       // Batting
       for (final entry in inning.battingStats.entries) {
         final pid = entry.key;
         final r = entry.value;
+        setTeam(pid, inning.battingTeamId);
         add(pid, 'runs_scored', r.runs);
         add(pid, 'balls_faced', r.ballsFaced);
         add(pid, 'fours', r.fours);
@@ -416,6 +424,7 @@ class CricketState {
       for (final entry in inning.bowlingStats.entries) {
         final pid = entry.key;
         final r = entry.value;
+        setTeam(pid, inning.bowlingTeamId);
         add(pid, 'balls_bowled', r.ballsBowled);
         add(pid, 'runs_conceded', r.runsConceded);
         add(pid, 'wickets_taken', r.wickets);
@@ -431,6 +440,7 @@ class CricketState {
         final type = fow['dismissal_type'] as String?;
         final outPlayer = fow['player_id'] as String?;
         if (fielder != null && fielder.isNotEmpty) {
+          setTeam(fielder, inning.bowlingTeamId);
           if (outPlayer != null) creditedDismissals.add(outPlayer);
           if (type == 'caught') add(fielder, 'catches', 1);
           if (type == 'run_out') add(fielder, 'run_outs', 1);
@@ -441,6 +451,7 @@ class CricketState {
         final r = entry.value;
         if (r.isOut && r.fielderId != null && r.fielderId!.isNotEmpty && !creditedDismissals.contains(entry.key)) {
           final fid = r.fielderId!;
+          setTeam(fid, inning.bowlingTeamId);
           if (r.howOut == 'caught') add(fid, 'catches', 1);
           if (r.howOut == 'run_out') add(fid, 'run_outs', 1);
           if (r.howOut == 'stumped') add(fid, 'stumpings', 1);

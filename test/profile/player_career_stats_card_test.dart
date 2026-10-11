@@ -123,5 +123,31 @@ void main() {
       expect(find.text('SAVES'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
     });
+
+    testWidgets('renders properly when career_counters is a JSON string', (tester) async {
+      final cricketRow = {
+        'sport': 'cricket',
+        'sport_display_name': 'Cricket',
+        'matches_played': 2,
+        'career_counters': '{"matches_won":2,"matches_lost":0,"runs_scored":88,"balls_faced":50,"fours":8,"sixes":3}',
+      };
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PlayerCareerStatsCard(sportRow: cricketRow),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Cricket'), findsOneWidget);
+      expect(find.text('2 Matches • 2 W - 0 L (100% Win Rate)'), findsOneWidget);
+      expect(find.text('RUNS'), findsOneWidget);
+      expect(find.text('88'), findsOneWidget);
+      expect(find.text('8'), findsOneWidget); // fours
+    });
   });
 }

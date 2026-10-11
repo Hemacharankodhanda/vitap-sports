@@ -1,5 +1,4 @@
-/// VIT-AP Sports — User model.
-library;
+import 'dart:convert';
 
 class UserModel {
   const UserModel({
@@ -37,25 +36,36 @@ class UserModel {
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final sportsData = json['user_sports'] as List<dynamic>?;
     
-    int totalMatches = json['matches_played'] as int? ?? 0;
-    int totalWins = json['wins'] as int? ?? 0;
-    int totalLosses = json['losses'] as int? ?? 0;
-    int totalMvps = json['mvp_count'] as int? ?? 0;
+    int totalMatches = (json['matches_played'] as num?)?.toInt() ?? 0;
+    int totalWins = (json['wins'] as num?)?.toInt() ?? 0;
+    int totalLosses = (json['losses'] as num?)?.toInt() ?? 0;
+    int totalMvps = (json['mvp_count'] as num?)?.toInt() ?? 0;
     
     final careerStats = json['career_stats'] as List<dynamic>?;
-    if (careerStats != null) {
-      // Overwrite the legacy flat counts with derived aggregates
-      totalMatches = 0;
-      totalWins = 0;
-      totalLosses = 0;
-      totalMvps = 0;
+    if (careerStats != null && careerStats.isNotEmpty) {
+      int derivedMatches = 0;
+      int derivedWins = 0;
+      int derivedLosses = 0;
+      int derivedMvps = 0;
       for (final row in careerStats) {
-        totalMatches += (row['matches_played'] as num?)?.toInt() ?? 0;
-        final counters = row['career_counters'] as Map<String, dynamic>? ?? {};
-        totalWins += (counters['matches_won'] as num?)?.toInt() ?? 0;
-        totalLosses += (counters['matches_lost'] as num?)?.toInt() ?? 0;
-        totalMvps += (counters['mvps'] as num?)?.toInt() ?? 0;
+        if (row is Map) {
+          derivedMatches += (row['matches_played'] as num?)?.toInt() ?? 0;
+          var counters = row['career_counters'];
+          if (counters is String) {
+            try {
+              counters = jsonDecode(counters);
+            } catch (_) {}
+          }
+          final countersMap = (counters as Map<String, dynamic>?) ?? {};
+          derivedWins += (countersMap['matches_won'] as num?)?.toInt() ?? 0;
+          derivedLosses += (countersMap['matches_lost'] as num?)?.toInt() ?? 0;
+          derivedMvps += (countersMap['mvps'] as num?)?.toInt() ?? 0;
+        }
       }
+      if (derivedMatches > 0) totalMatches = derivedMatches;
+      if (derivedWins > 0) totalWins = derivedWins;
+      if (derivedLosses > 0) totalLosses = derivedLosses;
+      if (derivedMvps > 0) totalMvps = derivedMvps;
     }
 
     return UserModel(

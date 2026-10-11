@@ -713,6 +713,32 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
     final result = engine.result(state.scoringState);
     final finalScore = (state.scoringState as dynamic).toJson() as Map<String, dynamic>;
 
+    // Ensure all squad players have an entry in player_stats with their team_id
+    final pStats = Map<String, dynamic>.from(
+      (finalScore['player_stats'] as Map<String, dynamic>?) ?? {},
+    );
+    for (final p in state.homePlayers) {
+      if (!pStats.containsKey(p.id)) {
+        pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
+      } else if (pStats[p.id] is Map &&
+          (pStats[p.id]['team_id'] == null ||
+              pStats[p.id]['team_id'].toString().isEmpty)) {
+        pStats[p.id] = Map<String, dynamic>.from(pStats[p.id] as Map)
+          ..['team_id'] = p.teamId;
+      }
+    }
+    for (final p in state.awayPlayers) {
+      if (!pStats.containsKey(p.id)) {
+        pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
+      } else if (pStats[p.id] is Map &&
+          (pStats[p.id]['team_id'] == null ||
+              pStats[p.id]['team_id'].toString().isEmpty)) {
+        pStats[p.id] = Map<String, dynamic>.from(pStats[p.id] as Map)
+          ..['team_id'] = p.teamId;
+      }
+    }
+    finalScore['player_stats'] = pStats;
+
     state = state.copyWith(isSyncing: true, clearSyncError: true);
     try {
       await _service.finishMatch(

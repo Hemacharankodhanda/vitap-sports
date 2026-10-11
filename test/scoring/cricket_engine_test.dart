@@ -324,6 +324,25 @@ void main() {
       final stats = state.playerStats;
       expect(stats['fielder_x']?['catches'], equals(1));
       expect(stats['fielder_y']?['run_outs'], equals(1));
+      expect(stats['b1']?['team_id'], equals('team_home'));
+      expect(stats['bowl1']?['team_id'], equals('team_away'));
+      expect(stats['fielder_x']?['team_id'], equals('team_away'));
+    });
+
+    test('engine result provides winner_team_id, loser_team_id, and is_draw', () {
+      final state = engine.initialState(
+        config,
+        homeId: 'team_home',
+        awayId: 'team_away',
+      ).copyWith(
+        isCompleted: true,
+        winnerTeamId: 'team_home',
+      );
+
+      final res = engine.result(state);
+      expect(res['winner_team_id'], equals('team_home'));
+      expect(res['loser_team_id'], equals('team_away'));
+      expect(res['is_draw'], isFalse);
     });
   });
 }

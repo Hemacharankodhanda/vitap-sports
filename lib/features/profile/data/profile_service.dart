@@ -3,6 +3,7 @@
 /// CRUD operations for user profile + user_sports in Supabase.
 library;
 
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -61,6 +62,11 @@ class ProfileService {
     for (final raw in (statsResponse as List<dynamic>)) {
       if (raw is Map) {
         final row = Map<String, dynamic>.from(raw);
+        if (row['career_counters'] is String) {
+          try {
+            row['career_counters'] = jsonDecode(row['career_counters'] as String);
+          } catch (_) {}
+        }
         final rawSport = row['sport']?.toString() ?? 'cricket';
         final resolvedSport = sportIdToName[rawSport] ?? rawSport;
         row['sport'] = resolvedSport.toLowerCase();
@@ -81,6 +87,28 @@ class ProfileService {
           'career_counters': <String, dynamic>{},
         });
         sportsWithStats.add(entry.toLowerCase());
+      }
+    }
+
+    // If there is only one sport with matches or single sport, and career_counters has 0 wins/losses while users row has stats, bridge them
+    if (resolvedStats.isNotEmpty) {
+      final activeSports = resolvedStats.where((s) => ((s['matches_played'] as num?)?.toInt() ?? 0) > 0).toList();
+      final target = activeSports.length == 1 ? activeSports.first : (resolvedStats.length == 1 ? resolvedStats.first : null);
+      if (target != null) {
+        final counters = Map<String, dynamic>.from((target['career_counters'] as Map<String, dynamic>?) ?? {});
+        final userWins = (response['wins'] as num?)?.toInt() ?? 0;
+        final userLosses = (response['losses'] as num?)?.toInt() ?? 0;
+        final userMvps = (response['mvp_count'] as num?)?.toInt() ?? 0;
+        if (((counters['matches_won'] as num?)?.toInt() ?? 0) == 0 && userWins > 0) {
+          counters['matches_won'] = userWins;
+        }
+        if (((counters['matches_lost'] as num?)?.toInt() ?? 0) == 0 && userLosses > 0) {
+          counters['matches_lost'] = userLosses;
+        }
+        if (((counters['mvps'] as num?)?.toInt() ?? 0) == 0 && userMvps > 0) {
+          counters['mvps'] = userMvps;
+        }
+        target['career_counters'] = counters;
       }
     }
 
