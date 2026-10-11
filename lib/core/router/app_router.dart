@@ -188,7 +188,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'scorecard',
-                        builder: (_, state) => ScorecardViewScreen(
+                        builder: (_, state) => MatchAnalysisScreen(
                           matchId: state.pathParameters['id']!,
                         ),
                       ),

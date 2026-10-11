@@ -27,7 +27,7 @@ class MatchAnalysisScreen extends ConsumerStatefulWidget {
 }
 
 class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
-  int _selectedTabIndex = 0; // 0 = Player Stats, 1 = Scorecard
+  int _selectedTabIndex = 0; // 0 = Scorecard, 1 = Player Performance
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Match Analysis'),
+        title: const Text('Scorecard'),
       ),
       body: matchAsync.when(
         loading: () => const LoadingIndicator(),
@@ -157,7 +157,7 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
 
               return Column(
                 children: [
-                  // Tab selector: Player Stats vs Full Scorecard
+                  // Tab selector: Scorecard vs Player Performance
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.screenMargin,
@@ -166,13 +166,13 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                     child: Row(
                       children: [
                         AppChip(
-                          label: 'Player Performance',
+                          label: 'Scorecard',
                           isSelected: _selectedTabIndex == 0,
                           onTap: () => setState(() => _selectedTabIndex = 0),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         AppChip(
-                          label: 'Full Scorecard',
+                          label: 'Player Performance',
                           isSelected: _selectedTabIndex == 1,
                           onTap: () => setState(() => _selectedTabIndex = 1),
                         ),
@@ -182,7 +182,16 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
 
                   Expanded(
                     child: _selectedTabIndex == 0
-                        ? (resolvedPlayerStats.isEmpty
+                        ? ListView(
+                            padding: const EdgeInsets.all(AppSpacing.screenMargin),
+                            children: [
+                              ProfessionalScorecard(
+                                match: match,
+                                playerNames: playerNames,
+                              ),
+                            ],
+                          )
+                        : (resolvedPlayerStats.isEmpty
                             ? const Center(
                                 child: Text('No player stats available for this match.'),
                               )
@@ -211,16 +220,7 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                                     const SizedBox(height: AppSpacing.md),
                                   ],
                                 ],
-                              ))
-                        : ListView(
-                            padding: const EdgeInsets.all(AppSpacing.screenMargin),
-                            children: [
-                              ProfessionalScorecard(
-                                match: match,
-                                playerNames: playerNames,
-                              ),
-                            ],
-                          ),
+                              )),
                   ),
                 ],
               );
