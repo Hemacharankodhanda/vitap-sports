@@ -56,6 +56,38 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
               onRetry: () => ref.invalidate(matchAnalysisProvider(widget.matchId)),
             ),
             data: (statsData) {
+              final playerNames = ref.watch(matchPlayerNamesProvider(match)).valueOrNull ?? const <String, String>{};
+
+              String resolveDisplayName(String pId, MatchParticipant? participant) {
+                if (participant?.userName != null && participant!.userName!.isNotEmpty) {
+                  return participant.userName!;
+                }
+                if (playerNames.containsKey(pId) && playerNames[pId]!.isNotEmpty) {
+                  return playerNames[pId]!;
+                }
+                if (match.score != null) {
+                  final pNames = match.score!['player_names'];
+                  if (pNames is Map && pNames[pId] != null && pNames[pId].toString().isNotEmpty) {
+                    return pNames[pId].toString();
+                  }
+                  final pStats = match.score!['player_stats'];
+                  if (pStats is Map && pStats[pId] is Map && pStats[pId]['name'] != null) {
+                    final n = pStats[pId]['name'].toString();
+                    if (n.isNotEmpty) return n;
+                  }
+                }
+                if (pId.startsWith('home_p_')) {
+                  return '${match.homeTeamName ?? "Home"} Player ${pId.replaceFirst('home_p_', '')}';
+                }
+                if (pId.startsWith('away_p_')) {
+                  return '${match.awayTeamName ?? "Away"} Player ${pId.replaceFirst('away_p_', '')}';
+                }
+                if (pId.length == 36 && pId.contains('-')) {
+                  return 'Player';
+                }
+                return pId;
+              }
+
               // 1. Resolve player stats (from player_match_stats DB table or match.score JSON)
               List<Map<String, dynamic>> resolvedPlayerStats = List.from(statsData);
 
@@ -80,12 +112,25 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                       'player_id': pId,
                       'team_id': participant?.teamId,
                       'users': {
-                        'name': participant?.userName ?? pId,
+                        'name': resolveDisplayName(pId, participant),
                         'avatar_url': participant?.userAvatar,
                       },
                       'counters': counters,
                     });
                   }
+                }
+              }
+
+              // Ensure any rows from DB missing user names are resolved
+              for (final row in resolvedPlayerStats) {
+                final pId = row['player_id']?.toString() ?? '';
+                final usersMap = row['users'] as Map<String, dynamic>?;
+                final curName = usersMap?['name'] as String?;
+                if (curName == null || curName.isEmpty || (curName.length == 36 && curName.contains('-'))) {
+                  row['users'] = {
+                    'name': resolveDisplayName(pId, null),
+                    'avatar_url': usersMap?['avatar_url'],
+                  };
                 }
               }
 
@@ -168,7 +213,10 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                         : ListView(
                             padding: const EdgeInsets.all(AppSpacing.screenMargin),
                             children: [
-                              ProfessionalScorecard(match: match),
+                              ProfessionalScorecard(
+                                match: match,
+                                playerNames: playerNames,
+                              ),
                             ],
                           ),
                   ),
