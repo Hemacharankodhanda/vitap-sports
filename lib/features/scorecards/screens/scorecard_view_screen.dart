@@ -475,8 +475,8 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     required bool isDark,
   }) {
     final teamName = event.teamId == homeId ? homeName : awayName;
-    final iconData = _getEventIcon(event.type);
-    final iconColor = _getEventColor(event.type);
+    final iconData = _getEventIcon(event);
+    final iconColor = _getEventColor(event);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -529,8 +529,9 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     );
   }
 
-  IconData _getEventIcon(String type) {
-    switch (type) {
+  IconData _getEventIcon(MatchEvent event) {
+    if (event.payload['is_wicket'] == true) return Icons.sports_cricket_rounded;
+    switch (event.type) {
       case 'goal':
       case 'own_goal':
         return Icons.sports_soccer_rounded;
@@ -548,8 +549,9 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     }
   }
 
-  Color _getEventColor(String type) {
-    switch (type) {
+  Color _getEventColor(MatchEvent event) {
+    if (event.payload['is_wicket'] == true) return AppColors.error;
+    switch (event.type) {
       case 'goal':
       case 'rally_won':
         return AppColors.success;
@@ -579,7 +581,12 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
       case 'wicket':
         return 'WICKET! ($teamName)';
       case 'delivery':
-        final runs = event.payload['runs'] ?? 0;
+        if (event.payload['is_wicket'] == true) {
+          final dismissal = event.payload['dismissal_type'] as String?;
+          final dismissalText = dismissal != null ? ' (${dismissal.replaceAll('_', ' ')})' : '';
+          return 'WICKET!$dismissalText ($teamName)';
+        }
+        final runs = event.payload['runs'] ?? event.payload['runs_completed'] ?? 0;
         return '$runs Run${runs == 1 ? "" : "s"} ($teamName)';
       default:
         return event.type.replaceAll('_', ' ').toUpperCase();
@@ -590,8 +597,12 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     if (event.payload.containsKey('scorer')) {
       return 'Scorer: ${event.payload['scorer']} (${event.payload['kind'] ?? "open play"})';
     }
-    if (event.payload.containsKey('dismissal_type')) {
-      return '${event.payload['dismissal_type']} • Batter: ${event.payload['dismissed_batter_id'] ?? "Striker"}';
+    if (event.payload.containsKey('dismissal_type') || event.payload['is_wicket'] == true) {
+      final dismissal = event.payload['dismissal_type'] ?? 'out';
+      final batter = event.payload['out_batter_id'] ?? event.payload['dismissed_batter_id'] ?? "Striker";
+      final runs = event.payload['runs'] ?? event.payload['runs_completed'];
+      final runsText = runs != null && (runs as num) > 0 ? ' • $runs runs completed' : '';
+      return '$dismissal • Batter: $batter$runsText';
     }
     if (event.payload.containsKey('reason')) {
       return 'Reason: ${event.payload['reason']}';

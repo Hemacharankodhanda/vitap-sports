@@ -208,10 +208,14 @@ class ActionDialogs {
                           }
 
                           Navigator.pop(ctx, {
+                            'is_wicket': true,
+                            'kind': 'normal',
                             'dismissal_type': dismissalType,
+                            'out_batter_id': dismissedBatterId,
                             'dismissed_batter_id': dismissedBatterId,
                             'new_batter_id': finalNewBatterId,
                             'fielder_id': finalFielderId,
+                            'runs': runOutRuns,
                             'runs_completed': runOutRuns,
                             'batters_crossed': battersCrossed,
                           });
