@@ -62,6 +62,8 @@ class MatchService {
     String? description,
     String? homeTeamId,
     String? awayTeamId,
+    List<String>? homePlayerIds,
+    List<String>? awayPlayerIds,
   }) async {
     final response = await _client.from('matches').insert({
       'sport_id': sportId,
@@ -81,6 +83,17 @@ class MatchService {
         'team_id': homeTeamId,
         'side': 'home',
       });
+
+      if (homePlayerIds != null && homePlayerIds.isNotEmpty) {
+        final rows = homePlayerIds.map((userId) => {
+          'match_id': matchId,
+          'team_id': homeTeamId,
+          'user_id': userId,
+          'side': 'home',
+          'rsvp_status': 'confirmed',
+        }).toList();
+        await _client.from('match_participants').insert(rows);
+      }
     }
     if (awayTeamId != null) {
       await _client.from('match_participants').insert({
@@ -88,6 +101,17 @@ class MatchService {
         'team_id': awayTeamId,
         'side': 'away',
       });
+
+      if (awayPlayerIds != null && awayPlayerIds.isNotEmpty) {
+        final rows = awayPlayerIds.map((userId) => {
+          'match_id': matchId,
+          'team_id': awayTeamId,
+          'user_id': userId,
+          'side': 'away',
+          'rsvp_status': 'confirmed',
+        }).toList();
+        await _client.from('match_participants').insert(rows);
+      }
     }
 
     return (await getMatch(matchId))!;

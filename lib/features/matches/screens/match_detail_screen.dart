@@ -202,29 +202,8 @@ class MatchDetailScreen extends ConsumerWidget {
                         ? AppButtonVariant.primary
                         : AppButtonVariant.secondary;
 
-                    final homeName = (homeTeam.isNotEmpty ? homeTeam.first.teamName : null) ?? match.homeTeamName ?? 'Team 1';
-                    final awayName = (awayTeam.isNotEmpty ? awayTeam.first.teamName : null) ?? match.awayTeamName ?? 'Team 2';
-
                     return Column(
                       children: [
-                        if (homeTeam.isNotEmpty && homeTeam.first.teamId != null) ...[
-                          AppButton(
-                            label: 'Manage $homeName Squad',
-                            onPressed: () => context.go('/matches/$matchId/squad/${homeTeam.first.teamId}/home'),
-                            icon: Icons.group_add_rounded,
-                            variant: AppButtonVariant.secondary,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                        ],
-                        if (awayTeam.isNotEmpty && awayTeam.first.teamId != null) ...[
-                          AppButton(
-                            label: 'Manage $awayName Squad',
-                            onPressed: () => context.go('/matches/$matchId/squad/${awayTeam.first.teamId}/away'),
-                            icon: Icons.group_add_rounded,
-                            variant: AppButtonVariant.secondary,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                        ],
                         AppButton(
                           label: buttonLabel,
                           onPressed: () => context.go('/matches/$matchId/scorecard/edit'),
