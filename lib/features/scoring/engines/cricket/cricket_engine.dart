@@ -551,11 +551,17 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
   @override
   Map<String, dynamic> result(CricketState state) {
+    final winnerId = state.winnerTeamId;
+    final loserId = winnerId == null
+        ? null
+        : (winnerId == state.homeId ? state.awayId : state.homeId);
     return {
       'innings': state.innings.map((i) => i.toJson()).toList(),
-      'winner_team_id': state.winnerTeamId,
-      'result_margin': state.resultMarginText,
+      'winner_team_id': winnerId,
+      'loser_team_id': loserId,
+      'is_draw': state.isTie,
       'is_tie': state.isTie,
+      'result_margin': state.resultMarginText,
       'target': state.target,
     };
   }

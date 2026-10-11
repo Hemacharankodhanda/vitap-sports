@@ -423,12 +423,17 @@ class FootballEngine extends ScoringEngine<FootballState, FootballConfig> {
 
   @override
   Map<String, dynamic> result(FootballState state) {
+    final winnerId = state.winnerId;
+    final loserId = winnerId == null
+        ? null
+        : (winnerId == state.homeId ? state.awayId : state.homeId);
     return {
       'home_score': state.homeScore,
       'away_score': state.awayScore,
       'shootout_home_score': state.shootoutHomeScore,
       'shootout_away_score': state.shootoutAwayScore,
-      'winner_team_id': state.winnerId,
+      'winner_team_id': winnerId,
+      'loser_team_id': loserId,
       'is_draw': state.isDraw,
       'forfeit_team_id': state.forfeitTeamId,
       'shootout_completed': state.shootoutCompleted,

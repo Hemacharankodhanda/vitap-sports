@@ -3,6 +3,8 @@
 /// Designed according to Apple HIG 8pt grid with rich contrast and scannability.
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -26,7 +28,13 @@ class PlayerCareerStatsCard extends StatelessWidget {
         (sportRaw.isNotEmpty ? '${sportRaw[0].toUpperCase()}${sportRaw.substring(1)}' : 'Cricket');
     
     final matchesPlayed = (sportRow['matches_played'] as num?)?.toInt() ?? 0;
-    final counters = (sportRow['career_counters'] as Map<String, dynamic>?) ?? {};
+    var rawCounters = sportRow['career_counters'];
+    if (rawCounters is String) {
+      try {
+        rawCounters = jsonDecode(rawCounters);
+      } catch (_) {}
+    }
+    final counters = (rawCounters as Map<String, dynamic>?) ?? {};
 
     final wins = (counters['matches_won'] as num?)?.toInt() ?? 0;
     final losses = (counters['matches_lost'] as num?)?.toInt() ?? 0;
