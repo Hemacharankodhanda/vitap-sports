@@ -155,6 +155,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               }
 
               final matchStatus = rawStreamMatch?['status'] as String? ?? matchDetail.status;
+              final playerNames = ref.watch(matchPlayerNamesProvider(matchDetail)).valueOrNull ?? const <String, String>{};
 
               return RefreshIndicator(
                 onRefresh: () async {
@@ -177,6 +178,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                       awayName: awayName,
                       status: matchStatus,
                       isDark: isDark,
+                      playerNames: playerNames,
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
@@ -184,6 +186,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                     ProfessionalScorecard(
                       match: matchDetail,
                       scoringState: derivedState,
+                      playerNames: playerNames,
                     ),
                     const SizedBox(height: AppSpacing.xl),
 
@@ -232,6 +235,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                             awayName: awayName,
                             sport: sport,
                             isDark: isDark,
+                            playerNames: playerNames,
                           )),
                   ],
                 ),
@@ -284,8 +288,33 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     required String awayName,
     required String status,
     required bool isDark,
+    required Map<String, String> playerNames,
   }) {
     final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+
+    String resolvePlayer(String? id) {
+      if (id == null || id.isEmpty) return 'Player';
+      if (playerNames.containsKey(id) && playerNames[id]!.isNotEmpty) {
+        return playerNames[id]!;
+      }
+      if (matchDetail.score != null) {
+        final pNames = matchDetail.score['player_names'];
+        if (pNames is Map && pNames[id] != null && pNames[id].toString().isNotEmpty) {
+          return pNames[id].toString();
+        }
+        final pStats = matchDetail.score['player_stats'];
+        if (pStats is Map && pStats[id] is Map && pStats[id]['name'] != null) {
+          final n = pStats[id]['name'].toString();
+          if (n.isNotEmpty) return n;
+        }
+      }
+      final p = matchDetail.participants.where((e) => e.userId == id || e.teamId == id).firstOrNull;
+      if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
+      if (id.startsWith('home_p_')) return '$homeName Player ${id.replaceFirst('home_p_', '')}';
+      if (id.startsWith('away_p_')) return '$awayName Player ${id.replaceFirst('away_p_', '')}';
+      if (id.length == 36 && id.contains('-')) return 'Player';
+      return id;
+    }
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -410,12 +439,12 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                   children: [
                     if (derivedState.activeInnings!.strikerId != null)
                       Text(
-                        '🏏 ${derivedState.activeInnings!.strikerId}*',
+                        '🏏 ${resolvePlayer(derivedState.activeInnings!.strikerId)}*',
                         style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
                       ),
                     if (derivedState.activeInnings!.nonStrikerId != null)
                       Text(
-                        '${derivedState.activeInnings!.nonStrikerId}',
+                        resolvePlayer(derivedState.activeInnings!.nonStrikerId),
                         style: AppTypography.body.copyWith(color: secondaryText),
                       ),
                   ],
@@ -423,7 +452,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                 if (derivedState.activeInnings!.currentBowlerId != null) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    '⚾ Bowler: ${derivedState.activeInnings!.currentBowlerId}',
+                    '⚾ Bowler: ${resolvePlayer(derivedState.activeInnings!.currentBowlerId)}',
                     style: AppTypography.caption.copyWith(color: secondaryText),
                   ),
                 ],
@@ -473,6 +502,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     required String awayName,
     required String sport,
     required bool isDark,
+    required Map<String, String> playerNames,
   }) {
     final teamName = event.teamId == homeId ? homeName : awayName;
     final iconData = _getEventIcon(event);
@@ -509,7 +539,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                   style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  _formatEventSubtitle(event),
+                  _formatEventSubtitle(event, playerNames),
                   style: AppTypography.caption.copyWith(
                     color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                   ),
@@ -593,13 +623,26 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     }
   }
 
-  String _formatEventSubtitle(MatchEvent event) {
+  String _formatEventSubtitle(MatchEvent event, Map<String, String> playerNames) {
+    String resolvePlayer(String? id) {
+      if (id == null || id.isEmpty) return 'Player';
+      if (playerNames.containsKey(id) && playerNames[id]!.isNotEmpty) {
+        return playerNames[id]!;
+      }
+      if (id.startsWith('home_p_') || id.startsWith('away_p_')) return 'Player';
+      if (id.length == 36 && id.contains('-')) return 'Player';
+      return id;
+    }
+
     if (event.payload.containsKey('scorer')) {
-      return 'Scorer: ${event.payload['scorer']} (${event.payload['kind'] ?? "open play"})';
+      final rawScorer = event.payload['scorer']?.toString();
+      final scorer = resolvePlayer(rawScorer);
+      return 'Scorer: $scorer (${event.payload['kind'] ?? "open play"})';
     }
     if (event.payload.containsKey('dismissal_type') || event.payload['is_wicket'] == true) {
       final dismissal = event.payload['dismissal_type'] ?? 'out';
-      final batter = event.payload['out_batter_id'] ?? event.payload['dismissed_batter_id'] ?? "Striker";
+      final rawBatter = event.payload['out_batter_id'] ?? event.payload['dismissed_batter_id'] ?? "Striker";
+      final batter = resolvePlayer(rawBatter.toString());
       final runs = event.payload['runs'] ?? event.payload['runs_completed'];
       final runsText = runs != null && (runs as num) > 0 ? ' • $runs runs completed' : '';
       return '$dismissal • Batter: $batter$runsText';

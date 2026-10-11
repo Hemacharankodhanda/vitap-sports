@@ -13,10 +13,12 @@ class ProfessionalScorecard extends StatelessWidget {
     super.key,
     required this.match,
     this.scoringState,
+    this.playerNames,
   });
 
   final MatchModel match;
   final dynamic scoringState;
+  final Map<String, String>? playerNames;
 
   @override
   Widget build(BuildContext context) {
@@ -38,9 +40,9 @@ class ProfessionalScorecard extends StatelessWidget {
     }
 
     if (resolvedState is CricketState) {
-      return _CricketScorecard(state: resolvedState, match: match);
+      return _CricketScorecard(state: resolvedState, match: match, playerNames: playerNames);
     } else if (resolvedState is FootballState) {
-      return _FootballScorecard(state: resolvedState, match: match);
+      return _FootballScorecard(state: resolvedState, match: match, playerNames: playerNames);
     } else if (resolvedState is BadmintonState) {
       return _BadmintonScorecard(state: resolvedState, match: match);
     }
@@ -76,15 +78,81 @@ class ProfessionalScorecard extends StatelessWidget {
 }
 
 class _CricketScorecard extends StatelessWidget {
-  const _CricketScorecard({required this.state, required this.match});
+  const _CricketScorecard({
+    required this.state,
+    required this.match,
+    this.playerNames,
+  });
   final CricketState state;
   final MatchModel match;
+  final Map<String, String>? playerNames;
 
   String _getPlayerName(String? id) {
-    if (id == null || id.isEmpty) return 'Unknown';
-    final p = match.participants.where((e) => e.userId == id).firstOrNull;
+    if (id == null || id.isEmpty) return 'Player';
+    // 1. Explicit playerNames map passed in
+    if (playerNames != null && playerNames![id] != null && playerNames![id]!.isNotEmpty) {
+      return playerNames![id]!;
+    }
+    // 2. Embedded in match.score
+    if (match.score != null) {
+      final pNames = match.score!['player_names'];
+      if (pNames is Map && pNames[id] != null && pNames[id].toString().isNotEmpty) {
+        return pNames[id].toString();
+      }
+      final pStats = match.score!['player_stats'];
+      if (pStats is Map && pStats[id] is Map && pStats[id]['name'] != null) {
+        final n = pStats[id]['name'].toString();
+        if (n.isNotEmpty) return n;
+      }
+    }
+    // 3. Match participants
+    final p = match.participants.where((e) => e.userId == id || e.teamId == id).firstOrNull;
     if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
+    if (p?.teamName != null && p!.teamName!.isNotEmpty) return p.teamName!;
+
+    // 4. Default player labels
+    if (id.startsWith('home_p_')) {
+      final num = id.replaceFirst('home_p_', '');
+      return '${match.homeTeamName ?? "Home"} Player $num';
+    }
+    if (id.startsWith('away_p_')) {
+      final num = id.replaceFirst('away_p_', '');
+      return '${match.awayTeamName ?? "Away"} Player $num';
+    }
+
+    // 5. Hide ugly UUIDs with fallback
+    if (id.length == 36 && id.contains('-')) {
+      return 'Player';
+    }
     return id;
+  }
+
+  String _formatDismissal(BatterRecord batter) {
+    final how = batter.howOut?.toLowerCase().trim();
+    if (how == null || how.isEmpty) return 'out';
+    final bowlerName = batter.bowlerId != null ? _getPlayerName(batter.bowlerId) : null;
+    final fielderName = batter.fielderId != null ? _getPlayerName(batter.fielderId) : null;
+
+    if (how == 'bowled') {
+      return bowlerName != null ? 'b $bowlerName' : 'bowled';
+    } else if (how == 'caught') {
+      if (fielderName != null && bowlerName != null) {
+        return fielderName == bowlerName ? 'c & b $bowlerName' : 'c $fielderName b $bowlerName';
+      }
+      return bowlerName != null ? 'c ... b $bowlerName' : 'caught';
+    } else if (how == 'lbw') {
+      return bowlerName != null ? 'lbw b $bowlerName' : 'lbw';
+    } else if (how == 'run_out' || how == 'run out') {
+      return fielderName != null ? 'run out ($fielderName)' : 'run out';
+    } else if (how == 'stumped') {
+      if (fielderName != null && bowlerName != null) {
+        return 'st $fielderName b $bowlerName';
+      }
+      return 'stumped';
+    } else if (how == 'hit_wicket') {
+      return bowlerName != null ? 'hit wicket b $bowlerName' : 'hit wicket';
+    }
+    return how;
   }
 
   String _getTeamName(String? id) {
@@ -180,7 +248,7 @@ class _CricketScorecard extends StatelessWidget {
                     ),
                     if (batter.isOut && batter.howOut != null)
                       Text(
-                        batter.howOut!,
+                        _formatDismissal(batter),
                         style: TextStyle(fontSize: 10, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                       )
                   ],
@@ -241,14 +309,48 @@ class _CricketScorecard extends StatelessWidget {
 }
 
 class _FootballScorecard extends StatelessWidget {
-  const _FootballScorecard({required this.state, required this.match});
+  const _FootballScorecard({
+    required this.state,
+    required this.match,
+    this.playerNames,
+  });
   final FootballState state;
   final MatchModel match;
+  final Map<String, String>? playerNames;
   
   String _getPlayerName(String? id) {
-    if (id == null) return 'Unknown';
-    final p = match.participants.where((e) => e.userId == id).firstOrNull;
-    return p?.userName ?? id;
+    if (id == null || id.isEmpty) return 'Player';
+    if (playerNames != null && playerNames![id] != null && playerNames![id]!.isNotEmpty) {
+      return playerNames![id]!;
+    }
+    if (match.score != null) {
+      final pNames = match.score!['player_names'];
+      if (pNames is Map && pNames[id] != null && pNames[id].toString().isNotEmpty) {
+        return pNames[id].toString();
+      }
+      final pStats = match.score!['player_stats'];
+      if (pStats is Map && pStats[id] is Map && pStats[id]['name'] != null) {
+        final n = pStats[id]['name'].toString();
+        if (n.isNotEmpty) return n;
+      }
+    }
+    final p = match.participants.where((e) => e.userId == id || e.teamId == id).firstOrNull;
+    if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
+    if (p?.teamName != null && p!.teamName!.isNotEmpty) return p.teamName!;
+
+    if (id.startsWith('home_p_')) {
+      final num = id.replaceFirst('home_p_', '');
+      return '${match.homeTeamName ?? "Home"} Player $num';
+    }
+    if (id.startsWith('away_p_')) {
+      final num = id.replaceFirst('away_p_', '');
+      return '${match.awayTeamName ?? "Away"} Player $num';
+    }
+
+    if (id.length == 36 && id.contains('-')) {
+      return 'Player';
+    }
+    return id;
   }
 
   @override

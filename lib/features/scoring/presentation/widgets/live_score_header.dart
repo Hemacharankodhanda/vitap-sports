@@ -142,9 +142,13 @@ class LiveScoreHeader extends StatelessWidget {
     String playerName(String? id) {
       if (id == null || id.isEmpty) return 'Player';
       final match = [...state.homePlayers, ...state.awayPlayers]
-          .where((p) => p.id == id)
+          .where((p) => p.id == id || p.name == id)
           .firstOrNull;
-      return match?.name ?? id;
+      if (match?.name != null && match!.name.isNotEmpty) return match.name;
+      if (id.startsWith('home_p_')) return '${state.homeName} Player ${id.replaceFirst('home_p_', '')}';
+      if (id.startsWith('away_p_')) return '${state.awayName} Player ${id.replaceFirst('away_p_', '')}';
+      if (id.length == 36 && id.contains('-')) return 'Player';
+      return id;
     }
 
     return Column(

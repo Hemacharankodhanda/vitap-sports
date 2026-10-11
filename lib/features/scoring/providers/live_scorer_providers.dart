@@ -716,8 +716,11 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
     // Remap any player names to their user UUID from squads
     final allSquadPlayers = [...state.homePlayers, ...state.awayPlayers];
     final nameToId = <String, String>{};
+    final idToName = <String, String>{};
     for (final p in allSquadPlayers) {
       nameToId[p.name.trim().toLowerCase()] = p.id;
+      idToName[p.id] = p.name;
+      idToName[p.name] = p.name;
     }
 
     final rawPStats = Map<String, dynamic>.from(
@@ -750,21 +753,33 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
 
     for (final p in state.homePlayers) {
       if (!pStats.containsKey(p.id)) {
-        pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
-      } else if (pStats[p.id]!['team_id'] == null ||
-          pStats[p.id]!['team_id'].toString().isEmpty) {
-        pStats[p.id]!['team_id'] = p.teamId;
+        pStats[p.id] = <String, dynamic>{'team_id': p.teamId, 'name': p.name};
+      } else {
+        pStats[p.id]!['name'] = p.name;
+        if (pStats[p.id]!['team_id'] == null ||
+            pStats[p.id]!['team_id'].toString().isEmpty) {
+          pStats[p.id]!['team_id'] = p.teamId;
+        }
       }
     }
     for (final p in state.awayPlayers) {
       if (!pStats.containsKey(p.id)) {
-        pStats[p.id] = <String, dynamic>{'team_id': p.teamId};
-      } else if (pStats[p.id]!['team_id'] == null ||
-          pStats[p.id]!['team_id'].toString().isEmpty) {
-        pStats[p.id]!['team_id'] = p.teamId;
+        pStats[p.id] = <String, dynamic>{'team_id': p.teamId, 'name': p.name};
+      } else {
+        pStats[p.id]!['name'] = p.name;
+        if (pStats[p.id]!['team_id'] == null ||
+            pStats[p.id]!['team_id'].toString().isEmpty) {
+          pStats[p.id]!['team_id'] = p.teamId;
+        }
+      }
+    }
+    for (final entry in pStats.entries) {
+      if (idToName.containsKey(entry.key) && entry.value['name'] == null) {
+        entry.value['name'] = idToName[entry.key];
       }
     }
     finalScore['player_stats'] = pStats;
+    finalScore['player_names'] = idToName;
 
     state = state.copyWith(isSyncing: true, clearSyncError: true);
     try {
