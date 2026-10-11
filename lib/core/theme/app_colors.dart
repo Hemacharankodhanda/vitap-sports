@@ -33,9 +33,40 @@ class AppColors {
   static const Color cancelled = Color(0xFFB91C1C);
   static const Color cancelledSurface = Color(0x14B91C1C);
 
-  static const Color success = Color(0xFF15803D);
-  static const Color warning = Color(0xFFD97706);
-  static const Color error = Color(0xFFDC2626);
+  static const Color success = win;
+  static const Color error = loss;
+
+  // ─── Status / Additional Tokens (Component Spec) ─────────
+  static const Color borderStrongLight = Color(0xFFCBD5E1);
+  static const Color borderStrongDark = Color(0xFF334155);
+
+  static const Color warningLight = Color(0xFFB45309);
+  static const Color warningDark = Color(0xFFFBBF24);
+
+  static const Color warning = warningLight;
+
+  // ─── Container Tints (10% on light, 16% on dark) ──────────
+  static const Color accentContainerLight = Color(0x1A2563EB); // 10%
+  static const Color accentContainerDark = Color(0x2960A5FA); // 16%
+
+  static const Color liveContainerLight = Color(0x1ADC2626);
+  static const Color liveContainerDark = Color(0x29F87171);
+
+  static const Color winContainerLight = Color(0x1A15803D);
+  static const Color winContainerDark = Color(0x294ADE80);
+
+  static const Color lossContainerLight = Color(0x1AB91C1C);
+  static const Color lossContainerDark = Color(0x29F87171);
+
+  static const Color warningContainerLight = Color(0x1AB45309);
+  static const Color warningContainerDark = Color(0x29FBBF24);
+
+  // ─── State Overlays ───────────────────────────────────────
+  static const double overlayHover = 0.08;
+  static const double overlayFocus = 0.12;
+  static const double overlayPressed = 0.12;
+  static const double overlayDisabledContent = 0.38;
+  static const double overlayDisabledContainer = 0.12;
 
   // ─── Light Mode ───────────────────────────────────────────
   static const Color lightBackground = Color(0xFFF7F8FA);
@@ -69,39 +100,66 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     required this.surface,
     required this.surfaceVariant,
     required this.border,
+    required this.borderStrong,
     required this.textPrimary,
     required this.textSecondary,
     required this.textTertiary,
     required this.accent,
+    required this.onAccent,
+    required this.accentContainer,
     required this.live,
+    required this.liveContainer,
     required this.win,
+    required this.winContainer,
     required this.loss,
+    required this.lossContainer,
+    required this.warning,
+    required this.warningContainer,
   });
 
   final Color background;
   final Color surface;
   final Color surfaceVariant;
   final Color border;
+  final Color borderStrong;
   final Color textPrimary;
   final Color textSecondary;
   final Color textTertiary;
   final Color accent;
+  final Color onAccent;
+  final Color accentContainer;
   final Color live;
+  final Color liveContainer;
   final Color win;
+  final Color winContainer;
   final Color loss;
+  final Color lossContainer;
+  final Color warning;
+  final Color warningContainer;
+
+  Color get negative => loss;
+  Color get negativeContainer => lossContainer;
 
   static const light = AppColorsExtension(
     background: AppColors.lightBackground,
     surface: AppColors.lightSurface,
     surfaceVariant: AppColors.lightSurfaceVariant,
     border: AppColors.lightDivider,
+    borderStrong: AppColors.borderStrongLight,
     textPrimary: AppColors.lightTextPrimary,
     textSecondary: AppColors.lightTextSecondary,
     textTertiary: AppColors.lightTextTertiary,
     accent: Color(0xFF2563EB),
+    onAccent: Colors.white,
+    accentContainer: AppColors.accentContainerLight,
     live: AppColors.live,
+    liveContainer: AppColors.liveContainerLight,
     win: AppColors.win,
+    winContainer: AppColors.winContainerLight,
     loss: AppColors.loss,
+    lossContainer: AppColors.lossContainerLight,
+    warning: AppColors.warningLight,
+    warningContainer: AppColors.warningContainerLight,
   );
 
   static const dark = AppColorsExtension(
@@ -109,13 +167,21 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     surface: AppColors.darkSurface,
     surfaceVariant: AppColors.darkSurfaceVariant,
     border: AppColors.darkDivider,
+    borderStrong: AppColors.borderStrongDark,
     textPrimary: AppColors.darkTextPrimary,
     textSecondary: AppColors.darkTextSecondary,
     textTertiary: AppColors.darkTextTertiary,
     accent: Color(0xFF60A5FA),
+    onAccent: AppColors.darkBackground,
+    accentContainer: AppColors.accentContainerDark,
     live: AppColors.liveDark,
+    liveContainer: AppColors.liveContainerDark,
     win: AppColors.winDark,
+    winContainer: AppColors.winContainerDark,
     loss: AppColors.lossDark,
+    lossContainer: AppColors.lossContainerDark,
+    warning: AppColors.warningDark,
+    warningContainer: AppColors.warningContainerDark,
   );
 
   @override
@@ -124,26 +190,42 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
     Color? surface,
     Color? surfaceVariant,
     Color? border,
+    Color? borderStrong,
     Color? textPrimary,
     Color? textSecondary,
     Color? textTertiary,
     Color? accent,
+    Color? onAccent,
+    Color? accentContainer,
     Color? live,
+    Color? liveContainer,
     Color? win,
+    Color? winContainer,
     Color? loss,
+    Color? lossContainer,
+    Color? warning,
+    Color? warningContainer,
   }) {
     return AppColorsExtension(
       background: background ?? this.background,
       surface: surface ?? this.surface,
       surfaceVariant: surfaceVariant ?? this.surfaceVariant,
       border: border ?? this.border,
+      borderStrong: borderStrong ?? this.borderStrong,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textTertiary: textTertiary ?? this.textTertiary,
       accent: accent ?? this.accent,
+      onAccent: onAccent ?? this.onAccent,
+      accentContainer: accentContainer ?? this.accentContainer,
       live: live ?? this.live,
+      liveContainer: liveContainer ?? this.liveContainer,
       win: win ?? this.win,
+      winContainer: winContainer ?? this.winContainer,
       loss: loss ?? this.loss,
+      lossContainer: lossContainer ?? this.lossContainer,
+      warning: warning ?? this.warning,
+      warningContainer: warningContainer ?? this.warningContainer,
     );
   }
 
@@ -155,13 +237,21 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceVariant: Color.lerp(surfaceVariant, other.surfaceVariant, t)!,
       border: Color.lerp(border, other.border, t)!,
+      borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
+      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
+      accentContainer: Color.lerp(accentContainer, other.accentContainer, t)!,
       live: Color.lerp(live, other.live, t)!,
+      liveContainer: Color.lerp(liveContainer, other.liveContainer, t)!,
       win: Color.lerp(win, other.win, t)!,
+      winContainer: Color.lerp(winContainer, other.winContainer, t)!,
       loss: Color.lerp(loss, other.loss, t)!,
+      lossContainer: Color.lerp(lossContainer, other.lossContainer, t)!,
+      warning: Color.lerp(warning, other.warning, t)!,
+      warningContainer: Color.lerp(warningContainer, other.warningContainer, t)!,
     );
   }
 }

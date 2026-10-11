@@ -1,7 +1,9 @@
 /// VIT-AP Sports — EmptyState widget.
 ///
-/// Centered icon + title + optional subtitle for empty lists/screens.
-/// Center-aligned both horizontally and vertically.
+/// Component specification:
+/// Centred column (max width 280): optional 40 px outline icon in textSecondary,
+/// Headline title, one to two lines of Body text in textSecondary,
+/// at most one button (tonal or outlined).
 library;
 
 import 'package:flutter/material.dart';
@@ -9,11 +11,12 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
+import 'app_button.dart';
 
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
-    required this.icon,
+    this.icon,
     required this.title,
     this.subtitle,
     this.action,
@@ -21,7 +24,7 @@ class EmptyState extends StatelessWidget {
     this.onAction,
   });
 
-  final IconData icon;
+  final IconData? icon;
   final String title;
   final String? subtitle;
   final Widget? action;
@@ -30,64 +33,60 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final secondaryColor =
-        isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
-    final tertiaryColor =
-        isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary;
+    final colors = context.appColors;
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: tertiaryColor.withAlpha(26),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: AppSpacing.iconLarge,
-                color: tertiaryColor,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              title,
-              style: AppTypography.headline.copyWith(color: secondaryColor),
-              textAlign: TextAlign.center,
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: AppSpacing.sm),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 40,
+                  color: colors.textSecondary,
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
               Text(
-                subtitle!,
-                style: AppTypography.caption.copyWith(color: tertiaryColor),
+                title,
+                style: AppTypography.headline.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
-            ],
-            if (action != null) ...[
-              const SizedBox(height: AppSpacing.xl),
-              action!,
-            ],
-            if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: AppSpacing.xl),
-              TextButton(
-                onPressed: onAction,
-                child: Text(
-                  actionLabel!,
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  subtitle!,
                   style: AppTypography.body.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+                    color: colors.textSecondary,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
+              if (action != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                action!,
+              ] else if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: AppSpacing.lg),
+                AppButton(
+                  label: actionLabel!,
+                  onPressed: onAction,
+                  variant: AppButtonVariant.secondary,
+                  size: AppButtonSize.medium,
+                  isExpanded: false,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

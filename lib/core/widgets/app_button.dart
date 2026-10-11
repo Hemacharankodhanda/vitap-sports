@@ -1,8 +1,15 @@
 /// VIT-AP Sports — AppButton widget.
 ///
-/// The ONLY button widget used across the entire app.
-/// Variants: primary (filled accent), secondary (outlined), destructive, text.
-/// AnimatedScale on press (0.96) per design.md motion guidelines.
+/// Component specification:
+/// - Primary: filled accent
+/// - Secondary: tonal accentContainer
+/// - Outlined: transparent with 1px borderStrong
+/// - Text: none, accent label
+/// - Destructive: negative fill, white text
+/// - DestructiveInline: outlined in negative, negative text
+///
+/// Heights: 48 (default), 40 (compact). Radius 8.
+/// Ripple: ink ripple with pressed overlay, no bouncy motion.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,11 +18,24 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
-enum AppButtonVariant { primary, secondary, destructive, text }
+enum AppButtonVariant {
+  primary,
+  secondary,
+  outlined,
+  text,
+  destructive,
+  destructiveInline,
+}
 
-enum AppButtonSize { large, medium, small }
+enum AppButtonSize {
+  large,
+  medium,
+  small;
 
-class AppButton extends StatefulWidget {
+  bool get isCompact => this != AppButtonSize.large;
+}
+
+class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
     required this.label,
@@ -35,146 +55,151 @@ class AppButton extends StatefulWidget {
   final bool isLoading;
   final bool isExpanded;
 
-  @override
-  State<AppButton> createState() => _AppButtonState();
-}
+  double get _height => size.isCompact ? 40.0 : 48.0;
 
-class _AppButtonState extends State<AppButton> {
-  bool _isPressed = false;
+  EdgeInsetsGeometry get _padding => EdgeInsets.symmetric(
+        horizontal: size.isCompact ? 12.0 : 16.0,
+      );
 
-  double get _height {
-    switch (widget.size) {
-      case AppButtonSize.large:
-        return AppSpacing.buttonHeightPrimary;
-      case AppButtonSize.medium:
-        return AppSpacing.buttonHeightSecondary;
-      case AppButtonSize.small:
-        return 32.0;
-    }
-  }
+  TextStyle get _textStyle =>
+      size.isCompact ? AppTypography.callout.copyWith(fontWeight: FontWeight.w600) : AppTypography.headline;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isDisabled = widget.onPressed == null || widget.isLoading;
+    final colors = context.appColors;
+    final isDisabled = onPressed == null || isLoading;
 
-    return AnimatedScale(
-      scale: _isPressed ? 0.96 : 1.0,
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOutCubic,
-      child: GestureDetector(
-        onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
-        onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
-        onTapCancel:
-            isDisabled ? null : () => setState(() => _isPressed = false),
-        child: SizedBox(
-          width: widget.isExpanded ? double.infinity : null,
-          height: _height,
-          child: _buildButton(isDark, isDisabled),
-        ),
-      ),
+    return SizedBox(
+      width: isExpanded ? double.infinity : null,
+      height: _height,
+      child: _buildButton(context, colors, isDisabled),
     );
   }
 
-  Widget _buildButton(bool isDark, bool isDisabled) {
-    switch (widget.variant) {
+  Widget _buildButton(BuildContext context, AppColorsExtension colors, bool isDisabled) {
+    switch (variant) {
       case AppButtonVariant.primary:
-        return ElevatedButton(
-          onPressed: isDisabled ? null : widget.onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Theme.of(context).colorScheme.primary.withAlpha(77),
-            disabledForegroundColor: Colors.white.withAlpha(128),
+        return FilledButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.accent,
+            foregroundColor: colors.onAccent,
+            disabledBackgroundColor: colors.accent.withAlpha((AppColors.overlayDisabledContainer * 255).round()),
+            disabledForegroundColor: colors.onAccent.withAlpha((AppColors.overlayDisabledContent * 255).round()),
             elevation: 0,
-            minimumSize: Size(0, _height),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-            ),
-            textStyle:
-                AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: _textStyle,
           ),
-          child: _buildChild(Colors.white),
+          child: _buildContent(colors.onAccent),
         );
 
       case AppButtonVariant.secondary:
-        return OutlinedButton(
-          onPressed: isDisabled ? null : widget.onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor:
-                isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+        return FilledButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.accentContainer,
+            foregroundColor: colors.accent,
+            disabledBackgroundColor: colors.accentContainer.withAlpha((AppColors.overlayDisabledContainer * 255).round()),
+            disabledForegroundColor: colors.accent.withAlpha((AppColors.overlayDisabledContent * 255).round()),
             elevation: 0,
-            minimumSize: Size(0, _height),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-            ),
-            side: BorderSide(
-              color:
-                  isDark ? AppColors.darkDivider : AppColors.lightDivider,
-            ),
-            textStyle:
-                AppTypography.body.copyWith(fontWeight: FontWeight.w500),
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: _textStyle,
           ),
-          child: _buildChild(
-            isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-          ),
+          child: _buildContent(colors.accent),
         );
 
-      case AppButtonVariant.destructive:
-        return ElevatedButton(
-          onPressed: isDisabled ? null : widget.onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.error,
-            foregroundColor: Colors.white,
+      case AppButtonVariant.outlined:
+        return OutlinedButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colors.textPrimary,
+            disabledForegroundColor: colors.textPrimary.withAlpha((AppColors.overlayDisabledContent * 255).round()),
             elevation: 0,
-            minimumSize: Size(0, _height),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.buttonRadius),
-            ),
-            textStyle:
-                AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            side: BorderSide(color: colors.borderStrong),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: _textStyle,
           ),
-          child: _buildChild(Colors.white),
+          child: _buildContent(colors.textPrimary),
         );
 
       case AppButtonVariant.text:
         return TextButton(
-          onPressed: isDisabled ? null : widget.onPressed,
+          onPressed: isDisabled ? null : onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.primary,
-            minimumSize: Size(0, _height),
-            textStyle:
-                AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+            foregroundColor: colors.accent,
+            disabledForegroundColor: colors.accent.withAlpha((AppColors.overlayDisabledContent * 255).round()),
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            textStyle: _textStyle,
           ),
-          child: _buildChild(Theme.of(context).colorScheme.primary),
+          child: _buildContent(colors.accent),
+        );
+
+      case AppButtonVariant.destructive:
+        return FilledButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.loss,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: colors.loss.withAlpha((AppColors.overlayDisabledContainer * 255).round()),
+            disabledForegroundColor: Colors.white.withAlpha((AppColors.overlayDisabledContent * 255).round()),
+            elevation: 0,
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: _textStyle,
+          ),
+          child: _buildContent(Colors.white),
+        );
+
+      case AppButtonVariant.destructiveInline:
+        return OutlinedButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: colors.loss,
+            disabledForegroundColor: colors.loss.withAlpha((AppColors.overlayDisabledContent * 255).round()),
+            elevation: 0,
+            minimumSize: Size(64, _height),
+            padding: _padding,
+            side: BorderSide(color: colors.loss),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            textStyle: _textStyle,
+          ),
+          child: _buildContent(colors.loss),
         );
     }
   }
 
-  Widget _buildChild(Color color) {
-    if (widget.isLoading) {
+  Widget _buildContent(Color textColor) {
+    if (isLoading) {
       return SizedBox(
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          color: color,
+          valueColor: AlwaysStoppedAnimation<Color>(textColor),
         ),
       );
     }
 
-    if (widget.icon != null) {
+    if (icon != null) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(widget.icon, size: AppSpacing.iconInline),
+          Icon(icon, size: 20, color: textColor),
           const SizedBox(width: AppSpacing.sm),
-          Text(widget.label),
+          Text(label),
         ],
       );
     }
 
-    return Text(widget.label);
+    return Text(label);
   }
 }

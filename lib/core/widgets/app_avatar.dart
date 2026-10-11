@@ -1,24 +1,43 @@
 /// VIT-AP Sports — AppAvatar widget.
 ///
-/// Circular avatar with cached network image and fallback initials.
-/// Consistent sizing per context: small (32), medium (48), large (72), xlarge (96).
+/// Component specification:
+/// - Sizes: 24, 32, 40, 56.
+/// - Players are circles, teams are rounded squares (radius 8, or 12 at 56).
+/// - Initials fallback uses one neutral tint with textSecondary letters.
+/// - 150 ms fade-in for network images with neutral placeholder.
 library;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
-enum AppAvatarSize { small, medium, large, xlarge }
+enum AppAvatarSize {
+  size24(24, 10, 6),
+  size32(32, 12, 8),
+  size40(40, 14, 8),
+  size56(56, 18, 12);
+
+  const AppAvatarSize(this.dimension, this.fontSize, this.teamRadius);
+  final double dimension;
+  final double fontSize;
+  final double teamRadius;
+
+  // Backward compatibility aliases
+  static const small = AppAvatarSize.size32;
+  static const medium = AppAvatarSize.size40;
+  static const large = AppAvatarSize.size56;
+  static const xlarge = AppAvatarSize.size56;
+}
 
 class AppAvatar extends StatelessWidget {
   const AppAvatar({
     super.key,
     this.imageUrl,
     this.name,
-    this.size = AppAvatarSize.medium,
+    this.size = AppAvatarSize.size40,
+    this.isTeam = false,
     this.onTap,
     this.showBorder = false,
   });
@@ -26,34 +45,9 @@ class AppAvatar extends StatelessWidget {
   final String? imageUrl;
   final String? name;
   final AppAvatarSize size;
+  final bool isTeam;
   final VoidCallback? onTap;
   final bool showBorder;
-
-  double get _dimension {
-    switch (size) {
-      case AppAvatarSize.small:
-        return AppSpacing.avatarSmall;
-      case AppAvatarSize.medium:
-        return AppSpacing.avatarMedium;
-      case AppAvatarSize.large:
-        return AppSpacing.avatarLarge;
-      case AppAvatarSize.xlarge:
-        return AppSpacing.avatarXLarge;
-    }
-  }
-
-  double get _fontSize {
-    switch (size) {
-      case AppAvatarSize.small:
-        return 12;
-      case AppAvatarSize.medium:
-        return 16;
-      case AppAvatarSize.large:
-        return 24;
-      case AppAvatarSize.xlarge:
-        return 32;
-    }
-  }
 
   String get _initials {
     if (name == null || name!.isEmpty) return '?';
@@ -64,37 +58,41 @@ class AppAvatar extends StatelessWidget {
     return parts[0][0].toUpperCase();
   }
 
+  BorderRadius? get _borderRadius =>
+      isTeam ? BorderRadius.circular(size.teamRadius) : null;
+
+  BoxShape get _shape => isTeam ? BoxShape.rectangle : BoxShape.circle;
+
   @override
   Widget build(BuildContext context) {
+    final colors = context.appColors;
     Widget avatar;
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       avatar = CachedNetworkImage(
         imageUrl: imageUrl!,
+        fadeInDuration: const Duration(milliseconds: 150),
         imageBuilder: (_, imageProvider) => Container(
-          width: _dimension,
-          height: _dimension,
+          width: size.dimension,
+          height: size.dimension,
           decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: showBorder
-                ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-                : null,
-            image: DecorationImage(
-              image: imageProvider,
-              fit: BoxFit.cover,
-            ),
+            shape: _shape,
+            borderRadius: _borderRadius,
+            border: showBorder ? Border.all(color: colors.border, width: 1) : null,
+            image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
           ),
         ),
-        placeholder: (_, __) => _buildFallback(context),
-        errorWidget: (_, __, ___) => _buildFallback(context),
+        placeholder: (_, __) => _buildFallback(context, colors),
+        errorWidget: (_, __, ___) => _buildFallback(context, colors),
       );
     } else {
-      avatar = _buildFallback(context);
+      avatar = _buildFallback(context, colors);
     }
 
     if (onTap != null) {
-      return GestureDetector(
+      return InkWell(
         onTap: onTap,
+        borderRadius: isTeam ? BorderRadius.circular(size.teamRadius) : BorderRadius.circular(size.dimension / 2),
         child: avatar,
       );
     }
@@ -102,26 +100,24 @@ class AppAvatar extends StatelessWidget {
     return avatar;
   }
 
-  Widget _buildFallback(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
+  Widget _buildFallback(BuildContext context, AppColorsExtension colors) {
     return Container(
-      width: _dimension,
-      height: _dimension,
+      width: size.dimension,
+      height: size.dimension,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Theme.of(context).colorScheme.primary.withAlpha(20),
-        border: showBorder
-            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-            : null,
+        shape: _shape,
+        borderRadius: _borderRadius,
+        color: colors.surfaceVariant,
+        border: showBorder ? Border.all(color: colors.border, width: 1) : null,
       ),
       alignment: Alignment.center,
       child: Text(
         _initials,
-        style: AppTypography.body.copyWith(
-          fontSize: _fontSize,
+        style: TextStyle(
+          fontFamily: AppTypography.caption.fontFamily,
+          fontSize: size.fontSize,
           fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.primary,
+          color: colors.textSecondary,
         ),
       ),
     );

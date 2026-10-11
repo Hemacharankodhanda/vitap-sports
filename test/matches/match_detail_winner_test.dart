@@ -65,7 +65,7 @@ void main() {
       expect(find.byIcon(Icons.emoji_events_rounded), findsOneWidget);
 
       // Verify Scorecard button exists
-      expect(find.text('View Scorecard'), findsOneWidget);
+      expect(find.text('Scorecard'), findsOneWidget);
 
       // Verify "Edit Scorecard" is NOT present on completed match
       expect(find.text('Edit Scorecard'), findsNothing);

@@ -1,7 +1,10 @@
-/// VIT-AP Sports — AppChip widget.
+/// VIT-AP Sports — AppChip and ResultChip widgets.
 ///
-/// Consistent 40px-height chip for filter/selection.
-/// Selected state uses accent color per design guidelines.
+/// Component specification:
+/// - Filter chip: height 32 (48 touch target), radius 8.
+///   Unselected: 1 px borderStrong, textPrimary.
+///   Selected: accentContainer, accent text, no checkmark.
+/// - Result chip (W / D / L): 24 x 24, radius 8, letter inside, container tints.
 library;
 
 import 'package:flutter/material.dart';
@@ -28,50 +31,97 @@ class AppChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isSelected
-        ? Theme.of(context).colorScheme.primary.withAlpha(20)
-        : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant);
-    final textColor = isSelected
-        ? Theme.of(context).colorScheme.primary
-        : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
-    final borderColor = isSelected
-        ? Theme.of(context).colorScheme.primary.withAlpha(77)
-        : Colors.transparent;
+    final colors = context.appColors;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOutCubic,
-        height: AppSpacing.chipHeight,
-        padding: EdgeInsets.symmetric(
-          horizontal: avatar != null ? AppSpacing.xs : AppSpacing.lg,
-        ),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
-          border: Border.all(color: borderColor, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (avatar != null) ...[
-              avatar!,
-              const SizedBox(width: AppSpacing.sm),
-            ],
-            if (icon != null) ...[
-              Icon(icon, size: AppSpacing.iconInline, color: textColor),
-              const SizedBox(width: AppSpacing.xs),
-            ],
-            Text(
-              label,
-              style: AppTypography.caption.copyWith(
-                color: textColor,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
+    final bgColor = isSelected ? colors.accentContainer : Colors.transparent;
+    final textColor = isSelected ? colors.accent : colors.textPrimary;
+    final borderColor = isSelected ? Colors.transparent : colors.borderStrong;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor, width: 1),
             ),
-          ],
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (avatar != null) ...[
+                  avatar!,
+                  const SizedBox(width: AppSpacing.xs),
+                ],
+                if (icon != null) ...[
+                  Icon(icon, size: 16, color: textColor),
+                  const SizedBox(width: AppSpacing.xs),
+                ],
+                Text(
+                  label,
+                  style: AppTypography.callout.copyWith(
+                    color: textColor,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 24x24 result chip (W / D / L) per component specification.
+class ResultChip extends StatelessWidget {
+  const ResultChip({
+    super.key,
+    required this.result,
+  });
+
+  final String result; // 'W', 'D', 'L'
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final clean = result.trim().toUpperCase();
+
+    Color bgColor;
+    Color textColor;
+
+    if (clean == 'W') {
+      bgColor = colors.winContainer;
+      textColor = colors.win;
+    } else if (clean == 'L') {
+      bgColor = colors.lossContainer;
+      textColor = colors.loss;
+    } else {
+      bgColor = colors.textPrimary.withAlpha(15);
+      textColor = colors.textSecondary;
+    }
+
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        clean,
+        style: TextStyle(
+          fontFamily: AppTypography.caption.fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: textColor,
         ),
       ),
     );
