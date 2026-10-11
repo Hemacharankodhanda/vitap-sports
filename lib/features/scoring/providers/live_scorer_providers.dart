@@ -296,7 +296,8 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
 
       // Extract participants and side identities
       final rawParticipants = (match['match_participants'] as List<dynamic>?)
-              ?.map((p) => p as Map<String, dynamic>)
+              ?.whereType<Map>()
+              .map((p) => Map<String, dynamic>.from(p))
               .toList() ??
           [];
       final (homeId, awayId, homeName, awayName) = _extractSides(rawParticipants);
@@ -421,13 +422,27 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
         }
       }
 
-      final derivedState = SportRegistry.fold(
-        sportName: sportName,
-        configJson: config,
-        events: rawEvents,
-        homeId: homeId,
-        awayId: awayId,
-      );
+      dynamic derivedState;
+      final engine = SportRegistry.getEngine(sportName);
+      final scoreSnapshot = match['score'] as Map?;
+      if (scoreSnapshot != null && engine != null) {
+        try {
+          derivedState = engine.fromSnapshot(
+            Map<String, dynamic>.from(scoreSnapshot),
+            SportRegistry.parseConfig(sportName, config),
+          );
+        } catch (_) {}
+      }
+
+      if (derivedState == null) {
+        derivedState = SportRegistry.fold(
+          sportName: sportName,
+          configJson: config,
+          events: rawEvents,
+          homeId: homeId,
+          awayId: awayId,
+        );
+      }
 
       state = state.copyWith(
         sport: sportName,

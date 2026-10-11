@@ -44,7 +44,10 @@ final matchAnalysisProvider = FutureProvider.family<List<Map<String, dynamic>>, 
 );
 
 final matchPlayerNamesProvider =
-    FutureProvider.family<Map<String, String>, MatchModel>((ref, match) async {
+    FutureProvider.family<Map<String, String>, String>((ref, matchId) async {
+  final match = await ref.watch(matchDetailProvider(matchId).future);
+  if (match == null) return const <String, String>{};
+
   final names = <String, String>{};
 
   // 1. From match.score['player_names']

@@ -148,5 +148,100 @@ void main() {
       expect(find.text('No Events Yet'), findsOneWidget);
       expect(find.text('0 Events'), findsOneWidget);
     });
+
+    testWidgets('Renders completed cricket match scorecard without white screen even with empty events', (tester) async {
+      const cricketMatchId = 'm-cricket-completed';
+      final completedCricketMatch = MatchModel(
+        id: cricketMatchId,
+        sportId: 's-cricket',
+        sportName: 'Cricket',
+        venue: 'Main Ground',
+        scheduledAt: DateTime.now().subtract(const Duration(hours: 3)),
+        status: 'completed',
+        createdBy: 'u-1',
+        homeScore: 145,
+        awayScore: 120,
+        score: {
+          'innings': [
+            {
+              'batting_team_id': 'team-home',
+              'bowling_team_id': 'team-away',
+              'total_runs': 145,
+              'total_wickets': 4,
+              'legal_balls': 36,
+              'batting_stats': {
+                'p-1': {
+                  'name': 'Rahul',
+                  'runs': 62,
+                  'balls_faced': 24,
+                  'fours': 6,
+                  'sixes': 3,
+                  'is_out': false,
+                },
+              },
+              'bowling_stats': {
+                'p-2': {
+                  'name': 'Karan',
+                  'balls_bowled': 12,
+                  'maidens': 0,
+                  'runs_conceded': 18,
+                  'wickets': 2,
+                },
+              },
+            },
+          ],
+          'player_names': {
+            'p-1': 'Rahul',
+            'p-2': 'Karan',
+          },
+          'winner_team_id': 'team-home',
+          'result_margin': 'Red Lions won by 25 runs',
+        },
+        participants: const [
+          MatchParticipant(
+            matchId: cricketMatchId,
+            teamId: 'team-home',
+            teamName: 'Red Lions',
+            side: 'home',
+          ),
+          MatchParticipant(
+            matchId: cricketMatchId,
+            teamId: 'team-away',
+            teamName: 'Blue Tigers',
+            side: 'away',
+          ),
+        ],
+      );
+
+      final fakeService = FakeViewerScorerService(events: []);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            liveScorerServiceProvider.overrideWithValue(fakeService),
+            matchDetailProvider(cricketMatchId).overrideWith((ref) async => completedCricketMatch),
+          ],
+          child: const MaterialApp(
+            home: ScorecardViewScreen(matchId: cricketMatchId),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Check AppBar says Match Scorecard
+      expect(find.text('Match Scorecard'), findsOneWidget);
+
+      // Check batting innings table header
+      expect(find.text('Red Lions Innings'), findsOneWidget);
+
+      // Check player stats rendered in DataTable
+      expect(find.text('Rahul*'), findsOneWidget);
+      expect(find.text('62'), findsOneWidget);
+      expect(find.text('Karan'), findsOneWidget);
+
+      // Verify no edit scorer icon in AppBar for completed match
+      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+    });
   });
 }
