@@ -124,7 +124,31 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
         return _applyDelivery(state, event);
 
       case 'finish_match':
-        return state.copyWith(isCompleted: true);
+        String? winnerId = state.winnerTeamId;
+        String? marginText = state.resultMarginText;
+        bool isTie = state.isTie;
+        if (winnerId == null && !isTie && state.innings.length >= 2) {
+          final first = state.innings[0];
+          final second = state.innings[1];
+          if (second.totalRuns > first.totalRuns) {
+            winnerId = second.battingTeamId;
+            final wicketsRemaining = state.config.maxWickets - second.totalWickets;
+            marginText = 'won by $wicketsRemaining wickets';
+          } else if (first.totalRuns > second.totalRuns) {
+            winnerId = first.battingTeamId;
+            final runsMargin = first.totalRuns - second.totalRuns;
+            marginText = 'won by $runsMargin runs';
+          } else {
+            isTie = true;
+            marginText = 'Match Tied';
+          }
+        }
+        return state.copyWith(
+          isCompleted: true,
+          winnerTeamId: winnerId,
+          resultMarginText: marginText,
+          isTie: isTie,
+        );
 
       default:
         return state;
@@ -551,7 +575,27 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
 
   @override
   Map<String, dynamic> result(CricketState state) {
-    final winnerId = state.winnerTeamId;
+    String? winnerId = state.winnerTeamId;
+    String? marginText = state.resultMarginText;
+    bool isTie = state.isTie;
+
+    if (winnerId == null && !isTie && state.innings.length >= 2) {
+      final first = state.innings[0];
+      final second = state.innings[1];
+      if (second.totalRuns > first.totalRuns) {
+        winnerId = second.battingTeamId;
+        final wicketsRemaining = state.config.maxWickets - second.totalWickets;
+        marginText = 'won by $wicketsRemaining wickets';
+      } else if (first.totalRuns > second.totalRuns) {
+        winnerId = first.battingTeamId;
+        final runsMargin = first.totalRuns - second.totalRuns;
+        marginText = 'won by $runsMargin runs';
+      } else {
+        isTie = true;
+        marginText = 'Match Tied';
+      }
+    }
+
     final loserId = winnerId == null
         ? null
         : (winnerId == state.homeId ? state.awayId : state.homeId);
@@ -559,9 +603,9 @@ class CricketEngine extends ScoringEngine<CricketState, CricketConfig> {
       'innings': state.innings.map((i) => i.toJson()).toList(),
       'winner_team_id': winnerId,
       'loser_team_id': loserId,
-      'is_draw': state.isTie,
-      'is_tie': state.isTie,
-      'result_margin': state.resultMarginText,
+      'is_draw': isTie,
+      'is_tie': isTie,
+      'result_margin': marginText,
       'target': state.target,
     };
   }

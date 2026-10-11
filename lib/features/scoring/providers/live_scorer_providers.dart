@@ -725,8 +725,54 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       return;
     }
 
-    final result = engine.result(state.scoringState);
+    final result = Map<String, dynamic>.from(engine.result(state.scoringState));
     final finalScore = (state.scoringState as dynamic).toJson() as Map<String, dynamic>;
+
+    // Ensure winner team name and formatted margin text
+    final winnerId = result['winner_team_id']?.toString() ??
+        finalScore['winner_team_id']?.toString();
+    String? winnerName;
+    if (winnerId != null) {
+      if (winnerId == state.homeId || winnerId == 'home') {
+        winnerName = state.homeName;
+      } else if (winnerId == state.awayId || winnerId == 'away') {
+        winnerName = state.awayName;
+      }
+    }
+    if (winnerName != null && winnerName.isNotEmpty) {
+      result['winner_team_name'] = winnerName;
+      finalScore['winner_team_name'] = winnerName;
+
+      final currentMargin = result['result_margin']?.toString() ?? '';
+      if (currentMargin.startsWith('won by ')) {
+        result['result_margin'] = '$winnerName $currentMargin';
+        finalScore['result_margin'] = '$winnerName $currentMargin';
+      }
+    }
+
+    // Safely ensure winner_team_id and loser_team_id are valid UUIDs if non-null,
+    // to prevent Postgres from throwing an invalid UUID exception.
+    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    if (result['winner_team_id'] != null) {
+      final wid = result['winner_team_id'].toString();
+      if (wid == 'home' || wid == state.homeId) {
+        result['winner_team_id'] = uuidRegex.hasMatch(state.homeId) ? state.homeId : null;
+      } else if (wid == 'away' || wid == state.awayId) {
+        result['winner_team_id'] = uuidRegex.hasMatch(state.awayId) ? state.awayId : null;
+      } else if (!uuidRegex.hasMatch(wid)) {
+        result['winner_team_id'] = null;
+      }
+    }
+    if (result['loser_team_id'] != null) {
+      final lid = result['loser_team_id'].toString();
+      if (lid == 'home' || lid == state.homeId) {
+        result['loser_team_id'] = uuidRegex.hasMatch(state.homeId) ? state.homeId : null;
+      } else if (lid == 'away' || lid == state.awayId) {
+        result['loser_team_id'] = uuidRegex.hasMatch(state.awayId) ? state.awayId : null;
+      } else if (!uuidRegex.hasMatch(lid)) {
+        result['loser_team_id'] = null;
+      }
+    }
 
     // Remap any player names to their user UUID from squads
     final allSquadPlayers = [...state.homePlayers, ...state.awayPlayers];
