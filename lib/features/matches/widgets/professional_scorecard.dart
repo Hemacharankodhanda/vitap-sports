@@ -56,7 +56,7 @@ class ProfessionalScorecard extends StatelessWidget {
       } else if (resolvedState is FootballState) {
         return _FootballScorecard(state: resolvedState, match: match, playerNames: playerNames);
       } else if (resolvedState is BadmintonState) {
-        return _BadmintonScorecard(state: resolvedState, match: match);
+        return _BadmintonScorecard(state: resolvedState, match: match, playerNames: playerNames);
       }
 
       // Empty state
@@ -1077,9 +1077,15 @@ class _FootballScorecard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────
 
 class _BadmintonScorecard extends StatelessWidget {
-  const _BadmintonScorecard({required this.state, required this.match});
+  const _BadmintonScorecard({
+    required this.state,
+    required this.match,
+    this.playerNames,
+  });
+
   final BadmintonState state;
   final MatchModel match;
+  final Map<String, String>? playerNames;
 
   String _getTeamName(String? id) {
     if (id == null || id.isEmpty) return 'Team';
@@ -1094,6 +1100,18 @@ class _BadmintonScorecard extends StatelessWidget {
         p?.userName ??
         (id == state.homeId ? match.resolvedHomeTeamName : match.resolvedAwayTeamName) ??
         'Team';
+  }
+
+  String _resolvePlayerName(String id) {
+    if (playerNames != null && playerNames!.containsKey(id)) {
+      return playerNames![id]!;
+    }
+    final p = match.participants.where((e) => e.userId == id || e.teamId == id).firstOrNull;
+    if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
+    if (p?.teamName != null && p!.teamName!.isNotEmpty) return p.teamName!;
+    if (id == state.homeId) return match.resolvedHomeTeamName ?? 'Team 1';
+    if (id == state.awayId) return match.resolvedAwayTeamName ?? 'Team 2';
+    return id;
   }
 
   @override
@@ -1139,7 +1157,7 @@ class _BadmintonScorecard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Overall Games Won Summary
+        // Overall Games Won & Total Points Summary
         Container(
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
           decoration: BoxDecoration(
@@ -1188,6 +1206,14 @@ class _BadmintonScorecard extends StatelessWidget {
                     Text(
                       'Games won',
                       style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                    ),
+                    Text(
+                      '${state.totalHomePoints} pts',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                        fontSize: 11,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ],
                 ),
@@ -1240,6 +1266,14 @@ class _BadmintonScorecard extends StatelessWidget {
                     Text(
                       'Games won',
                       style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                    ),
+                    Text(
+                      '${state.totalAwayPoints} pts',
+                      style: AppTypography.caption.copyWith(
+                        color: colors.textTertiary,
+                        fontSize: 11,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                     ),
                   ],
                 ),
@@ -1325,6 +1359,93 @@ class _BadmintonScorecard extends StatelessWidget {
             ),
           );
         }),
+
+        // Player Stats Breakdown (Points Won & Service Points)
+        if (state.playerStats.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              border: Border.all(color: colors.border, width: 1),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Player Statistics',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.textSecondary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      'Points (Service)',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.textTertiary,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: AppSpacing.md),
+                ...state.playerStats.entries.map((entry) {
+                  final pName = _resolvePlayerName(entry.key);
+                  final pw = entry.value['points_won'] ?? entry.value['points'] ?? 0;
+                  final spw = entry.value['service_points_won'] ?? 0;
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            pName,
+                            style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: colors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Text(
+                              '$pw pts',
+                              style: AppTypography.body.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colors.textPrimary,
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            if (spw > 0) ...[
+                              const SizedBox(width: 4),
+                              Text(
+                                '($spw)',
+                                style: AppTypography.caption.copyWith(
+                                  color: colors.textSecondary,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

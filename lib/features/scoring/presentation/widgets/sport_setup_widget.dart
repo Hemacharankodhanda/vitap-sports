@@ -133,7 +133,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     }
 
     if (_badmintonFormat == 'singles') {
-      _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId;
+      _badmintonTossWinner = widget.state.homeId;
     } else {
       _badmintonTossWinner = widget.state.homeId;
     }
@@ -593,7 +593,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
               onTap: () {
                 setState(() {
                   _badmintonFormat = 'singles';
-                  _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId;
+                  _badmintonTossWinner = widget.state.homeId;
                 });
               },
             ),
@@ -629,9 +629,6 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
               onSelected: (val) {
                 setState(() {
                   _badmintonPlayer1 = val;
-                  if (_badmintonTossWinner == widget.state.homeId || _badmintonTossWinner == _badmintonPlayer1) {
-                    _badmintonTossWinner = val;
-                  }
                 });
               },
             ),
@@ -650,9 +647,6 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
               onSelected: (val) {
                 setState(() {
                   _badmintonPlayer2 = val;
-                  if (_badmintonTossWinner == widget.state.awayId || _badmintonTossWinner == _badmintonPlayer2) {
-                    _badmintonTossWinner = val;
-                  }
                 });
               },
             ),
@@ -665,14 +659,14 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             children: [
               AppChip(
                 label: p1Name,
-                isSelected: _badmintonTossWinner == (_badmintonPlayer1 ?? widget.state.homeId),
-                onTap: () => setState(() => _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId),
+                isSelected: _badmintonTossWinner == widget.state.homeId || _badmintonTossWinner == _badmintonPlayer1,
+                onTap: () => setState(() => _badmintonTossWinner = widget.state.homeId),
               ),
               const SizedBox(width: AppSpacing.sm),
               AppChip(
                 label: p2Name,
-                isSelected: _badmintonTossWinner == (_badmintonPlayer2 ?? widget.state.awayId),
-                onTap: () => setState(() => _badmintonTossWinner = _badmintonPlayer2 ?? widget.state.awayId),
+                isSelected: _badmintonTossWinner == widget.state.awayId || _badmintonTossWinner == _badmintonPlayer2,
+                onTap: () => setState(() => _badmintonTossWinner = widget.state.awayId),
               ),
             ],
           ),
@@ -1122,9 +1116,14 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             ? _badmintonAwayDoubles.toList()
             : [_badmintonPlayer2 ?? widget.state.awayId];
 
-        final serverSide = _badmintonDecision == 'serve'
-            ? _badmintonTossWinner
-            : (_badmintonTossWinner == widget.state.homeId ? widget.state.awayId : widget.state.homeId);
+        final bool isHomeTossWinner = _badmintonFormat == 'singles'
+            ? (_badmintonTossWinner == widget.state.homeId || _badmintonTossWinner == _badmintonPlayer1)
+            : (_badmintonTossWinner == widget.state.homeId);
+
+        final tossWinnerTeamId = isHomeTossWinner ? widget.state.homeId : widget.state.awayId;
+        final tossLoserTeamId = isHomeTossWinner ? widget.state.awayId : widget.state.homeId;
+
+        final serverSide = _badmintonDecision == 'serve' ? tossWinnerTeamId : tossLoserTeamId;
 
         final firstServerId = serverSide == widget.state.homeId
             ? homeList.first

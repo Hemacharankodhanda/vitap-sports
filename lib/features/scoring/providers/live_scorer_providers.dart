@@ -810,10 +810,19 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
 
     if (state.sport.toLowerCase() == 'badminton' && state.scoringState is BadmintonState) {
       final bState = state.scoringState as BadmintonState;
+      final totalHomePts = bState.totalHomePoints;
+      final totalAwayPts = bState.totalAwayPoints;
+      final gamesSummary = bState.games.map((g) => '${g.homePoints}-${g.awayPoints}').join(', ');
       result['home_score'] = bState.homeGamesWon;
       result['away_score'] = bState.awayGamesWon;
+      result['home_total_points'] = totalHomePts;
+      result['away_total_points'] = totalAwayPts;
+      result['games_summary'] = gamesSummary;
       finalScore['home_score'] = bState.homeGamesWon;
       finalScore['away_score'] = bState.awayGamesWon;
+      finalScore['home_total_points'] = totalHomePts;
+      finalScore['away_total_points'] = totalAwayPts;
+      finalScore['games_summary'] = gamesSummary;
     }
 
     // Safely ensure winner_team_id and loser_team_id are valid UUIDs if non-null,
