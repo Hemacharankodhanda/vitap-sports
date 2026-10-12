@@ -379,20 +379,40 @@ class MatchCard extends StatelessWidget {
 
     String? gamesSummary = resultMap?['games_summary']?.toString() ??
         scoreMap?['games_summary']?.toString();
-    if (gamesSummary == null || gamesSummary.isEmpty) {
-      final gamesRaw = (scoreMap?['games'] as List?) ?? (resultMap?['games'] as List?);
-      if (gamesRaw != null && gamesRaw.isNotEmpty) {
-        final list = <String>[];
-        for (final g in gamesRaw) {
-          if (g is Map) {
-            final hp = (g['home_points'] as num?)?.toInt() ?? 0;
-            final ap = (g['away_points'] as num?)?.toInt() ?? 0;
-            if (hp > 0 || ap > 0 || g['is_completed'] == true) {
-              list.add('$hp-$ap');
-            }
+    final gamesRaw = (scoreMap?['games'] as List?) ?? (resultMap?['games'] as List?);
+    final homeGamePoints = <int>[];
+    final awayGamePoints = <int>[];
+    int currentHomePoints = 0;
+    int currentAwayPoints = 0;
+
+    if (gamesRaw != null && gamesRaw.isNotEmpty) {
+      final list = <String>[];
+      for (final g in gamesRaw) {
+        if (g is Map) {
+          final hp = (g['home_points'] as num?)?.toInt() ?? 0;
+          final ap = (g['away_points'] as num?)?.toInt() ?? 0;
+          homeGamePoints.add(hp);
+          awayGamePoints.add(ap);
+          if (hp > 0 || ap > 0 || g['is_completed'] == true) {
+            list.add('$hp-$ap');
           }
         }
-        if (list.isNotEmpty) gamesSummary = list.join(', ');
+      }
+      if (list.isNotEmpty && (gamesSummary == null || gamesSummary.isEmpty)) {
+        gamesSummary = list.join(', ');
+      }
+      final curGame = gamesRaw.last;
+      if (curGame is Map) {
+        currentHomePoints = (curGame['home_points'] as num?)?.toInt() ?? 0;
+        currentAwayPoints = (curGame['away_points'] as num?)?.toInt() ?? 0;
+      }
+    }
+
+    if (homeGamePoints.isEmpty && gamesSummary != null && gamesSummary.isNotEmpty) {
+      final reg = RegExp(r'(\d+)\s*[-–]\s*(\d+)');
+      for (final match in reg.allMatches(gamesSummary)) {
+        homeGamePoints.add(int.tryParse(match.group(1)!) ?? 0);
+        awayGamePoints.add(int.tryParse(match.group(2)!) ?? 0);
       }
     }
 
@@ -410,10 +430,29 @@ class MatchCard extends StatelessWidget {
             : 'Match Completed';
       }
     } else if (_isLive) {
-      final gamesRaw = scoreMap?['games'] as List?;
       final curIdx = (scoreMap?['current_game_index'] as num?)?.toInt() ??
           (gamesRaw != null && gamesRaw.isNotEmpty ? gamesRaw.length - 1 : 0);
       situation = 'Game ${curIdx + 1}';
+    }
+
+    String? hScore;
+    String? aScore;
+    String? hOvers;
+    String? aOvers;
+
+    if (_isCompleted) {
+      hScore = hGames != null ? '$hGames' : (homeGamePoints.isNotEmpty ? '${homeGamePoints.last}' : null);
+      aScore = aGames != null ? '$aGames' : (awayGamePoints.isNotEmpty ? '${awayGamePoints.last}' : null);
+      hOvers = homeGamePoints.isNotEmpty ? homeGamePoints.join(', ') : null;
+      aOvers = awayGamePoints.isNotEmpty ? awayGamePoints.join(', ') : null;
+    } else if (_isLive) {
+      hScore = '$currentHomePoints pts';
+      aScore = '$currentAwayPoints pts';
+      hOvers = (hGames != null && hGames > 0) ? '$hGames ${(hGames == 1 ? "game" : "games")}' : null;
+      aOvers = (aGames != null && aGames > 0) ? '$aGames ${(aGames == 1 ? "game" : "games")}' : null;
+    } else {
+      hScore = hGames != null ? '$hGames' : null;
+      aScore = aGames != null ? '$aGames' : null;
     }
 
     return AppCard(
@@ -429,9 +468,9 @@ class MatchCard extends StatelessWidget {
             teamName: homeName,
             isBatting: false,
             isWinner: isHomeWinner,
-            scoreText: hGames != null ? '$hGames' : null,
-            oversText: null,
-            hasBatted: hGames != null,
+            scoreText: hScore,
+            oversText: hOvers,
+            hasBatted: hScore != null,
             isDark: isDark,
           ),
           const SizedBox(height: 6),
@@ -441,9 +480,9 @@ class MatchCard extends StatelessWidget {
             teamName: awayName,
             isBatting: false,
             isWinner: isAwayWinner,
-            scoreText: aGames != null ? '$aGames' : null,
-            oversText: null,
-            hasBatted: aGames != null,
+            scoreText: aScore,
+            oversText: aOvers,
+            hasBatted: aScore != null,
             isDark: isDark,
           ),
 

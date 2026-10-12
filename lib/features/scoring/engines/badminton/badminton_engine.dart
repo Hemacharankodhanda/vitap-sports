@@ -19,7 +19,17 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     final homePlayers = (extra?['home_players'] as List<dynamic>?)?.cast<String>() ?? [homeId];
     final awayPlayers = (extra?['away_players'] as List<dynamic>?)?.cast<String>() ?? [awayId];
 
-    final firstServerTeamId = extra?['first_server_team_id'] as String? ?? homeId;
+    var firstServerTeamId = extra?['first_server_team_id'] as String? ?? homeId;
+    if (firstServerTeamId != homeId && firstServerTeamId != awayId) {
+      if (homePlayers.contains(firstServerTeamId) || firstServerTeamId == 'home') {
+        firstServerTeamId = homeId;
+      } else if (awayPlayers.contains(firstServerTeamId) || firstServerTeamId == 'away') {
+        firstServerTeamId = awayId;
+      } else {
+        firstServerTeamId = homeId;
+      }
+    }
+
     final firstServerId = extra?['first_server_id'] as String? ?? (firstServerTeamId == homeId ? homePlayers.first : awayPlayers.first);
     final receivingTeamId = firstServerTeamId == homeId ? awayId : homeId;
     final firstReceiverId = extra?['first_receiver_id'] as String? ?? (receivingTeamId == homeId ? homePlayers.first : awayPlayers.first);
@@ -37,6 +47,9 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     return BadmintonState(
       homeId: homeId,
       awayId: awayId,
+      bestOfGames: config.bestOfGames,
+      pointsPerGame: config.pointsPerGame,
+      cap: config.cap,
       servingTeamId: firstServerTeamId,
       currentServerId: firstServerId,
       currentReceiverId: firstReceiverId,
@@ -53,14 +66,25 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
     switch (event.type) {
       case 'rally_won':
-        final teamId = event.teamId ?? event.payload['team'] as String?;
-        if (teamId == null) return 'Winning team is required';
-        if (teamId != state.homeId && teamId != state.awayId) return 'Invalid team id';
+      case 'point':
+      case 'point_won':
+      case 'rally':
+        final rawTeam = event.teamId ?? event.payload['team'] as String? ?? event.payload['team_id'] as String?;
+        if (rawTeam == null) return 'Winning team is required';
+
+        final isHome = rawTeam == state.homeId ||
+            rawTeam == 'home' ||
+            (state.teamPlayers[state.homeId]?.contains(rawTeam) ?? false);
+        final isAway = rawTeam == state.awayId ||
+            rawTeam == 'away' ||
+            (state.teamPlayers[state.awayId]?.contains(rawTeam) ?? false);
+
+        if (!isHome && !isAway) return 'Invalid team id';
         return null;
 
       case 'retire':
       case 'walkover':
-        final teamId = event.teamId ?? event.payload['team'] as String?;
+        final teamId = event.teamId ?? event.payload['team'] as String? ?? event.payload['team_id'] as String?;
         if (teamId == null) return 'Retiring/walkover team is required';
         return null;
 
@@ -91,7 +115,8 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
       case 'retire':
         final retiringTeam = event.teamId ?? event.payload['team'] as String;
-        final winnerId = retiringTeam == state.homeId ? state.awayId : state.homeId;
+        final isHomeRetiring = retiringTeam == state.homeId || retiringTeam == 'home';
+        final winnerId = isHomeRetiring ? state.awayId : state.homeId;
         return state.copyWith(
           retireTeamId: retiringTeam,
           winnerId: winnerId,
@@ -101,7 +126,8 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
 
       case 'walkover':
         final walkoverTeam = event.teamId ?? event.payload['team'] as String;
-        final winnerId = walkoverTeam == state.homeId ? state.awayId : state.homeId;
+        final isHomeWalkover = walkoverTeam == state.homeId || walkoverTeam == 'home';
+        final winnerId = isHomeWalkover ? state.awayId : state.homeId;
         final isHome = winnerId == state.homeId;
         // Walkover recorded as 2-0 (21-0, 21-0)
         final walkoverGames = [
@@ -119,34 +145,58 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
         );
 
       case 'rally_won':
-        final winningTeam = event.teamId ?? event.payload['team'] as String;
-        return _applyRallyWon(state, winningTeam);
+      case 'point':
+      case 'point_won':
+      case 'rally':
+        final rawWinningTeam = event.teamId ?? event.payload['team'] as String? ?? event.payload['team_id'] as String? ?? state.homeId;
+        return _applyRallyWon(state, rawWinningTeam, event: event);
 
       default:
         return state;
     }
   }
 
-  BadmintonState _applyRallyWon(BadmintonState state, String winningTeam) {
+  BadmintonState _applyRallyWon(BadmintonState state, String rawWinningTeam, {MatchEvent? event}) {
     final currentGame = state.currentGame;
-    final isHome = winningTeam == state.homeId;
+    final isHome = rawWinningTeam == state.homeId ||
+        rawWinningTeam == 'home' ||
+        (state.teamPlayers[state.homeId]?.contains(rawWinningTeam) ?? false);
+    final winningTeam = isHome ? state.homeId : state.awayId;
 
     // Update player stats
     final pStats = Map<String, Map<String, int>>.from(state.playerStats);
     void addStat(String pid, String key, int val) {
       if (!pStats.containsKey(pid)) {
-        pStats[pid] = {'points_won': 0, 'service_points_won': 0};
+        pStats[pid] = {'points_won': 0, 'points': 0, 'service_points_won': 0};
       } else {
         pStats[pid] = Map<String, int>.from(pStats[pid]!);
       }
       pStats[pid]![key] = (pStats[pid]![key] ?? 0) + val;
     }
 
-    final winningPlayers = state.teamPlayers[winningTeam] ?? [];
+    final winningPlayers = List<String>.from(state.teamPlayers[winningTeam] ?? []);
+    if (winningPlayers.isEmpty) {
+      if (rawWinningTeam != state.homeId && rawWinningTeam != state.awayId && rawWinningTeam != 'home' && rawWinningTeam != 'away') {
+        winningPlayers.add(rawWinningTeam);
+      } else if (event?.playerId != null) {
+        winningPlayers.add(event!.playerId!);
+      } else {
+        winningPlayers.add(winningTeam);
+      }
+    }
+
     for (final pid in winningPlayers) {
       addStat(pid, 'points_won', 1);
+      addStat(pid, 'points', 1);
     }
-    if (state.servingTeamId == winningTeam && state.currentServerId != null) {
+
+    final servingSide = (state.servingTeamId == state.homeId || state.servingTeamId == 'home')
+        ? state.homeId
+        : (state.servingTeamId == state.awayId || state.servingTeamId == 'away')
+            ? state.awayId
+            : state.servingTeamId;
+
+    if (servingSide == winningTeam && state.currentServerId != null) {
       addStat(state.currentServerId!, 'service_points_won', 1);
     }
 
@@ -156,8 +206,11 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     final loserScore = isHome ? newAwayPts : newHomePts;
 
     // Check if this point wins the game
-    // 21 pts lead by 2, or up to cap 30 (29-29 -> 30-29)
-    final bool gameWon = (winnerScore >= 21 && (winnerScore - loserScore >= 2)) || (winnerScore >= 30);
+    final pointsToWin = state.pointsPerGame > 0 ? state.pointsPerGame : 21;
+    final cap = state.cap > 0 ? state.cap : 30;
+    final gamesToWin = (state.bestOfGames > 0 ? (state.bestOfGames / 2).ceil() : 2);
+
+    final bool gameWon = (winnerScore >= pointsToWin && (winnerScore - loserScore >= 2)) || (winnerScore >= cap);
 
     if (gameWon) {
       final updatedGame = currentGame.copyWith(
@@ -173,8 +226,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
       final newHomeGamesWon = isHome ? state.homeGamesWon + 1 : state.homeGamesWon;
       final newAwayGamesWon = !isHome ? state.awayGamesWon + 1 : state.awayGamesWon;
 
-      // Best of 3 -> first to 2 games wins
-      final bool matchWon = newHomeGamesWon >= 2 || newAwayGamesWon >= 2;
+      final bool matchWon = newHomeGamesWon >= gamesToWin || newAwayGamesWon >= gamesToWin;
 
       if (matchWon) {
         return state.copyWith(
@@ -219,7 +271,7 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     }
 
     // Game in progress: update court positions and serving player
-    final wasServing = state.servingTeamId == winningTeam;
+    final wasServing = servingSide == winningTeam;
     final courtPositions = Map<String, Map<String, String>>.from(state.courtPositions);
     final teamCourt = Map<String, String>.from(courtPositions[winningTeam] ?? {});
 
@@ -250,14 +302,15 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
       nextReceiverId = oppCourt[serverCourtKey];
     }
 
-    // Check interval prompt at leading score = 11
+    // Check interval prompt at leading score = intervalAt (halfway)
+    final intervalAt = (pointsToWin / 2).ceil();
     final leadingScore = newHomePts > newAwayPts ? newHomePts : newAwayPts;
     String? intervalMsg = state.intervalPrompt;
     final triggeredMap = Map<int, bool>.from(state.intervalTriggeredAt11);
 
-    if (leadingScore == 11 && !(triggeredMap[state.currentGameIndex] ?? false)) {
+    if (leadingScore == intervalAt && !(triggeredMap[state.currentGameIndex] ?? false)) {
       triggeredMap[state.currentGameIndex] = true;
-      if (state.currentGameIndex == 2) {
+      if (state.currentGameIndex == (state.bestOfGames - 1)) {
         intervalMsg = 'interval 60s - change ends';
       } else {
         intervalMsg = 'interval 60s';
@@ -271,8 +324,8 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
     return state.copyWith(
       games: newGames,
       servingTeamId: winningTeam,
-      currentServerId: nextServerId,
-      currentReceiverId: nextReceiverId,
+      currentServerId: nextServerId ?? state.currentServerId,
+      currentReceiverId: nextReceiverId ?? state.currentReceiverId,
       courtPositions: courtPositions,
       intervalPrompt: intervalMsg,
       intervalTriggeredAt11: triggeredMap,
@@ -349,6 +402,8 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
       'away_games_won': state.awayGamesWon,
       'home_score': state.homeGamesWon,
       'away_score': state.awayGamesWon,
+      'home_total_points': state.totalHomePoints,
+      'away_total_points': state.totalAwayPoints,
       'games_summary': scoresSummary,
       'result_margin': scoresSummary.isNotEmpty ? scoresSummary : null,
       'winner_team_id': state.winnerId,

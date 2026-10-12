@@ -81,6 +81,9 @@ class BadmintonState {
   const BadmintonState({
     required this.homeId,
     required this.awayId,
+    this.bestOfGames = 3,
+    this.pointsPerGame = 21,
+    this.cap = 30,
     this.currentGameIndex = 0,
     this.games = const [BadmintonGame()],
     this.homeGamesWon = 0,
@@ -101,6 +104,9 @@ class BadmintonState {
 
   final String homeId;
   final String awayId;
+  final int bestOfGames;
+  final int pointsPerGame;
+  final int cap;
   final int currentGameIndex;
   final List<BadmintonGame> games;
   final int homeGamesWon;
@@ -122,9 +128,16 @@ class BadmintonState {
   BadmintonGame get currentGame =>
       currentGameIndex < games.length ? games[currentGameIndex] : const BadmintonGame();
 
+  int get gamesToWin => (bestOfGames / 2).ceil();
+  int get totalHomePoints => games.fold<int>(0, (sum, g) => sum + g.homePoints);
+  int get totalAwayPoints => games.fold<int>(0, (sum, g) => sum + g.awayPoints);
+
   BadmintonState copyWith({
     String? homeId,
     String? awayId,
+    int? bestOfGames,
+    int? pointsPerGame,
+    int? cap,
     int? currentGameIndex,
     List<BadmintonGame>? games,
     int? homeGamesWon,
@@ -146,6 +159,9 @@ class BadmintonState {
     return BadmintonState(
       homeId: homeId ?? this.homeId,
       awayId: awayId ?? this.awayId,
+      bestOfGames: bestOfGames ?? this.bestOfGames,
+      pointsPerGame: pointsPerGame ?? this.pointsPerGame,
+      cap: cap ?? this.cap,
       currentGameIndex: currentGameIndex ?? this.currentGameIndex,
       games: games ?? this.games,
       homeGamesWon: homeGamesWon ?? this.homeGamesWon,
@@ -168,10 +184,16 @@ class BadmintonState {
   Map<String, dynamic> toJson() => {
         'home_id': homeId,
         'away_id': awayId,
+        'best_of_games': bestOfGames,
+        'points_per_game': pointsPerGame,
+        'cap': cap,
         'current_game_index': currentGameIndex,
         'games': games.map((g) => g.toJson()).toList(),
         'home_games_won': homeGamesWon,
         'away_games_won': awayGamesWon,
+        'home_total_points': totalHomePoints,
+        'away_total_points': totalAwayPoints,
+        'games_summary': games.map((g) => '${g.homePoints}-${g.awayPoints}').join(', '),
         'serving_team_id': servingTeamId,
         'current_server_id': currentServerId,
         'current_receiver_id': currentReceiverId,
@@ -194,6 +216,32 @@ class BadmintonState {
             .map((g) => BadmintonGame.fromJson(Map<String, dynamic>.from(g)))
             .toList()
         : const [BadmintonGame()];
+
+    List<BadmintonGame> finalGames = gamesList;
+    if (finalGames.length <= 1 &&
+        (finalGames.isEmpty ||
+            (finalGames.first.homePoints == 0 && finalGames.first.awayPoints == 0))) {
+      final summary = json['games_summary']?.toString() ??
+          json['result_margin']?.toString() ??
+          '';
+      final parsedGames = <BadmintonGame>[];
+      final reg = RegExp(r'(\d+)\s*[-–]\s*(\d+)');
+      for (final match in reg.allMatches(summary)) {
+        final hp = int.tryParse(match.group(1)!) ?? 0;
+        final ap = int.tryParse(match.group(2)!) ?? 0;
+        parsedGames.add(BadmintonGame(
+          homePoints: hp,
+          awayPoints: ap,
+          isCompleted: true,
+          winnerId: hp > ap
+              ? (json['home_id']?.toString() ?? 'home')
+              : (json['away_id']?.toString() ?? 'away'),
+        ));
+      }
+      if (parsedGames.isNotEmpty) {
+        finalGames = parsedGames;
+      }
+    }
 
     final courtPos = (json['court_positions'] is Map)
         ? (json['court_positions'] as Map).map(
@@ -232,13 +280,23 @@ class BadmintonState {
       });
     }
 
+    final homeGamesWon = (json['home_games_won'] as num?)?.toInt() ??
+        (json['home_score'] as num?)?.toInt() ??
+        0;
+    final awayGamesWon = (json['away_games_won'] as num?)?.toInt() ??
+        (json['away_score'] as num?)?.toInt() ??
+        0;
+
     return BadmintonState(
       homeId: json['home_id']?.toString() ?? 'home',
       awayId: json['away_id']?.toString() ?? 'away',
+      bestOfGames: (json['best_of_games'] as num?)?.toInt() ?? 3,
+      pointsPerGame: (json['points_per_game'] as num?)?.toInt() ?? 21,
+      cap: (json['cap'] as num?)?.toInt() ?? 30,
       currentGameIndex: (json['current_game_index'] as num?)?.toInt() ?? 0,
-      games: gamesList,
-      homeGamesWon: (json['home_games_won'] as num?)?.toInt() ?? 0,
-      awayGamesWon: (json['away_games_won'] as num?)?.toInt() ?? 0,
+      games: finalGames,
+      homeGamesWon: homeGamesWon,
+      awayGamesWon: awayGamesWon,
       servingTeamId: json['serving_team_id']?.toString(),
       currentServerId: json['current_server_id']?.toString(),
       currentReceiverId: json['current_receiver_id']?.toString(),

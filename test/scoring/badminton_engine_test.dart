@@ -167,5 +167,57 @@ void main() {
       expect(beforeLast.games[0].homePoints, equals(1));
       expect(beforeLast.games[0].awayPoints, equals(1));
     });
+
+    test('calculates points and player stats when teamId is home/away or player ID', () {
+      var state = engine.initialState(
+        config,
+        homeId: 'team_uuid_home',
+        awayId: 'team_uuid_away',
+        extra: {
+          'home_players': ['player_p1'],
+          'away_players': ['player_p2'],
+        },
+      );
+
+      // 1. rally_won with 'home' string
+      expect(engine.validate(state, MatchEvent(id: '1', matchId: 'm', seq: 1, type: 'rally_won', teamId: 'home')), isNull);
+      state = engine.apply(state, MatchEvent(id: '1', matchId: 'm', seq: 1, type: 'rally_won', teamId: 'home'));
+      expect(state.games[0].homePoints, equals(1));
+      expect(state.playerStats['player_p1']!['points_won'], equals(1));
+      expect(state.playerStats['player_p1']!['points'], equals(1));
+
+      // 2. 'point' event with player ID
+      expect(engine.validate(state, MatchEvent(id: '2', matchId: 'm', seq: 2, type: 'point', teamId: 'player_p2')), isNull);
+      state = engine.apply(state, MatchEvent(id: '2', matchId: 'm', seq: 2, type: 'point', teamId: 'player_p2'));
+      expect(state.games[0].awayPoints, equals(1));
+      expect(state.playerStats['player_p2']!['points_won'], equals(1));
+
+      // 3. 'point_won' event with teamId in payload
+      expect(engine.validate(state, MatchEvent(id: '3', matchId: 'm', seq: 3, type: 'point_won', payload: {'team': 'away'})), isNull);
+      state = engine.apply(state, MatchEvent(id: '3', matchId: 'm', seq: 3, type: 'point_won', payload: {'team': 'away'}));
+      expect(state.games[0].awayPoints, equals(2));
+
+      // Verify total points helper
+      expect(state.totalHomePoints, equals(1));
+      expect(state.totalAwayPoints, equals(2));
+      final res = engine.result(state);
+      expect(res['home_total_points'], equals(1));
+      expect(res['away_total_points'], equals(2));
+    });
+
+    test('best of 1 finishes match after 1 game', () {
+      const b1Config = BadmintonConfig(bestOfGames: 1, pointsPerGame: 21);
+      var state = engine.initialState(b1Config, homeId: 'h', awayId: 'a');
+
+      for (int i = 0; i < 21; i++) {
+        state = engine.apply(state, MatchEvent(id: '$i', matchId: 'm', seq: i, type: 'rally_won', teamId: 'h'));
+      }
+
+      expect(state.games[0].homePoints, equals(21));
+      expect(state.games[0].isCompleted, isTrue);
+      expect(state.homeGamesWon, equals(1));
+      expect(state.isCompleted, isTrue);
+      expect(state.winnerId, equals('h'));
+    });
   });
 }

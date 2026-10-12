@@ -195,8 +195,15 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
         aVal = _getInt(Map<String, dynamic>.from(aCounters), 'goals');
         bVal = _getInt(Map<String, dynamic>.from(bCounters), 'goals');
       } else if (sportLower == 'badminton') {
-        aVal = _getInt(Map<String, dynamic>.from(aCounters), 'points_won');
-        bVal = _getInt(Map<String, dynamic>.from(bCounters), 'points_won');
+        int getBadmintonPts(Map<String, dynamic> c) {
+          final pw = _getInt(c, 'points_won');
+          if (pw > 0) return pw;
+          final pts = _getInt(c, 'points');
+          if (pts > 0) return pts;
+          return _getInt(c, 'total_points');
+        }
+        aVal = getBadmintonPts(Map<String, dynamic>.from(aCounters));
+        bVal = getBadmintonPts(Map<String, dynamic>.from(bCounters));
       }
       return bVal.compareTo(aVal);
     });
@@ -218,7 +225,8 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
         primary = '$goals Goals';
         secondary = '$assists Assists';
       } else if (sportLower == 'badminton') {
-        points = _getInt(counters, 'points_won');
+        final pw = _getInt(counters, 'points_won');
+        points = pw > 0 ? pw : (_getInt(counters, 'points') > 0 ? _getInt(counters, 'points') : _getInt(counters, 'total_points'));
         primary = '$points Points';
         secondary = '$matches Matches';
       }
