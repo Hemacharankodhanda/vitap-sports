@@ -217,5 +217,26 @@ void main() {
       expect(find.byIcon(Icons.emoji_events_rounded), findsNothing);
       expect(find.text('Live Scorer'), findsOneWidget);
     });
+
+    test('MatchModel.updateFromRealtime updates scheduledAt when match is started', () {
+      final initialTime = DateTime.parse('2026-10-10T10:00:00.000Z');
+      final match = MatchModel(
+        id: testMatchId,
+        sportId: 's-football',
+        venue: 'Main Ground',
+        createdBy: 'u-1',
+        scheduledAt: initialTime,
+        status: 'scheduled',
+      );
+
+      final newStartTime = '2026-10-12T14:30:00.000Z';
+      final updated = match.updateFromRealtime({
+        'status': 'live',
+        'scheduled_at': newStartTime,
+      });
+
+      expect(updated.status, 'live');
+      expect(updated.scheduledAt, DateTime.parse(newStartTime));
+    });
   });
 }

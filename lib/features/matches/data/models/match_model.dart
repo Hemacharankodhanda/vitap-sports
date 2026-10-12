@@ -328,8 +328,12 @@ class MatchModel {
     final newConfig = raw['config'] is Map
         ? Map<String, dynamic>.from(raw['config'] as Map)
         : config;
+    final newScheduledAt = raw['scheduled_at'] != null
+        ? DateTime.tryParse(raw['scheduled_at'].toString()) ?? scheduledAt
+        : scheduledAt;
 
     return copyWith(
+      scheduledAt: newScheduledAt,
       status: raw['status'] as String? ?? status,
       homeScore: raw['home_score'] is num
           ? (raw['home_score'] as num).toInt()

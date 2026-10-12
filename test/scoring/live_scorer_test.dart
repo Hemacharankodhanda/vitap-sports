@@ -29,6 +29,19 @@ class FakeLiveScorerService extends Fake implements LiveScorerService {
   final List<MatchEvent> recordedEvents = [];
   final List<String> undoneEventIds = [];
   bool finishMatchCalled = false;
+  bool startMatchCalled = false;
+  DateTime? startedAt;
+
+  @override
+  Future<void> startMatch({
+    required String matchId,
+    required Map<String, dynamic> config,
+    required Map<String, dynamic> initialScore,
+    DateTime? startTime,
+  }) async {
+    startMatchCalled = true;
+    startedAt = startTime;
+  }
 
   @override
   Future<Map<String, dynamic>?> fetchMatch(String matchId) async => matchData;
@@ -271,6 +284,32 @@ void main() {
 
       await notifier.finishMatch();
       expect(fakeService.finishMatchCalled, isFalse);
+    });
+
+    test('startMatch sets scheduled_at to current timestamp and transitions status to live', () async {
+      final fakeService = FakeLiveScorerService(matchData: {
+        ...fakeMatchData,
+        'status': 'scheduled',
+        'scheduled_at': '2026-10-10T10:00:00.000Z',
+      });
+      final notifier = LiveScorerNotifier(
+        fakeService,
+        testUserId,
+        matchId: testMatchId,
+      );
+      await notifier.init();
+
+      final before = DateTime.now().subtract(const Duration(seconds: 2));
+      await notifier.startMatch(config: {'half_length_mins': 45});
+      final after = DateTime.now().add(const Duration(seconds: 2));
+
+      expect(fakeService.startMatchCalled, isTrue);
+      expect(fakeService.startedAt, isNotNull);
+      expect(notifier.state.status, 'live');
+
+      final updatedScheduledAt = DateTime.parse(notifier.state.matchData!['scheduled_at'] as String);
+      expect(updatedScheduledAt.isAfter(before), isTrue);
+      expect(updatedScheduledAt.isBefore(after), isTrue);
     });
   });
 }

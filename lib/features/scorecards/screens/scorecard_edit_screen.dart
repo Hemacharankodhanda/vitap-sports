@@ -17,6 +17,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../scoring/presentation/widgets/action_dialogs.dart';
 import '../../scoring/presentation/widgets/live_score_header.dart';
+import '../../matches/providers/match_providers.dart';
 import '../../scoring/presentation/widgets/scorer_action_grid.dart';
 import '../../scoring/presentation/widgets/sport_setup_widget.dart';
 import '../../scoring/providers/live_scorer_providers.dart';
@@ -102,10 +103,10 @@ class ScorecardEditScreen extends ConsumerWidget {
             ? const Center(child: CircularProgressIndicator())
             : !state.isAuthorized
                 ? _buildUnauthorizedView(context, isDark, notifier, state)
-                : _buildScorerBody(context, state, notifier),
+                : _buildScorerBody(context, state, notifier, ref),
       ),
       bottomNavigationBar: state.isAuthorized && state.isMatchLive
-          ? _buildBottomBar(context, state, notifier)
+          ? _buildBottomBar(context, state, notifier, ref)
           : null,
     );
   }
@@ -178,6 +179,7 @@ class ScorecardEditScreen extends ConsumerWidget {
     BuildContext context,
     ScorerState state,
     LiveScorerNotifier notifier,
+    WidgetRef ref,
   ) {
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -225,6 +227,8 @@ class ScorecardEditScreen extends ConsumerWidget {
             onStartMatch: ({required config, extra}) async {
               HapticFeedback.mediumImpact();
               await notifier.startMatch(config: config, extra: extra);
+              ref.invalidate(matchDetailProvider(matchId));
+              ref.invalidate(matchesListProvider);
             },
           ),
         ] else if (state.status == 'live') ...[
@@ -270,6 +274,7 @@ class ScorecardEditScreen extends ConsumerWidget {
     BuildContext context,
     ScorerState state,
     LiveScorerNotifier notifier,
+    WidgetRef ref,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -324,6 +329,16 @@ class ScorecardEditScreen extends ConsumerWidget {
 
                 if (confirm) {
                   await notifier.finishMatch();
+                  ref.invalidate(matchDetailProvider(matchId));
+                  ref.invalidate(matchesListProvider);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Match finished successfully'),
+                      ),
+                    );
+                    context.pop();
+                  }
                 }
               },
             ),

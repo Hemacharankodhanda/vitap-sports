@@ -149,11 +149,15 @@ class LiveScorerService {
   }
 
   /// Starts a scheduled match with sport-specific initial config and state.
+  /// Also sets [scheduled_at] to the exact start time so match cards, feed,
+  /// and scorecards display the real start time rather than the pre-entered time.
   Future<void> startMatch({
     required String matchId,
     required Map<String, dynamic> config,
     required Map<String, dynamic> initialScore,
+    DateTime? startTime,
   }) async {
+    final startIso = (startTime ?? DateTime.now()).toIso8601String();
     try {
       await _client.rpc(
         'start_match',
@@ -163,12 +167,17 @@ class LiveScorerService {
           'p_initial_score': initialScore,
         },
       );
+      // Ensure scheduled_at is updated to the actual start time in Supabase
+      await _client.from('matches').update({
+        'scheduled_at': startIso,
+      }).eq('id', matchId);
     } catch (_) {
       // Fallback to direct update if RPC is not deployed yet
       await _client.from('matches').update({
         'status': 'live',
         'config': config,
         'score': initialScore,
+        'scheduled_at': startIso,
       }).eq('id', matchId);
     }
   }

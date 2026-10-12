@@ -660,16 +660,23 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       return;
     }
 
+    final now = DateTime.now();
     state = state.copyWith(isSyncing: true, clearSyncError: true);
     try {
       await _service.startMatch(
         matchId: state.matchId,
         config: config,
         initialScore: (initialSnapshot as dynamic).toJson() as Map<String, dynamic>,
+        startTime: now,
       );
+      final updatedMatchData = state.matchData != null
+          ? Map<String, dynamic>.from(state.matchData!)
+          : <String, dynamic>{};
+      updatedMatchData['scheduled_at'] = now.toIso8601String();
       state = state.copyWith(
         status: 'live',
         config: config,
+        matchData: updatedMatchData,
         scoringState: initialSnapshot,
         currentScorerId: _currentUserId,
         isAuthorized: true,
