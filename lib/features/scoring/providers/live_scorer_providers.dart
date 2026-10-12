@@ -887,6 +887,18 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       }
     }
 
+    final winnerSide = result['winner_side']?.toString() ??
+        (winnerId == state.homeId || winnerId == 'home'
+            ? 'home'
+            : (winnerId == state.awayId || winnerId == 'away'
+                ? 'away'
+                : null));
+    final isDraw = result['is_draw'] == true || result['is_tie'] == true;
+    if (winnerSide != null) {
+      result['winner_side'] = winnerSide;
+      finalScore['winner_side'] = winnerSide;
+    }
+
     for (final p in state.homePlayers) {
       if (!pStats.containsKey(p.id)) {
         pStats[p.id] = <String, dynamic>{'team_id': p.teamId, 'name': p.name};
@@ -896,6 +908,14 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
             pStats[p.id]!['team_id'].toString().isEmpty) {
           pStats[p.id]!['team_id'] = p.teamId;
         }
+      }
+      pStats[p.id]!['matches_played'] = 1;
+      if (isDraw) {
+        pStats[p.id]!['matches_drawn'] = 1;
+      } else if (winnerSide == 'home') {
+        pStats[p.id]!['matches_won'] = 1;
+      } else if (winnerSide == 'away') {
+        pStats[p.id]!['matches_lost'] = 1;
       }
     }
     for (final p in state.awayPlayers) {
@@ -907,6 +927,14 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
             pStats[p.id]!['team_id'].toString().isEmpty) {
           pStats[p.id]!['team_id'] = p.teamId;
         }
+      }
+      pStats[p.id]!['matches_played'] = 1;
+      if (isDraw) {
+        pStats[p.id]!['matches_drawn'] = 1;
+      } else if (winnerSide == 'away') {
+        pStats[p.id]!['matches_won'] = 1;
+      } else if (winnerSide == 'home') {
+        pStats[p.id]!['matches_lost'] = 1;
       }
     }
     for (final entry in pStats.entries) {

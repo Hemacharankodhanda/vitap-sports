@@ -36,11 +36,25 @@ class PlayerCareerStatsCard extends StatelessWidget {
     }
     final counters = (rawCounters as Map<String, dynamic>?) ?? {};
 
-    final wins = (counters['matches_won'] as num?)?.toInt() ?? 0;
-    final losses = (counters['matches_lost'] as num?)?.toInt() ?? 0;
-    final mvps = (counters['mvps'] as num?)?.toInt() ?? 0;
+    final wins = (counters['matches_won'] as num?)?.toInt() ??
+        (counters['wins'] as num?)?.toInt() ??
+        (counters['won'] as num?)?.toInt() ??
+        (sportRow['wins'] as num?)?.toInt() ??
+        (sportRow['matches_won'] as num?)?.toInt() ??
+        0;
+    final losses = (counters['matches_lost'] as num?)?.toInt() ??
+        (counters['losses'] as num?)?.toInt() ??
+        (counters['lost'] as num?)?.toInt() ??
+        (sportRow['losses'] as num?)?.toInt() ??
+        (sportRow['matches_lost'] as num?)?.toInt() ??
+        0;
+    final mvps = (counters['mvps'] as num?)?.toInt() ??
+        (counters['mvp_count'] as num?)?.toInt() ??
+        (sportRow['mvp_count'] as num?)?.toInt() ??
+        0;
 
-    final winRate = matchesPlayed > 0 ? ((wins / matchesPlayed) * 100).toStringAsFixed(0) : '0';
+    final effectiveMatches = matchesPlayed < (wins + losses) ? (wins + losses) : matchesPlayed;
+    final winRate = effectiveMatches > 0 ? ((wins / effectiveMatches) * 100).toStringAsFixed(0) : '0';
 
     return AppCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -77,7 +91,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$matchesPlayed Matches • $wins W - $losses L ($winRate% Win Rate)',
+                      '$effectiveMatches Matches • $wins W - $losses L ($winRate% Win Rate)',
                       style: AppTypography.caption.copyWith(
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       ),
@@ -114,11 +128,11 @@ class PlayerCareerStatsCard extends StatelessWidget {
 
           // ─── Sport-Specific Detailed Stats ─────────────
           if (sportRaw.contains('cricket'))
-            _buildCricketStats(context, counters, matchesPlayed, isDark)
+            _buildCricketStats(context, counters, effectiveMatches, isDark)
           else if (sportRaw.contains('football'))
-            _buildFootballStats(context, counters, matchesPlayed, isDark)
+            _buildFootballStats(context, counters, effectiveMatches, isDark)
           else if (sportRaw.contains('badminton'))
-            _buildBadmintonStats(context, counters, matchesPlayed, isDark)
+            _buildBadmintonStats(context, counters, effectiveMatches, isDark)
           else
             _buildGenericStats(context, counters, isDark),
         ],
@@ -456,9 +470,16 @@ class PlayerCareerStatsCard extends StatelessWidget {
     int matches,
     bool isDark,
   ) {
-    final points = (counters['points_won'] as num?)?.toInt() ?? 0;
-    final servePts = (counters['service_points_won'] as num?)?.toInt() ?? 0;
-    final gamesWon = (counters['games_won'] as num?)?.toInt() ?? 0;
+    final points = (counters['points_won'] as num?)?.toInt() ??
+        (counters['points'] as num?)?.toInt() ??
+        (counters['total_points'] as num?)?.toInt() ??
+        0;
+    final servePts = (counters['service_points_won'] as num?)?.toInt() ??
+        (counters['service_points'] as num?)?.toInt() ??
+        0;
+    final gamesWon = (counters['games_won'] as num?)?.toInt() ??
+        (counters['games'] as num?)?.toInt() ??
+        0;
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),

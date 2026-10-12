@@ -1,8 +1,6 @@
 /// VIT-AP Sports — Team model.
 library;
 
-import '../../../profile/data/models/user_model.dart';
-
 class TeamModel {
   const TeamModel({
     required this.id,
@@ -57,9 +55,9 @@ class TeamModel {
               ?.map((e) => TeamMember.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
-      wins: json['wins'] as int? ?? 0,
-      losses: json['losses'] as int? ?? 0,
-      draws: json['draws'] as int? ?? 0,
+      wins: (json['wins'] as num?)?.toInt() ?? 0,
+      losses: (json['losses'] as num?)?.toInt() ?? 0,
+      draws: (json['draws'] as num?)?.toInt() ?? 0,
     );
   }
 
