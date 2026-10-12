@@ -49,7 +49,7 @@ class UserModel {
       int derivedMvps = 0;
       for (final row in careerStats) {
         if (row is Map) {
-          derivedMatches += (row['matches_played'] as num?)?.toInt() ?? 0;
+          final rowMatches = (row['matches_played'] as num?)?.toInt() ?? 0;
           var counters = row['career_counters'];
           if (counters is String) {
             try {
@@ -57,15 +57,41 @@ class UserModel {
             } catch (_) {}
           }
           final countersMap = (counters as Map<String, dynamic>?) ?? {};
-          derivedWins += (countersMap['matches_won'] as num?)?.toInt() ?? 0;
-          derivedLosses += (countersMap['matches_lost'] as num?)?.toInt() ?? 0;
-          derivedMvps += (countersMap['mvps'] as num?)?.toInt() ?? 0;
+          final w = (countersMap['matches_won'] as num?)?.toInt() ??
+              (countersMap['wins'] as num?)?.toInt() ??
+              (countersMap['won'] as num?)?.toInt() ??
+              (row['wins'] as num?)?.toInt() ??
+              (row['matches_won'] as num?)?.toInt() ??
+              0;
+          final l = (countersMap['matches_lost'] as num?)?.toInt() ??
+              (countersMap['losses'] as num?)?.toInt() ??
+              (countersMap['lost'] as num?)?.toInt() ??
+              (row['losses'] as num?)?.toInt() ??
+              (row['matches_lost'] as num?)?.toInt() ??
+              0;
+          final mvp = (countersMap['mvps'] as num?)?.toInt() ??
+              (countersMap['mvp_count'] as num?)?.toInt() ??
+              (row['mvp_count'] as num?)?.toInt() ??
+              0;
+
+          final effMatches = rowMatches < (w + l) ? (w + l) : rowMatches;
+          derivedMatches += effMatches;
+          derivedWins += w;
+          derivedLosses += l;
+          derivedMvps += mvp;
         }
       }
-      if (derivedMatches > 0) totalMatches = derivedMatches;
-      if (derivedWins > 0) totalWins = derivedWins;
-      if (derivedLosses > 0) totalLosses = derivedLosses;
-      if (derivedMvps > 0) totalMvps = derivedMvps;
+      if (derivedMatches > 0) {
+        totalMatches = derivedMatches;
+        totalWins = derivedWins;
+        totalLosses = derivedLosses;
+        if (derivedMvps > 0) totalMvps = derivedMvps;
+      }
+    }
+
+    // Mathematical guarantee: matches played can never be less than wins + losses
+    if (totalMatches < (totalWins + totalLosses)) {
+      totalMatches = totalWins + totalLosses;
     }
 
     return UserModel(

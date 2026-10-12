@@ -130,6 +130,51 @@ class LiveScorerService {
         'result': result,
         'score': finalScore,
       }).eq('id', matchId);
+
+      // Best-effort stats synchronization if RPC failed
+      try {
+        final pStats = (finalScore['player_stats'] as Map<String, dynamic>?) ?? {};
+        final matchRow = await _client.from('matches').select('sport_id, sports(name)').eq('id', matchId).maybeSingle();
+        final sportObj = matchRow?['sports'] as Map<String, dynamic>?;
+        final sportName = (sportObj?['name']?.toString() ?? 'cricket').toLowerCase();
+        final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+        for (final entry in pStats.entries) {
+          final playerId = entry.key;
+          final stats = Map<String, dynamic>.from(entry.value is Map ? entry.value as Map : {});
+          final teamId = stats['team_id']?.toString();
+
+          if (uuidRegex.hasMatch(playerId)) {
+            try {
+              await _client.from('player_match_stats').upsert({
+                'match_id': matchId,
+                'player_id': playerId,
+                'sport': sportName,
+                'team_id': (teamId != null && uuidRegex.hasMatch(teamId)) ? teamId : null,
+                'counters': stats,
+              });
+            } catch (_) {}
+
+            try {
+              final user = await _client.from('users').select('matches_played, wins, losses').eq('id', playerId).maybeSingle();
+              if (user != null) {
+                final curMatches = (user['matches_played'] as num?)?.toInt() ?? 0;
+                final curWins = (user['wins'] as num?)?.toInt() ?? 0;
+                final curLosses = (user['losses'] as num?)?.toInt() ?? 0;
+                final isWin = stats['matches_won'] == 1;
+                final isLoss = stats['matches_lost'] == 1;
+
+                await _client.from('users').update({
+                  'matches_played': curMatches + 1,
+                  'wins': isWin ? curWins + 1 : curWins,
+                  'losses': isLoss ? curLosses + 1 : curLosses,
+                }).eq('id', playerId);
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
       return {'success': true};
     }
   }
