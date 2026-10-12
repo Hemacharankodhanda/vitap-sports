@@ -20,12 +20,12 @@ void main() {
               'name': 'Rohit Sharma',
               'avatar_url': null,
               'runs': 450,
-              'balls': 321,
+              'avg': '56.3',
               'fours': 38,
               'sixes': 15,
               'sr': '140.2',
-              'primary_stat': '450 Runs',
-              'secondary_stat': 'SR: 140.2 • 38 (4s) • 15 (6s)',
+              'primary_stat': '56.3 Avg',
+              'secondary_stat': 'Avg: 56.3 • SR: 140.2 • 38 (4s) • 15 (6s)',
             },
           ]),
           topTeamsProvider.overrideWith((ref) async => []),
@@ -61,12 +61,14 @@ void main() {
       // Check tabular column headers
       expect(find.text('PLAYER'), findsOneWidget);
       expect(find.text('RUNS'), findsOneWidget);
+      expect(find.text('AVG'), findsOneWidget);
       expect(find.text('SR'), findsOneWidget);
       expect(find.text('4s'), findsOneWidget);
       expect(find.text('6s'), findsOneWidget);
 
       // Check player stat numbers
       expect(find.text('450'), findsOneWidget);
+      expect(find.text('56.3'), findsOneWidget);
       expect(find.text('140.2'), findsOneWidget);
     });
 
@@ -167,6 +169,72 @@ void main() {
       expect(find.text('Lionel Messi'), findsOneWidget);
       expect(find.text('14'), findsOneWidget);
       expect(find.text('8'), findsOneWidget);
+    });
+
+    testWidgets('cricket batting ranks players by average score and displays AVG column instead of balls', (tester) async {
+      final players = [
+        {
+          'id': 'p-b',
+          'name': 'Virat Kohli',
+          'avatar_url': null,
+          'runs': 200,
+          'avg': '100.0',
+          'fours': 20,
+          'sixes': 6,
+          'sr': '150.0',
+        },
+        {
+          'id': 'p-c',
+          'name': 'KL Rahul',
+          'avatar_url': null,
+          'runs': 250,
+          'avg': '50.0',
+          'fours': 22,
+          'sixes': 5,
+          'sr': '135.0',
+        },
+        {
+          'id': 'p-a',
+          'name': 'Shikhar Dhawan',
+          'avatar_url': null,
+          'runs': 300,
+          'avg': '30.0',
+          'fours': 30,
+          'sixes': 4,
+          'sr': '125.0',
+        },
+      ];
+
+      final container = ProviderContainer(
+        overrides: [
+          leaderboardSportProvider.overrideWith((ref) => 'Cricket'),
+          cricketCategoryProvider.overrideWith((ref) => 'Batting'),
+          topPlayersProvider.overrideWith((ref) async => players),
+          topTeamsProvider.overrideWith((ref) async => []),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: LeaderboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify AVG header is present and B is absent
+      expect(find.text('AVG'), findsOneWidget);
+      expect(find.text('B'), findsNothing);
+
+      // Verify order of players matches average ranking
+      expect(find.text('Virat Kohli'), findsOneWidget);
+      expect(find.text('100.0'), findsOneWidget);
+      expect(find.text('KL Rahul'), findsOneWidget);
+      expect(find.text('50.0'), findsOneWidget);
+      expect(find.text('Shikhar Dhawan'), findsOneWidget);
+      expect(find.text('30.0'), findsOneWidget);
     });
   });
 }

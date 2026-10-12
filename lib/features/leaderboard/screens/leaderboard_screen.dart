@@ -293,8 +293,8 @@ class _PlayerLeaderboardTable extends StatelessWidget {
       } else {
         // Batting
         return [
-          _colHeader('RUNS', 44, isHighlight: true),
-          _colHeader('B', 34),
+          _colHeader('RUNS', 44),
+          _colHeader('AVG', 44, isHighlight: true),
           _colHeader('4s', 30),
           _colHeader('6s', 30),
           _colHeader('SR', 50),
@@ -421,14 +421,14 @@ class _PlayerLeaderboardTable extends StatelessWidget {
       } else {
         // Batting
         final runs = _resolveBattingRuns(p);
-        final balls = _resolveBattingBalls(p);
+        final avg = _resolveBattingAvg(p);
         final fours = _resolveBattingFours(p);
         final sixes = _resolveBattingSixes(p);
         final sr = _resolveBattingSr(p);
 
         return [
-          _colValue(runs, 44, isHighlight: true),
-          _colValue(balls, 34),
+          _colValue(runs, 44),
+          _colValue(avg, 44, isHighlight: true),
           _colValue(fours, 30),
           _colValue(sixes, 30),
           _colValue(sr, 50),
@@ -512,11 +512,15 @@ class _PlayerLeaderboardTable extends StatelessWidget {
     return prim.isNotEmpty ? prim : '0';
   }
 
-  String _resolveBattingBalls(Map<String, dynamic> p) {
-    if (p['balls'] != null) return p['balls'].toString();
+  String _resolveBattingAvg(Map<String, dynamic> p) {
+    if (p['avg'] != null) return p['avg'].toString();
+    if (p['batting_avg'] != null) return p['batting_avg'].toString();
     final sec = p['secondary_stat']?.toString() ?? '';
-    final m = RegExp(r'(\d+)\s*Balls?').firstMatch(sec);
+    final m = RegExp(r'Avg:\s*([0-9.]+)').firstMatch(sec);
     if (m != null) return m.group(1)!;
+    final prim = p['primary_stat']?.toString() ?? '';
+    final m2 = RegExp(r'([0-9.]+)\s*Avg').firstMatch(prim);
+    if (m2 != null) return m2.group(1)!;
     return '-';
   }
 
