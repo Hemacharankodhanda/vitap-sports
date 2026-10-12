@@ -328,8 +328,12 @@ class MatchModel {
     final newConfig = raw['config'] is Map
         ? Map<String, dynamic>.from(raw['config'] as Map)
         : config;
+    final newScheduledAt = raw['scheduled_at'] != null
+        ? DateTime.tryParse(raw['scheduled_at'].toString()) ?? scheduledAt
+        : scheduledAt;
 
     return copyWith(
+      scheduledAt: newScheduledAt,
       status: raw['status'] as String? ?? status,
       homeScore: raw['home_score'] is num
           ? (raw['home_score'] as num).toInt()
@@ -348,9 +352,9 @@ class MatchModel {
     final sportLower = (sportName ?? '').toLowerCase();
 
     // 1. Cricket: Extract runs/wickets (overs ov)
-    if (sportLower == 'cricket' && score != null) {
-      final inningsRaw = score!['innings'];
-      if (inningsRaw is List && inningsRaw.isNotEmpty) {
+    if (sportLower == 'cricket') {
+      final inningsRaw = (score?['innings'] as List?) ?? (result?['innings'] as List?);
+      if (inningsRaw != null && inningsRaw.isNotEmpty) {
         final parts = <String>[];
         for (final inn in inningsRaw) {
           if (inn is Map) {
