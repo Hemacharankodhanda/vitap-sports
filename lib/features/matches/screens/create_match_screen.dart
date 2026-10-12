@@ -11,6 +11,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/providers/sport_filter_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../teams/providers/team_providers.dart';
 import '../providers/match_providers.dart';
@@ -276,9 +277,9 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
       
       final sportsList = ref.read(sportsListProvider).valueOrNull ?? [];
       final selectedSport = sportsList.where((s) => s['id'] == _selectedSportId).firstOrNull;
-      final sportName = (selectedSport?['name'] as String? ?? '').toLowerCase();
-      final isCricket = sportName == 'cricket';
-      final isBadminton = sportName == 'badminton';
+      final sportName = (selectedSport?['name'] as String? ?? '').toLowerCase().trim();
+      final isCricket = sportName.contains('cricket');
+      final isBadminton = sportName.contains('badminton');
 
       String? finalFormat = _selectedFormat;
       if (isCricket && _oversController.text.isNotEmpty) {
@@ -470,7 +471,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             const SizedBox(height: AppSpacing.xl),
 
             // Badminton Match Type: Singles or Doubles
-            if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false) ...[
+            if (_isBadminton(sportsAsync.valueOrNull)) ...[
               Text('Match Type', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
               const SizedBox(height: AppSpacing.sm),
               Row(
@@ -506,8 +507,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ],
 
             // If Badminton Singles: Do not show option of teams, show option of players
-            if ((sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false) &&
-                _badmintonType == 'singles') ...[
+            if (_isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'singles') ...[
               Text('Players', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
               const SizedBox(height: AppSpacing.sm),
               _buildSinglesPlayersSection(),
@@ -518,7 +518,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Teams', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-                  if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false)
+                  if (_isBadminton(sportsAsync.valueOrNull))
                     Text(
                       'Doubles: exactly 2 players per team',
                       style: AppTypography.caption.copyWith(
@@ -529,16 +529,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              ref.watch(teamsListProvider).when(
+              ref.watch(teamsBySportProvider(_selectedSportId)).when(
                     loading: () => const CircularProgressIndicator(),
                     error: (err, stack) => const Text('Failed to load teams'),
                     data: (teams) {
-                      final isBadmintonDoubles = (sportsAsync.valueOrNull?.any(
-                              (s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ??
-                          false) && _badmintonType == 'doubles';
+                      final isBadmintonDoubles = _isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'doubles';
 
                       final filteredTeams = teams
-                          .where((t) => t.sportId == _selectedSportId)
+                          .where((t) => _selectedSportId == null || t.sportId == _selectedSportId)
                           .toList();
                       final items = filteredTeams
                           .map((t) => DropdownMenuItem(
@@ -554,10 +552,52 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                           .where((t) => t.id == _awayTeamId)
                           .firstOrNull;
 
+                      final sportObj = sportsAsync.valueOrNull
+                          ?.where((s) => s['id'] == _selectedSportId)
+                          .firstOrNull;
+                      final sportName = sportObj?['name'] as String? ?? 'this sport';
+
+                      if (items.isEmpty) {
+                        return Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.35),
+                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                            border: Border.all(color: Theme.of(context).dividerColor),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                'No teams found for $sportName.',
+                                style: AppTypography.body,
+                              ),
+                              if (isBadmintonDoubles) ...[
+                                const SizedBox(height: AppSpacing.xs),
+                                Text(
+                                  'Tip: You can switch to Badminton Singles above to play immediately without teams.',
+                                  style: AppTypography.caption.copyWith(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: AppSpacing.sm),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.add, size: 18),
+                                label: Text('Create a $sportName Team'),
+                                onPressed: () => context.push('/teams/create'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           DropdownButtonFormField<String>(
+                            key: ValueKey('team1_${_selectedSportId}_${_homeTeamId}_${items.length}'),
                             initialValue: _homeTeamId,
                             decoration: const InputDecoration(
                               labelText: 'Team 1',
@@ -617,6 +657,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                           ],
                           const SizedBox(height: AppSpacing.md),
                           DropdownButtonFormField<String>(
+                            key: ValueKey('team2_${_selectedSportId}_${_awayTeamId}_${items.length}'),
                             initialValue: _awayTeamId,
                             decoration: const InputDecoration(
                               labelText: 'Team 2',
@@ -759,36 +800,31 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     );
   }
 
-  Widget _buildSinglesPlayersSection() {
-    final allPlayersAsync = ref.watch(allPlayersProvider);
+  bool _isBadminton(List<Map<String, dynamic>>? sports) {
+    if (sports == null || _selectedSportId == null) return false;
+    return sports.any((s) =>
+        s['id'] == _selectedSportId &&
+        (s['name'] as String? ?? '').toLowerCase().trim().contains('badminton'));
+  }
 
-    return allPlayersAsync.when(
+  Widget _buildSinglesPlayersSection() {
+    final playersAsync = ref.watch(playersForSportProvider(_selectedSportId));
+
+    return playersAsync.when(
       loading: () => const Center(
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.md),
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (err, stack) => Column(
-        children: [
-          AppTextField(
-            controller: _player1CustomCtrl,
-            label: 'Player 1',
-            hint: 'e.g., P.V. Sindhu',
-            prefixIcon: Icons.person_outline,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 1 name' : null,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _player2CustomCtrl,
-            label: 'Player 2',
-            hint: 'e.g., Saina Nehwal',
-            prefixIcon: Icons.person_outline,
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 2 name' : null,
-          ),
-        ],
-      ),
+      error: (err, stack) => _buildCustomPlayersFallback(),
       data: (players) {
+        if (players.isEmpty) {
+          return _buildCustomPlayersFallback(
+            note: 'No registered players found in system. Enter player names manually below:',
+          );
+        }
+
         final playerItems = players
             .map((p) => DropdownMenuItem<String>(
                   value: p['id'] as String,
@@ -799,13 +835,17 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                 ))
             .toList();
 
+        final validP1 = players.any((p) => p['id'] == _selectedPlayer1Id) ? _selectedPlayer1Id : null;
+        final validP2 = players.any((p) => p['id'] == _selectedPlayer2Id) ? _selectedPlayer2Id : null;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Player 1
             if (!_isCustomP1) ...[
               DropdownButtonFormField<String>(
-                initialValue: _selectedPlayer1Id,
+                key: ValueKey('p1_${_selectedSportId}_${validP1}_${playerItems.length}'),
+                initialValue: validP1,
                 decoration: InputDecoration(
                   labelText: 'Player 1',
                   prefixIcon: const Icon(Icons.person_outline),
@@ -855,7 +895,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             // Player 2
             if (!_isCustomP2) ...[
               DropdownButtonFormField<String>(
-                initialValue: _selectedPlayer2Id,
+                key: ValueKey('p2_${_selectedSportId}_${validP2}_${playerItems.length}'),
+                initialValue: validP2,
                 decoration: InputDecoration(
                   labelText: 'Player 2',
                   prefixIcon: const Icon(Icons.person_outline),
@@ -907,6 +948,43 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCustomPlayersFallback({String? note}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (note != null) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            ),
+            child: Text(
+              note,
+              style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.primary),
+            ),
+          ),
+        ],
+        AppTextField(
+          controller: _player1CustomCtrl,
+          label: 'Player 1',
+          hint: 'e.g., P.V. Sindhu',
+          prefixIcon: Icons.person_outline,
+          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 1 name' : null,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _player2CustomCtrl,
+          label: 'Player 2',
+          hint: 'e.g., Saina Nehwal',
+          prefixIcon: Icons.person_outline,
+          validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 2 name' : null,
+        ),
+      ],
     );
   }
 }

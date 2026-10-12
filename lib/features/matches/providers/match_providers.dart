@@ -15,16 +15,77 @@ final matchServiceProvider = Provider<MatchService>((ref) {
 
 /// All registered players/users for individual/singles selection.
 final allPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(playersForSportProvider(null).future);
+});
+
+/// Players provider with optional sport filtering and team-member resolution.
+final playersForSportProvider =
+    FutureProvider.family<List<Map<String, dynamic>>, String?>((ref, sportId) async {
   final client = ref.watch(supabaseClientProvider);
+  final users = <Map<String, dynamic>>[];
+  final seenIds = <String>{};
+
+  // 1. If sportId is specified, fetch members from teams of this sport first
+  if (sportId != null) {
+    try {
+      final teamRes = await client
+          .from('teams')
+          .select('id, team_members(user_id, users(id, name, avatar_url))')
+          .eq('sport_id', sportId);
+      for (final t in teamRes) {
+        final members = t['team_members'] as List<dynamic>? ?? [];
+        for (final m in members) {
+          final u = m['users'] as Map<String, dynamic>?;
+          final uid = (m['user_id'] as String?) ?? (u?['id'] as String?);
+          if (uid != null && seenIds.add(uid)) {
+            final name = (u?['name'] as String?)?.trim();
+            users.add({
+              'id': uid,
+              'name': (name != null && name.isNotEmpty) ? name : 'Player',
+              'avatar_url': u?['avatar_url'] as String?,
+            });
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Fetch all registered users from public.users table (safe columns only)
   try {
     final res = await client
         .from('users')
-        .select('id, name, avatar_url, role')
+        .select('id, name, avatar_url')
         .order('name');
-    return List<Map<String, dynamic>>.from(res);
-  } catch (_) {
-    return <Map<String, dynamic>>[];
+    for (final row in res) {
+      final id = row['id'] as String?;
+      if (id != null && seenIds.add(id)) {
+        final name = (row['name'] as String?)?.trim();
+        users.add({
+          'id': id,
+          'name': (name != null && name.isNotEmpty) ? name : 'Player',
+          'avatar_url': row['avatar_url'] as String?,
+        });
+      }
+    }
+  } catch (_) {}
+
+  // 3. Ensure currently authenticated user is in list
+  final currentUserId = ref.watch(currentUserIdProvider);
+  if (currentUserId != null && !seenIds.contains(currentUserId)) {
+    final user = ref.watch(currentUserProvider);
+    final name = (user?.userMetadata?['name'] as String?) ??
+        (user?.userMetadata?['full_name'] as String?) ??
+        user?.email?.split('@').first ??
+        'You';
+    seenIds.add(currentUserId);
+    users.insert(0, {
+      'id': currentUserId,
+      'name': '$name (You)',
+      'avatar_url': null,
+    });
   }
+
+  return users;
 });
 
 final matchesListProvider = FutureProvider.family<List<MatchModel>, String?>(
