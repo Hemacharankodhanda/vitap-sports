@@ -647,12 +647,44 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       return;
     }
 
+    final sanitizedExtra = extra != null ? Map<String, dynamic>.from(extra) : <String, dynamic>{};
+
+    if (state.sport.toLowerCase() == 'cricket') {
+      final battingTeamId = sanitizedExtra['batting_first_team_id'] as String? ?? state.homeId;
+      final bowlingTeamId = battingTeamId == state.homeId ? state.awayId : state.homeId;
+      final battingTeamName = battingTeamId == state.homeId ? state.homeName : state.awayName;
+      final bowlingTeamName = bowlingTeamId == state.homeId ? state.homeName : state.awayName;
+      final battingPlayers = state.playersForTeam(battingTeamId);
+      final bowlingPlayers = state.playersForTeam(bowlingTeamId);
+
+      var striker = (sanitizedExtra['striker_id'] as String?) ?? (sanitizedExtra['opening_striker'] as String?);
+      var nonStriker = (sanitizedExtra['non_striker_id'] as String?) ?? (sanitizedExtra['opening_non_striker'] as String?);
+      var bowler = (sanitizedExtra['opening_bowler_id'] as String?) ?? (sanitizedExtra['opening_bowler'] as String?);
+
+      if (striker == null || striker.isEmpty || striker == 'Batter 1' || striker == 'Striker 1') {
+        striker = battingPlayers.isNotEmpty ? battingPlayers.first.id : '$battingTeamName Player 1';
+      }
+      if (nonStriker == null || nonStriker.isEmpty || nonStriker == 'Batter 2' || nonStriker == 'Non-Striker 2') {
+        nonStriker = battingPlayers.length > 1 ? battingPlayers[1].id : '$battingTeamName Player 2';
+      }
+      if (bowler == null || bowler.isEmpty || bowler == 'Bowler 1' || bowler == 'Opening Bowler') {
+        bowler = bowlingPlayers.isNotEmpty ? bowlingPlayers.first.id : '$bowlingTeamName Bowler 1';
+      }
+
+      sanitizedExtra['striker_id'] = striker;
+      sanitizedExtra['opening_striker'] = striker;
+      sanitizedExtra['non_striker_id'] = nonStriker;
+      sanitizedExtra['opening_non_striker'] = nonStriker;
+      sanitizedExtra['opening_bowler_id'] = bowler;
+      sanitizedExtra['opening_bowler'] = bowler;
+    }
+
     final initialSnapshot = SportRegistry.initialState(
       sportName: state.sport,
       configJson: config,
       homeId: state.homeId,
       awayId: state.awayId,
-      extra: extra,
+      extra: sanitizedExtra,
     );
 
     if (initialSnapshot == null) {
@@ -660,13 +692,24 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       return;
     }
 
+    // Embed player_names map into initialScore so viewers have immediate name resolution
+    final allSquadPlayers = [...state.homePlayers, ...state.awayPlayers];
+    final idToName = <String, String>{};
+    for (final p in allSquadPlayers) {
+      idToName[p.id] = p.name;
+      idToName[p.name] = p.name;
+    }
+
+    final initialScore = (initialSnapshot as dynamic).toJson() as Map<String, dynamic>;
+    initialScore['player_names'] = idToName;
+
     final now = DateTime.now();
     state = state.copyWith(isSyncing: true, clearSyncError: true);
     try {
       await _service.startMatch(
         matchId: state.matchId,
         config: config,
-        initialScore: (initialSnapshot as dynamic).toJson() as Map<String, dynamic>,
+        initialScore: initialScore,
         startTime: now,
       );
       final updatedMatchData = state.matchData != null

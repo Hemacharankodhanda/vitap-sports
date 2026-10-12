@@ -277,6 +277,36 @@ final matchPlayerNamesProvider =
     } catch (_) {}
   }
 
+  // 6. Map legacy/placeholder labels (e.g. Batter 1, Batter 2, Bowler 1) to actual squad players or team names
+  final homeTeamName = match.homeTeamName ?? 'Home';
+  final awayTeamName = match.awayTeamName ?? 'Away';
+  String battingTeamId = match.homeTeamId ?? 'home';
+  if (match.score != null && match.score!['innings'] is List && (match.score!['innings'] as List).isNotEmpty) {
+    final firstInn = (match.score!['innings'] as List).first;
+    if (firstInn is Map && firstInn['batting_team_id'] != null) {
+      battingTeamId = firstInn['batting_team_id'].toString();
+    }
+  }
+  final isHomeBatting = battingTeamId == match.homeTeamId || battingTeamId == 'home';
+  final battingTeamName = isHomeBatting ? homeTeamName : awayTeamName;
+  final bowlingTeamName = isHomeBatting ? awayTeamName : homeTeamName;
+
+  final battingMembers = match.participants
+      .where((p) => (isHomeBatting ? p.teamId == match.homeTeamId : p.teamId == match.awayTeamId) && p.userName != null && p.userName!.isNotEmpty)
+      .map((p) => p.userName!)
+      .toList();
+  final bowlingMembers = match.participants
+      .where((e) => (isHomeBatting ? e.teamId == match.awayTeamId : e.teamId == match.homeTeamId) && e.userName != null && e.userName!.isNotEmpty)
+      .map((e) => e.userName!)
+      .toList();
+
+  names.putIfAbsent('Batter 1', () => battingMembers.isNotEmpty ? battingMembers[0] : '$battingTeamName Player 1');
+  names.putIfAbsent('Batter 2', () => battingMembers.length > 1 ? battingMembers[1] : '$battingTeamName Player 2');
+  names.putIfAbsent('Bowler 1', () => bowlingMembers.isNotEmpty ? bowlingMembers[0] : '$bowlingTeamName Bowler 1');
+  names.putIfAbsent('Striker 1', () => battingMembers.isNotEmpty ? battingMembers[0] : '$battingTeamName Player 1');
+  names.putIfAbsent('Non-Striker 2', () => battingMembers.length > 1 ? battingMembers[1] : '$battingTeamName Player 2');
+  names.putIfAbsent('Opening Bowler', () => bowlingMembers.isNotEmpty ? bowlingMembers[0] : '$bowlingTeamName Bowler 1');
+
   return names;
 });
 

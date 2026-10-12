@@ -90,6 +90,22 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     _syncBadmintonPlayers();
   }
 
+  @override
+  void didUpdateWidget(covariant SportSetupWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final homeChanged = widget.state.homePlayers != oldWidget.state.homePlayers;
+    final awayChanged = widget.state.awayPlayers != oldWidget.state.awayPlayers;
+    if (homeChanged || awayChanged) {
+      if (_selectedStriker == null ||
+          _selectedStriker == 'Batter 1' ||
+          _selectedStriker!.contains('Player 1') ||
+          !_battingPlayers.any((p) => p.id == _selectedStriker)) {
+        _syncDefaultPlayers();
+      }
+      _syncBadmintonPlayers();
+    }
+  }
+
   void _syncBadmintonPlayers() {
     final homeList = widget.state.homePlayers;
     final awayList = widget.state.awayPlayers;
@@ -152,21 +168,31 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
       _selectedStriker = batting.first.id;
       _selectedNonStriker = batting.length > 1 ? batting[1].id : null;
     } else {
-      _selectedStriker = 'Batter 1';
-      _selectedNonStriker = 'Batter 2';
+      _selectedStriker = '$_battingTeamName Player 1';
+      _selectedNonStriker = '$_battingTeamName Player 2';
     }
 
     if (bowling.isNotEmpty) {
       _selectedBowler = bowling.first.id;
     } else {
-      _selectedBowler = 'Bowler 1';
+      _selectedBowler = '$_bowlingTeamName Bowler 1';
     }
   }
 
   String _playerDisplayName(String? id, List<PlayerOption> list, String fallback) {
     if (id == null || id.isEmpty) return fallback;
-    final match = list.where((p) => p.id == id).firstOrNull;
-    return match?.name ?? id;
+    final match = list.where((p) => p.id == id || p.name == id).firstOrNull;
+    if (match != null) return match.name;
+    if (id == 'Batter 1' || id == 'Striker 1') {
+      return list.isNotEmpty ? list.first.name : '$_battingTeamName Player 1';
+    }
+    if (id == 'Batter 2' || id == 'Non-Striker 2') {
+      return list.length > 1 ? list[1].name : '$_battingTeamName Player 2';
+    }
+    if (id == 'Bowler 1' || id == 'Opening Bowler') {
+      return _bowlingPlayers.isNotEmpty ? _bowlingPlayers.first.name : '$_bowlingTeamName Bowler 1';
+    }
+    return id;
   }
 
   @override
@@ -1020,6 +1046,22 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
 
     try {
       if (sport == 'cricket') {
+        final batting = _battingPlayers;
+        final bowling = _bowlingPlayers;
+
+        String strikerId = _selectedStriker ?? '';
+        if (strikerId.isEmpty || strikerId == 'Batter 1' || strikerId == 'Striker 1') {
+          strikerId = batting.isNotEmpty ? batting.first.id : '$_battingTeamName Player 1';
+        }
+        String nonStrikerId = _selectedNonStriker ?? '';
+        if (nonStrikerId.isEmpty || nonStrikerId == 'Batter 2' || nonStrikerId == 'Non-Striker 2') {
+          nonStrikerId = batting.length > 1 ? batting[1].id : '$_battingTeamName Player 2';
+        }
+        String bowlerId = _selectedBowler ?? '';
+        if (bowlerId.isEmpty || bowlerId == 'Bowler 1' || bowlerId == 'Opening Bowler') {
+          bowlerId = bowling.isNotEmpty ? bowling.first.id : '$_bowlingTeamName Bowler 1';
+        }
+
         final config = {
           'overs_per_innings': _cricketOvers,
           'players_per_side': 11,
@@ -1030,12 +1072,12 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           'toss_winner': _cricketTossWinner,
           'toss_decision': _cricketDecision,
           'batting_first_team_id': _battingTeamId,
-          'striker_id': _selectedStriker ?? 'Batter 1',
-          'non_striker_id': _selectedNonStriker ?? 'Batter 2',
-          'opening_bowler_id': _selectedBowler ?? 'Bowler 1',
-          'opening_striker': _selectedStriker ?? 'Batter 1',
-          'opening_non_striker': _selectedNonStriker ?? 'Batter 2',
-          'opening_bowler': _selectedBowler ?? 'Bowler 1',
+          'striker_id': strikerId,
+          'non_striker_id': nonStrikerId,
+          'opening_bowler_id': bowlerId,
+          'opening_striker': strikerId,
+          'opening_non_striker': nonStrikerId,
+          'opening_bowler': bowlerId,
         };
         await widget.onStartMatch(config: config, extra: extra);
       } else if (sport == 'badminton') {

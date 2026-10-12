@@ -145,8 +145,37 @@ class LiveScoreHeader extends StatelessWidget {
           .where((p) => p.id == id || p.name == id)
           .firstOrNull;
       if (match?.name != null && match!.name.isNotEmpty) return match.name;
-      if (id.startsWith('home_p_')) return '${state.homeName} Player ${id.replaceFirst('home_p_', '')}';
-      if (id.startsWith('away_p_')) return '${state.awayName} Player ${id.replaceFirst('away_p_', '')}';
+
+      final idLower = id.toLowerCase().trim();
+      final isHomeBatting = currentInnings.battingTeamId == state.homeId;
+      final battingTeamName = isHomeBatting ? state.homeName : state.awayName;
+      final bowlingTeamName = isHomeBatting ? state.awayName : state.homeName;
+      final battingPlayers = isHomeBatting ? state.homePlayers : state.awayPlayers;
+      final bowlingPlayers = isHomeBatting ? state.awayPlayers : state.homePlayers;
+
+      if (idLower == 'batter 1' || idLower == 'striker 1') {
+        if (battingPlayers.isNotEmpty) return battingPlayers.first.name;
+        return '$battingTeamName Player 1';
+      }
+      if (idLower == 'batter 2' || idLower == 'striker 2' || idLower == 'non-striker 2') {
+        if (battingPlayers.length > 1) return battingPlayers[1].name;
+        return '$battingTeamName Player 2';
+      }
+      if (idLower == 'bowler 1' || idLower == 'opening bowler') {
+        if (bowlingPlayers.isNotEmpty) return bowlingPlayers.first.name;
+        return '$bowlingTeamName Bowler 1';
+      }
+
+      if (id.startsWith('home_p_')) {
+        final num = int.tryParse(id.replaceFirst('home_p_', '')) ?? 1;
+        if (num > 0 && num <= state.homePlayers.length) return state.homePlayers[num - 1].name;
+        return '${state.homeName} Player $num';
+      }
+      if (id.startsWith('away_p_')) {
+        final num = int.tryParse(id.replaceFirst('away_p_', '')) ?? 1;
+        if (num > 0 && num <= state.awayPlayers.length) return state.awayPlayers[num - 1].name;
+        return '${state.awayName} Player $num';
+      }
       if (id.length == 36 && id.contains('-')) return 'Player';
       return id;
     }
