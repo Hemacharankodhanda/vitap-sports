@@ -26,6 +26,14 @@ final teamsListProvider = FutureProvider<List<TeamModel>>((ref) async {
   return service.getTeams(sportId: sport['id'] as String);
 });
 
+/// Teams for a specific sport ID (independent of global sportFilterProvider).
+final teamsBySportProvider =
+    FutureProvider.family<List<TeamModel>, String?>((ref, sportId) async {
+  if (sportId == null) return [];
+  final service = ref.watch(teamServiceProvider);
+  return service.getTeams(sportId: sportId, pageSize: 100);
+});
+
 final teamDetailProvider = FutureProvider.family<TeamModel?, String>(
   (ref, teamId) async {
     final service = ref.watch(teamServiceProvider);

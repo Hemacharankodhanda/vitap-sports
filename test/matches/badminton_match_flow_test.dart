@@ -57,7 +57,9 @@ void main() {
             currentUserIdProvider.overrideWith((ref) => 'u-1'),
             sportsListProvider.overrideWith((ref) => mockSports),
             teamsListProvider.overrideWith((ref) => mockTeams),
+            teamsBySportProvider.overrideWith((ref, sportId) => mockTeams),
             allPlayersProvider.overrideWith((ref) => mockPlayers),
+            playersForSportProvider.overrideWith((ref, sportId) => mockPlayers),
           ],
           child: const MaterialApp(
             home: CreateMatchScreen(),
@@ -97,7 +99,9 @@ void main() {
             currentUserIdProvider.overrideWith((ref) => 'u-1'),
             sportsListProvider.overrideWith((ref) => mockSports),
             teamsListProvider.overrideWith((ref) => mockTeams),
+            teamsBySportProvider.overrideWith((ref, sportId) => mockTeams),
             allPlayersProvider.overrideWith((ref) => mockPlayers),
+            playersForSportProvider.overrideWith((ref, sportId) => mockPlayers),
           ],
           child: const MaterialApp(
             home: CreateMatchScreen(),
