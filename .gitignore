@@ -150,6 +150,7 @@ desktop.ini
 *.pem
 *.pfx
 *.p12
+lib/core/constants/supabase_constants.dart
 
 # ------------------------------------------------------------------------------
 # Logs & Crash Dumps
