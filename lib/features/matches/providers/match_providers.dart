@@ -13,6 +13,20 @@ final matchServiceProvider = Provider<MatchService>((ref) {
   return MatchService(ref.watch(supabaseClientProvider));
 });
 
+/// All registered players/users for individual/singles selection.
+final allPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final client = ref.watch(supabaseClientProvider);
+  try {
+    final res = await client
+        .from('users')
+        .select('id, name, avatar_url, role')
+        .order('name');
+    return List<Map<String, dynamic>>.from(res);
+  } catch (_) {
+    return <Map<String, dynamic>>[];
+  }
+});
+
 final matchesListProvider = FutureProvider.family<List<MatchModel>, String?>(
   (ref, status) async {
     final service = ref.watch(matchServiceProvider);

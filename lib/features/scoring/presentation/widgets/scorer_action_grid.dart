@@ -317,7 +317,7 @@ class ScorerActionGrid extends StatelessWidget {
     if (action.type == 'delivery') {
       final cricket = state.scoringState as CricketState?;
       final active = cricket?.activeInnings;
-      final payload = Map<String, dynamic>.from(action.payload ?? {});
+      final payload = Map<String, dynamic>.from(action.payload);
       final kind = payload['kind'] as String?;
 
       // Prompt for extra runs on Wide or No Ball
@@ -363,7 +363,7 @@ class ScorerActionGrid extends StatelessWidget {
     // 5. Inject explicit IDs into Badminton rally_won events
     if (action.type == 'rally_won') {
       final badminton = state.scoringState as BadmintonState?;
-      final payload = Map<String, dynamic>.from(action.payload ?? {});
+      final payload = Map<String, dynamic>.from(action.payload);
       payload['server_id'] = badminton?.currentServerId;
       payload['receiver_id'] = badminton?.currentReceiverId;
       
