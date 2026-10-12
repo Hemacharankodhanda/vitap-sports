@@ -352,9 +352,9 @@ class MatchModel {
     final sportLower = (sportName ?? '').toLowerCase();
 
     // 1. Cricket: Extract runs/wickets (overs ov)
-    if (sportLower == 'cricket' && score != null) {
-      final inningsRaw = score!['innings'];
-      if (inningsRaw is List && inningsRaw.isNotEmpty) {
+    if (sportLower == 'cricket') {
+      final inningsRaw = (score?['innings'] as List?) ?? (result?['innings'] as List?);
+      if (inningsRaw != null && inningsRaw.isNotEmpty) {
         final parts = <String>[];
         for (final inn in inningsRaw) {
           if (inn is Map) {
