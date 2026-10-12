@@ -114,14 +114,43 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
         };
       }).toList();
     } else {
-      // Default: Batting
+      // Default: Batting - ranked based on average score
+      double calculateBattingAvg(Map<String, dynamic> counters, int matches) {
+        if (counters['batting_avg'] != null) {
+          return (counters['batting_avg'] as num).toDouble();
+        }
+        if (counters['average'] != null) {
+          return (counters['average'] as num).toDouble();
+        }
+        final runs = _getInt(counters, 'runs_scored');
+        final outs = _getInt(counters, 'outs');
+        if (outs > 0) {
+          return runs / outs;
+        } else if (runs > 0) {
+          final innings = _getInt(counters, 'innings');
+          final denom = innings > 0 ? innings : (matches > 0 ? matches : 1);
+          return runs / denom;
+        }
+        return 0.0;
+      }
+
       players.sort((a, b) {
         final aCounters = a['career_counters'] as Map<String, dynamic>? ?? {};
         final bCounters = b['career_counters'] as Map<String, dynamic>? ?? {};
+        final aMatches = (a['matches_played'] as num?)?.toInt() ?? 0;
+        final bMatches = (b['matches_played'] as num?)?.toInt() ?? 0;
+
+        final aAvg = calculateBattingAvg(aCounters, aMatches);
+        final bAvg = calculateBattingAvg(bCounters, bMatches);
+        // 1. Rank by Average score (descending)
+        if (bAvg != aAvg) return bAvg.compareTo(aAvg);
+
+        // 2. Tie-break: Runs scored (descending)
         final aRuns = _getInt(aCounters, 'runs_scored');
         final bRuns = _getInt(bCounters, 'runs_scored');
         if (bRuns != aRuns) return bRuns.compareTo(aRuns);
 
+        // 3. Tie-break: Strike rate (descending)
         final aBalls = _getInt(aCounters, 'balls_faced');
         final bBalls = _getInt(bCounters, 'balls_faced');
         final aSr = aBalls > 0 ? (aRuns / aBalls) : 0.0;
@@ -137,6 +166,8 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
         final fours = _getInt(counters, 'fours');
         final sixes = _getInt(counters, 'sixes');
         final sr = balls > 0 ? ((runs / balls) * 100).toStringAsFixed(1) : '0.0';
+        final avgNum = calculateBattingAvg(counters, matches);
+        final avg = avgNum.toStringAsFixed(1);
 
         return {
           'id': p['player_id'],
@@ -144,12 +175,12 @@ final topPlayersProvider = FutureProvider<List<Map<String, dynamic>>>((ref) asyn
           'avatar_url': p['avatar_url'],
           'matches_played': matches,
           'runs': runs,
-          'balls': balls,
+          'avg': avg,
           'fours': fours,
           'sixes': sixes,
           'sr': sr,
-          'primary_stat': '$runs Runs',
-          'secondary_stat': 'SR: $sr • $fours (4s) • $sixes (6s)',
+          'primary_stat': '$avg Avg',
+          'secondary_stat': 'Avg: $avg • SR: $sr • $runs Runs • $fours (4s) • $sixes (6s)',
         };
       }).toList();
     }
