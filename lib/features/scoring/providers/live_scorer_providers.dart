@@ -15,6 +15,7 @@ import '../domain/match_event.dart';
 import '../domain/player_option.dart';
 import '../domain/scoring_engine.dart';
 import '../domain/sport_registry.dart';
+import '../engines/badminton/badminton_state.dart';
 
 /// Provider for LiveScorerService
 final liveScorerServiceProvider = Provider<LiveScorerService>((ref) {
@@ -797,7 +798,22 @@ class LiveScorerNotifier extends StateNotifier<ScorerState> {
       if (currentMargin.startsWith('won by ')) {
         result['result_margin'] = '$winnerName $currentMargin';
         finalScore['result_margin'] = '$winnerName $currentMargin';
+      } else if (state.sport.toLowerCase() == 'badminton') {
+        final scoresSummary = result['games_summary']?.toString() ?? '';
+        final margin = scoresSummary.isNotEmpty
+            ? '$winnerName won ($scoresSummary)'
+            : '$winnerName won';
+        result['result_margin'] = margin;
+        finalScore['result_margin'] = margin;
       }
+    }
+
+    if (state.sport.toLowerCase() == 'badminton' && state.scoringState is BadmintonState) {
+      final bState = state.scoringState as BadmintonState;
+      result['home_score'] = bState.homeGamesWon;
+      result['away_score'] = bState.awayGamesWon;
+      finalScore['home_score'] = bState.homeGamesWon;
+      finalScore['away_score'] = bState.awayGamesWon;
     }
 
     // Safely ensure winner_team_id and loser_team_id are valid UUIDs if non-null,

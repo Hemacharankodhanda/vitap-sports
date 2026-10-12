@@ -341,11 +341,18 @@ class BadmintonEngine extends ScoringEngine<BadmintonState, BadmintonConfig> {
   @override
   Map<String, dynamic> result(BadmintonState state) {
     final scoresSummary = state.games.map((g) => '${g.homePoints}-${g.awayPoints}').join(', ');
+    final winnerSide = state.winnerId == state.homeId
+        ? 'home'
+        : (state.winnerId == state.awayId ? 'away' : state.winnerId);
     return {
       'home_games_won': state.homeGamesWon,
       'away_games_won': state.awayGamesWon,
+      'home_score': state.homeGamesWon,
+      'away_score': state.awayGamesWon,
       'games_summary': scoresSummary,
+      'result_margin': scoresSummary.isNotEmpty ? scoresSummary : null,
       'winner_team_id': state.winnerId,
+      'winner_side': winnerSide,
       'is_draw': false,
       'retire_team_id': state.retireTeamId,
       'walkover_team_id': state.walkoverTeamId,
