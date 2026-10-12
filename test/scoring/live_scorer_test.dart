@@ -31,6 +31,7 @@ class FakeLiveScorerService extends Fake implements LiveScorerService {
   bool finishMatchCalled = false;
   bool startMatchCalled = false;
   DateTime? startedAt;
+  Map<String, dynamic>? passedInitialScore;
 
   @override
   Future<void> startMatch({
@@ -41,6 +42,7 @@ class FakeLiveScorerService extends Fake implements LiveScorerService {
   }) async {
     startMatchCalled = true;
     startedAt = startTime;
+    passedInitialScore = initialScore;
   }
 
   @override
@@ -310,6 +312,44 @@ void main() {
       final updatedScheduledAt = DateTime.parse(notifier.state.matchData!['scheduled_at'] as String);
       expect(updatedScheduledAt.isAfter(before), isTrue);
       expect(updatedScheduledAt.isBefore(after), isTrue);
+    });
+
+    test('cricket startMatch sanitizes Batter 1 & 2 placeholders and embeds player_names', () async {
+      final fakeCricketMatch = {
+        ...fakeMatchData,
+        'sports': {'name': 'Cricket'},
+        'status': 'scheduled',
+      };
+      final fakeService = FakeLiveScorerService(matchData: fakeCricketMatch);
+      final notifier = LiveScorerNotifier(
+        fakeService,
+        testUserId,
+        matchId: testMatchId,
+      );
+      await notifier.init();
+
+      await notifier.startMatch(
+        config: {'overs_per_innings': 20},
+        extra: {
+          'striker_id': 'Batter 1',
+          'non_striker_id': 'Batter 2',
+          'opening_bowler_id': 'Bowler 1',
+        },
+      );
+
+      expect(fakeService.startMatchCalled, isTrue);
+      final initialScore = fakeService.passedInitialScore;
+      expect(initialScore, isNotNull);
+      expect(initialScore!['player_names'], isA<Map>());
+
+      final innings = initialScore['innings'] as List;
+      expect(innings, isNotEmpty);
+      final firstInning = innings.first as Map;
+
+      // Striker and nonStriker must be sanitized to real squad player IDs (not literal "Batter 1")
+      expect(firstInning['striker_id'], isNot('Batter 1'));
+      expect(firstInning['non_striker_id'], isNot('Batter 2'));
+      expect(firstInning['current_bowler_id'], isNot('Bowler 1'));
     });
   });
 }

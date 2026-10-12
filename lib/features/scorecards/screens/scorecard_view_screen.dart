@@ -320,8 +320,59 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
       }
       final p = matchDetail.participants.where((e) => e.userId == id || e.teamId == id).firstOrNull;
       if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
-      if (id.startsWith('home_p_')) return '$homeName Player ${id.replaceFirst('home_p_', '')}';
-      if (id.startsWith('away_p_')) return '$awayName Player ${id.replaceFirst('away_p_', '')}';
+
+      final idLower = id.toLowerCase().trim();
+      if (idLower == 'batter 1' ||
+          idLower == 'batter 2' ||
+          idLower == 'bowler 1' ||
+          idLower == 'striker 1' ||
+          idLower == 'non-striker 2' ||
+          idLower == 'opening bowler') {
+        final isCricket = derivedState is CricketState && (derivedState as CricketState).innings.isNotEmpty;
+        final battingTeamId = isCricket
+            ? (derivedState as CricketState).innings.first.battingTeamId
+            : matchDetail.homeTeamId;
+        final isHomeBatting = battingTeamId == matchDetail.homeTeamId || battingTeamId == 'home';
+        final battingTeamName = isHomeBatting ? homeName : awayName;
+        final bowlingTeamName = isHomeBatting ? awayName : homeName;
+
+        final battingParticipants = matchDetail.participants
+            .where((e) => (isHomeBatting ? (e.teamId == matchDetail.homeTeamId || e.teamId == 'home') : (e.teamId == matchDetail.awayTeamId || e.teamId == 'away')) && e.userName != null && e.userName!.isNotEmpty)
+            .toList();
+        final bowlingParticipants = matchDetail.participants
+            .where((e) => (isHomeBatting ? (e.teamId == matchDetail.awayTeamId || e.teamId == 'away') : (e.teamId == matchDetail.homeTeamId || e.teamId == 'home')) && e.userName != null && e.userName!.isNotEmpty)
+            .toList();
+
+        if (idLower == 'batter 1' || idLower == 'striker 1') {
+          if (battingParticipants.isNotEmpty) return battingParticipants[0].userName!;
+          return '$battingTeamName Player 1';
+        }
+        if (idLower == 'batter 2' || idLower == 'striker 2' || idLower == 'non-striker 2') {
+          if (battingParticipants.length > 1) return battingParticipants[1].userName!;
+          return '$battingTeamName Player 2';
+        }
+        if (idLower == 'bowler 1' || idLower == 'opening bowler') {
+          if (bowlingParticipants.isNotEmpty) return bowlingParticipants[0].userName!;
+          return '$bowlingTeamName Bowler 1';
+        }
+      }
+
+      if (id.startsWith('home_p_')) {
+        final num = int.tryParse(id.replaceFirst('home_p_', '')) ?? 1;
+        final homeParts = matchDetail.participants
+            .where((e) => (e.teamId == matchDetail.homeTeamId || e.teamId == 'home') && e.userName != null && e.userName!.isNotEmpty)
+            .toList();
+        if (num > 0 && num <= homeParts.length) return homeParts[num - 1].userName!;
+        return '$homeName Player $num';
+      }
+      if (id.startsWith('away_p_')) {
+        final num = int.tryParse(id.replaceFirst('away_p_', '')) ?? 1;
+        final awayParts = matchDetail.participants
+            .where((e) => (e.teamId == matchDetail.awayTeamId || e.teamId == 'away') && e.userName != null && e.userName!.isNotEmpty)
+            .toList();
+        if (num > 0 && num <= awayParts.length) return awayParts[num - 1].userName!;
+        return '$awayName Player $num';
+      }
       if (id.length == 36 && id.contains('-')) return 'Player';
       return id;
     }

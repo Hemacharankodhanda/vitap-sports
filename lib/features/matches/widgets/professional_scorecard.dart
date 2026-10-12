@@ -178,13 +178,57 @@ class _CricketScorecardState extends State<_CricketScorecard> {
     if (p?.userName != null && p!.userName!.isNotEmpty) return p.userName!;
     if (p?.teamName != null && p!.teamName!.isNotEmpty) return p.teamName!;
 
+    final idLower = id.toLowerCase().trim();
+    if (idLower == 'batter 1' ||
+        idLower == 'batter 2' ||
+        idLower == 'bowler 1' ||
+        idLower == 'striker 1' ||
+        idLower == 'non-striker 2' ||
+        idLower == 'opening bowler') {
+      final isCricket = widget.state is CricketState && (widget.state as CricketState).innings.isNotEmpty;
+      final battingTeamId = isCricket
+          ? (widget.state as CricketState).innings[_selectedInningsIndex.clamp(0, (widget.state as CricketState).innings.length - 1)].battingTeamId
+          : widget.match.homeTeamId;
+      final isHomeBatting = battingTeamId == widget.match.homeTeamId || battingTeamId == 'home';
+      final battingTeamName = isHomeBatting ? (widget.match.homeTeamName ?? 'Team 1') : (widget.match.awayTeamName ?? 'Team 2');
+      final bowlingTeamName = isHomeBatting ? (widget.match.awayTeamName ?? 'Team 2') : (widget.match.homeTeamName ?? 'Team 1');
+
+      final battingParticipants = widget.match.participants
+          .where((e) => (isHomeBatting ? (e.teamId == widget.match.homeTeamId || e.teamId == 'home') : (e.teamId == widget.match.awayTeamId || e.teamId == 'away')) && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+      final bowlingParticipants = widget.match.participants
+          .where((e) => (isHomeBatting ? (e.teamId == widget.match.awayTeamId || e.teamId == 'away') : (e.teamId == widget.match.homeTeamId || e.teamId == 'home')) && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+
+      if (idLower == 'batter 1' || idLower == 'striker 1') {
+        if (battingParticipants.isNotEmpty) return battingParticipants[0].userName!;
+        return '$battingTeamName Player 1';
+      }
+      if (idLower == 'batter 2' || idLower == 'striker 2' || idLower == 'non-striker 2') {
+        if (battingParticipants.length > 1) return battingParticipants[1].userName!;
+        return '$battingTeamName Player 2';
+      }
+      if (idLower == 'bowler 1' || idLower == 'opening bowler') {
+        if (bowlingParticipants.isNotEmpty) return bowlingParticipants[0].userName!;
+        return '$bowlingTeamName Bowler 1';
+      }
+    }
+
     if (id.startsWith('home_p_')) {
-      final num = id.replaceFirst('home_p_', '');
+      final num = int.tryParse(id.replaceFirst('home_p_', '')) ?? 1;
+      final homeParts = widget.match.participants
+          .where((e) => (e.teamId == widget.match.homeTeamId || e.teamId == 'home') && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+      if (num > 0 && num <= homeParts.length) return homeParts[num - 1].userName!;
       final t = widget.match.homeTeamName ?? 'Team 1';
       return '$t Player $num';
     }
     if (id.startsWith('away_p_')) {
-      final num = id.replaceFirst('away_p_', '');
+      final num = int.tryParse(id.replaceFirst('away_p_', '')) ?? 1;
+      final awayParts = widget.match.participants
+          .where((e) => (e.teamId == widget.match.awayTeamId || e.teamId == 'away') && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+      if (num > 0 && num <= awayParts.length) return awayParts[num - 1].userName!;
       final t = widget.match.awayTeamName ?? 'Team 2';
       return '$t Player $num';
     }
@@ -840,12 +884,20 @@ class _FootballScorecard extends StatelessWidget {
     if (p?.teamName != null && p!.teamName!.isNotEmpty) return p.teamName!;
 
     if (id.startsWith('home_p_')) {
-      final num = id.replaceFirst('home_p_', '');
+      final num = int.tryParse(id.replaceFirst('home_p_', '')) ?? 1;
+      final homeParts = match.participants
+          .where((e) => (e.teamId == match.homeTeamId || e.teamId == 'home') && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+      if (num > 0 && num <= homeParts.length) return homeParts[num - 1].userName!;
       final t = match.homeTeamName ?? 'Team 1';
       return '$t Player $num';
     }
     if (id.startsWith('away_p_')) {
-      final num = id.replaceFirst('away_p_', '');
+      final num = int.tryParse(id.replaceFirst('away_p_', '')) ?? 1;
+      final awayParts = match.participants
+          .where((e) => (e.teamId == match.awayTeamId || e.teamId == 'away') && e.userName != null && e.userName!.isNotEmpty)
+          .toList();
+      if (num > 0 && num <= awayParts.length) return awayParts[num - 1].userName!;
       final t = match.awayTeamName ?? 'Team 2';
       return '$t Player $num';
     }
