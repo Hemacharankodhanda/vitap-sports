@@ -14,6 +14,9 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
+import '../../scoring/domain/match_event.dart';
+import '../../scoring/domain/sport_registry.dart';
+import '../../scoring/providers/live_scorer_providers.dart';
 import '../data/models/match_model.dart';
 import '../providers/match_providers.dart';
 import '../widgets/professional_scorecard.dart';
@@ -31,32 +34,77 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final initialMatchAsync = ref.watch(matchDetailProvider(widget.matchId));
+    final liveStreamAsync = ref.watch(liveMatchStreamProvider(widget.matchId));
+    final eventsAsync = ref.watch(liveEventsNotifierProvider(widget.matchId));
     final analysisAsync = ref.watch(matchAnalysisProvider(widget.matchId));
-    final matchAsync = ref.watch(matchDetailProvider(widget.matchId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: AppBar(
         title: const Text('Scorecard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: AppSpacing.iconNav),
+            onPressed: () {
+              ref.invalidate(matchDetailProvider(widget.matchId));
+              ref.invalidate(matchAnalysisProvider(widget.matchId));
+            },
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
-      body: matchAsync.when(
+      body: initialMatchAsync.when(
         loading: () => const LoadingIndicator(),
         error: (e, _) => ErrorView(
           message: e.toString(),
-          onRetry: () => ref.invalidate(matchDetailProvider(widget.matchId)),
+          onRetry: () {
+            ref.invalidate(matchDetailProvider(widget.matchId));
+            ref.invalidate(matchAnalysisProvider(widget.matchId));
+          },
         ),
-        data: (match) {
-          if (match == null) return const ErrorView(message: 'Match not found');
+        data: (initialMatch) {
+          if (initialMatch == null) return const ErrorView(message: 'Match not found');
 
-          return analysisAsync.when(
-            loading: () => const LoadingIndicator(),
-            error: (e, _) => ErrorView(
-              message: e.toString(),
-              onRetry: () => ref.invalidate(matchAnalysisProvider(widget.matchId)),
-            ),
-            data: (statsData) {
-              final playerNames = ref.watch(matchPlayerNamesProvider(widget.matchId)).valueOrNull ?? const <String, String>{};
+          final match = initialMatch.updateFromRealtime(liveStreamAsync.valueOrNull);
+          final statsData = analysisAsync.valueOrNull ?? const <Map<String, dynamic>>[];
+          final playerNames = ref.watch(matchPlayerNamesProvider(widget.matchId)).valueOrNull ?? const <String, String>{};
+
+          // Compute pure engine derived state if available for live reactive scorecard
+          final sport = (match.sportName ?? 'cricket').toLowerCase().trim();
+          final config = match.config ?? {};
+          final engine = SportRegistry.getEngine(sport);
+          final scoreSnapshot = match.score;
+
+          dynamic derivedState;
+          if (scoreSnapshot != null && engine != null) {
+            try {
+              derivedState = engine.fromSnapshot(
+                Map<String, dynamic>.from(scoreSnapshot),
+                SportRegistry.parseConfig(sport, config),
+              );
+            } catch (e) {
+              debugPrint('Error parsing score snapshot: $e');
+            }
+          }
+
+          if (derivedState == null && engine != null) {
+            final events = eventsAsync.valueOrNull ?? const <MatchEvent>[];
+            if (events.isNotEmpty) {
+              String homeId = match.homeTeamId ?? 'home';
+              String awayId = match.awayTeamId ?? 'away';
+              try {
+                derivedState = SportRegistry.fold(
+                  sportName: sport,
+                  configJson: config,
+                  events: events,
+                  homeId: homeId,
+                  awayId: awayId,
+                );
+              } catch (_) {}
+            }
+          }
 
               String resolveDisplayName(String pId, MatchParticipant? participant) {
                 if (participant?.userName != null && participant!.userName!.isNotEmpty) {
@@ -187,6 +235,7 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                             children: [
                               ProfessionalScorecard(
                                 match: match,
+                                scoringState: derivedState,
                                 playerNames: playerNames,
                               ),
                             ],
@@ -224,8 +273,6 @@ class _MatchAnalysisScreenState extends ConsumerState<MatchAnalysisScreen> {
                   ),
                 ],
               );
-            },
-          );
         },
       ),
     );

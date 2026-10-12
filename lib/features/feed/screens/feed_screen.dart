@@ -12,6 +12,9 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/sport_filter_bar.dart';
+import '../../../core/widgets/status_badge.dart';
+import '../../matches/providers/match_providers.dart';
+import '../../matches/widgets/match_card.dart';
 
 class FeedScreen extends ConsumerWidget {
   const FeedScreen({super.key});
@@ -19,6 +22,7 @@ class FeedScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final liveMatchesAsync = ref.watch(liveMatchesStreamProvider);
 
     return Scaffold(
       backgroundColor:
@@ -45,6 +49,49 @@ class FeedScreen extends ConsumerWidget {
           vertical: AppSpacing.lg,
         ),
         children: [
+          // ─── Live Matches (Realtime Stream) ───────────
+          ...liveMatchesAsync.when(
+            loading: () => const [SizedBox.shrink()],
+            error: (_, __) => const [SizedBox.shrink()],
+            data: (liveMatches) {
+              if (liveMatches.isEmpty) return const <Widget>[];
+
+              return [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const StatusLabel.live(),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          'Live Matches',
+                          style: AppTypography.headline.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/matches'),
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                for (final match in liveMatches)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: MatchCard(
+                      match: match,
+                      onTap: () => context.go('/matches/${match.id}'),
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.sectionGap),
+              ];
+            },
+          ),
+
           // ─── Quick Actions ────────────────────────────
           SectionHeader(
             title: 'Quick Actions',

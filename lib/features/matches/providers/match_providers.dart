@@ -36,6 +36,46 @@ final matchDetailProvider = FutureProvider.family<MatchModel?, String>(
   },
 );
 
+/// Realtime stream of all currently 'live' matches from Supabase.
+/// Emits instantly on any score change or ball bowled.
+final liveMatchesStreamProvider =
+    StreamProvider.autoDispose<List<MatchModel>>((ref) {
+  final client = ref.watch(supabaseClientProvider);
+  final matchService = ref.watch(matchServiceProvider);
+  final selectedSport = ref.watch(sportFilterProvider);
+
+  return client
+      .from('matches')
+      .stream(primaryKey: ['id'])
+      .eq('status', 'live')
+      .asyncMap((rows) async {
+        if (rows.isEmpty) return <MatchModel>[];
+
+        try {
+          final allLive = await matchService.getMatches(status: 'live');
+          final rowMap = {for (final r in rows) r['id'] as String: r};
+
+          final updated = allLive.map((m) {
+            if (rowMap.containsKey(m.id)) {
+              return m.updateFromRealtime(rowMap[m.id]);
+            }
+            return m;
+          }).toList();
+
+          if (selectedSport.isNotEmpty) {
+            return updated
+                .where((m) =>
+                    m.sportName?.toLowerCase() == selectedSport.toLowerCase())
+                .toList();
+          }
+
+          return updated;
+        } catch (_) {
+          return <MatchModel>[];
+        }
+      });
+});
+
 final matchAnalysisProvider = FutureProvider.family<List<Map<String, dynamic>>, String>(
   (ref, matchId) async {
     final service = ref.watch(matchServiceProvider);

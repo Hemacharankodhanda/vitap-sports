@@ -272,6 +272,146 @@ class MatchModel {
     );
   }
 
+  MatchModel copyWith({
+    String? id,
+    String? sportId,
+    String? sportName,
+    String? venue,
+    DateTime? scheduledAt,
+    String? status,
+    String? format,
+    String? createdBy,
+    String? scorerId,
+    String? description,
+    DateTime? createdAt,
+    List<MatchParticipant>? participants,
+    String? homeTeamName,
+    String? awayTeamName,
+    int? homeScore,
+    int? awayScore,
+    Map<String, dynamic>? config,
+    Map<String, dynamic>? score,
+    Map<String, dynamic>? result,
+  }) {
+    return MatchModel(
+      id: id ?? this.id,
+      sportId: sportId ?? this.sportId,
+      sportName: sportName ?? this.sportName,
+      venue: venue ?? this.venue,
+      scheduledAt: scheduledAt ?? this.scheduledAt,
+      status: status ?? this.status,
+      format: format ?? this.format,
+      createdBy: createdBy ?? this.createdBy,
+      scorerId: scorerId ?? this.scorerId,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+      participants: participants ?? this.participants,
+      homeTeamName: homeTeamName ?? this.homeTeamName,
+      awayTeamName: awayTeamName ?? this.awayTeamName,
+      homeScore: homeScore ?? this.homeScore,
+      awayScore: awayScore ?? this.awayScore,
+      config: config ?? this.config,
+      score: score ?? this.score,
+      result: result ?? this.result,
+    );
+  }
+
+  /// Merges a raw Supabase Realtime matches row into this model
+  MatchModel updateFromRealtime(Map<String, dynamic>? raw) {
+    if (raw == null) return this;
+    final newScore = raw['score'] is Map
+        ? Map<String, dynamic>.from(raw['score'] as Map)
+        : score;
+    final newResult = raw['result'] is Map
+        ? Map<String, dynamic>.from(raw['result'] as Map)
+        : result;
+    final newConfig = raw['config'] is Map
+        ? Map<String, dynamic>.from(raw['config'] as Map)
+        : config;
+
+    return copyWith(
+      status: raw['status'] as String? ?? status,
+      homeScore: raw['home_score'] is num
+          ? (raw['home_score'] as num).toInt()
+          : homeScore,
+      awayScore: raw['away_score'] is num
+          ? (raw['away_score'] as num).toInt()
+          : awayScore,
+      score: newScore,
+      result: newResult,
+      config: newConfig,
+    );
+  }
+
+  /// Returns a concise single-line live score string based on sport and scoring engine snapshot
+  String? get liveScoreSummary {
+    final sportLower = (sportName ?? '').toLowerCase();
+
+    // 1. Cricket: Extract runs/wickets (overs ov)
+    if (sportLower == 'cricket' && score != null) {
+      final inningsRaw = score!['innings'];
+      if (inningsRaw is List && inningsRaw.isNotEmpty) {
+        final parts = <String>[];
+        for (final inn in inningsRaw) {
+          if (inn is Map) {
+            final runs = inn['total_runs'] ?? 0;
+            final wickets = inn['total_wickets'] ?? 0;
+            final legalBalls = (inn['legal_balls'] as num?)?.toInt() ?? 0;
+            final overs = '${legalBalls ~/ 6}.${legalBalls % 6}';
+            final bId = inn['batting_team_id']?.toString();
+            String? teamPrefix;
+            if (bId != null) {
+              if (bId == 'home' || bId == homeTeamId) {
+                teamPrefix = resolvedHomeTeamName;
+              } else if (bId == 'away' || bId == awayTeamId) {
+                teamPrefix = resolvedAwayTeamName;
+              }
+            }
+            if (teamPrefix != null && teamPrefix.isNotEmpty) {
+              parts.add('$teamPrefix: $runs/$wickets ($overs ov)');
+            } else {
+              parts.add('$runs/$wickets ($overs ov)');
+            }
+          }
+        }
+        if (parts.isNotEmpty) {
+          return parts.join('  •  ');
+        }
+      }
+    }
+
+    // 2. Badminton: games won or current game score
+    if (sportLower == 'badminton' && score != null) {
+      final hGames = (score!['home_games_won'] as num?)?.toInt();
+      final aGames = (score!['away_games_won'] as num?)?.toInt();
+      final gamesRaw = score!['games'];
+      if (gamesRaw is List && gamesRaw.isNotEmpty) {
+        final curIdx = (score!['current_game_index'] as num?)?.toInt() ?? (gamesRaw.length - 1);
+        if (curIdx >= 0 && curIdx < gamesRaw.length && gamesRaw[curIdx] is Map) {
+          final cur = gamesRaw[curIdx] as Map;
+          final hp = (cur['home_points'] as num?)?.toInt() ?? 0;
+          final ap = (cur['away_points'] as num?)?.toInt() ?? 0;
+          if (hGames != null && aGames != null) {
+            return '$hGames - $aGames  ($hp - $ap)';
+          }
+          return '$hp - $ap (Game ${curIdx + 1})';
+        }
+      }
+      if (hGames != null && aGames != null) {
+        return '$hGames - $aGames';
+      }
+    }
+
+    // 3. Football & general: check snapshot or direct columns
+    final hScore = (score?['home_score'] as num?)?.toInt() ?? homeScore;
+    final aScore = (score?['away_score'] as num?)?.toInt() ?? awayScore;
+    if (hScore != null && aScore != null) {
+      return '$hScore - $aScore';
+    }
+
+    return null;
+  }
+
   Map<String, dynamic> toJson() => {
         'sport_id': sportId,
         'venue': venue,

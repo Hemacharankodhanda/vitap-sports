@@ -1,6 +1,4 @@
-/// VIT-AP Sports — MatchCard widget.
-library;
-
+import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -91,6 +89,61 @@ class MatchCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.md),
+
+          // Live Score / Result Banner if available
+          if (match.liveScoreSummary != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs + 2,
+              ),
+              decoration: BoxDecoration(
+                color: _status == MatchStatus.live
+                    ? (isDark
+                        ? AppColors.liveDark.withAlpha(35)
+                        : AppColors.liveLight.withAlpha(20))
+                    : (isDark
+                        ? AppColors.darkSurfaceVariant
+                        : AppColors.lightSurfaceVariant),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                border: _status == MatchStatus.live
+                    ? Border.all(
+                        color: (isDark ? AppColors.liveDark : AppColors.liveLight)
+                            .withAlpha(60),
+                      )
+                    : null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _status == MatchStatus.live ? 'Live Score' : 'Score',
+                    style: AppTypography.caption.copyWith(
+                      color: _status == MatchStatus.live
+                          ? (isDark ? AppColors.liveDark : AppColors.liveLight)
+                          : (isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    match.liveScoreSummary!,
+                    style: AppTypography.headline.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _status == MatchStatus.live
+                          ? (isDark ? AppColors.liveDark : AppColors.liveLight)
+                          : (isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // Venue + Time
           Row(

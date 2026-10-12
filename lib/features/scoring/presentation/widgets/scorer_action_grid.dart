@@ -313,11 +313,40 @@ class ScorerActionGrid extends StatelessWidget {
       return;
     }
 
-    // 4. Inject explicit IDs into Cricket delivery events
+    // 4. Inject explicit IDs into Cricket delivery events (and prompt for Wide / No-ball extra runs)
     if (action.type == 'delivery') {
       final cricket = state.scoringState as CricketState?;
       final active = cricket?.activeInnings;
       final payload = Map<String, dynamic>.from(action.payload ?? {});
+      final kind = payload['kind'] as String?;
+
+      // Prompt for extra runs on Wide or No Ball
+      if (kind == 'wide' || kind == 'no_ball') {
+        final battingTeamId = active?.battingTeamId ?? state.homeId;
+        final bowlingTeamId = active?.bowlingTeamId ?? state.awayId;
+        final strikerName = active?.strikerId != null
+            ? (state.playersForTeam(battingTeamId).where((p) => p.id == active!.strikerId).firstOrNull?.name ?? active!.strikerId)
+            : 'Striker';
+        final bowlerName = active?.currentBowlerId != null
+            ? (state.playersForTeam(bowlingTeamId).where((p) => p.id == active!.currentBowlerId).firstOrNull?.name ?? active!.currentBowlerId)
+            : 'Bowler';
+
+        final result = await ActionDialogs.showExtraRunsSheet(
+          context: context,
+          kind: kind!,
+          strikerName: strikerName,
+          bowlerName: bowlerName,
+        );
+
+        if (result == null) return; // User dismissed sheet, cancel recording
+
+        final extraRuns = (result['runs'] as int?) ?? 0;
+        final isBoundary = (result['is_boundary'] as bool?) ?? false;
+
+        payload['runs'] = extraRuns;
+        payload['is_boundary'] = isBoundary;
+      }
+
       payload['striker_id'] = active?.strikerId;
       payload['non_striker_id'] = active?.nonStrikerId;
       payload['bowler_id'] = active?.currentBowlerId;
