@@ -353,19 +353,62 @@ class MatchCard extends StatelessWidget {
     bool isDark,
   ) {
     final scoreMap = match.score;
-    final hGames = (scoreMap?['home_games_won'] as num?)?.toInt() ?? match.homeScore;
-    final aGames = (scoreMap?['away_games_won'] as num?)?.toInt() ?? match.awayScore;
+    final resultMap = match.result;
+    final hGames = (scoreMap?['home_games_won'] as num?)?.toInt() ??
+        (resultMap?['home_games_won'] as num?)?.toInt() ??
+        (scoreMap?['home_score'] as num?)?.toInt() ??
+        (resultMap?['home_score'] as num?)?.toInt() ??
+        match.homeScore;
+    final aGames = (scoreMap?['away_games_won'] as num?)?.toInt() ??
+        (resultMap?['away_games_won'] as num?)?.toInt() ??
+        (scoreMap?['away_score'] as num?)?.toInt() ??
+        (resultMap?['away_score'] as num?)?.toInt() ??
+        match.awayScore;
 
     final winnerId = match.winnerTeamId;
     final isHomeWinner = _isCompleted &&
-        (winnerId == match.homeTeamId || winnerId == 'home' || match.winningTeamName == homeName);
+        (winnerId == match.homeTeamId ||
+            winnerId == 'home' ||
+            match.winningTeamName == homeName ||
+            (hGames != null && aGames != null && hGames > aGames));
     final isAwayWinner = _isCompleted &&
-        (winnerId == match.awayTeamId || winnerId == 'away' || match.winningTeamName == awayName);
+        (winnerId == match.awayTeamId ||
+            winnerId == 'away' ||
+            match.winningTeamName == awayName ||
+            (hGames != null && aGames != null && aGames > hGames));
+
+    String? gamesSummary = resultMap?['games_summary']?.toString() ??
+        scoreMap?['games_summary']?.toString();
+    if (gamesSummary == null || gamesSummary.isEmpty) {
+      final gamesRaw = (scoreMap?['games'] as List?) ?? (resultMap?['games'] as List?);
+      if (gamesRaw != null && gamesRaw.isNotEmpty) {
+        final list = <String>[];
+        for (final g in gamesRaw) {
+          if (g is Map) {
+            final hp = (g['home_points'] as num?)?.toInt() ?? 0;
+            final ap = (g['away_points'] as num?)?.toInt() ?? 0;
+            if (hp > 0 || ap > 0 || g['is_completed'] == true) {
+              list.add('$hp-$ap');
+            }
+          }
+        }
+        if (list.isNotEmpty) gamesSummary = list.join(', ');
+      }
+    }
 
     String? situation;
     if (_isCompleted) {
-      situation = match.resultMargin ??
-          (match.winningTeamName != null ? '${match.winningTeamName} won' : 'Match Completed');
+      if (match.resultMargin != null && match.resultMargin!.isNotEmpty) {
+        situation = match.resultMargin;
+      } else if (match.winningTeamName != null) {
+        situation = gamesSummary != null && gamesSummary.isNotEmpty
+            ? '${match.winningTeamName} won ($gamesSummary)'
+            : '${match.winningTeamName} won';
+      } else {
+        situation = gamesSummary != null && gamesSummary.isNotEmpty
+            ? 'Match Completed ($gamesSummary)'
+            : 'Match Completed';
+      }
     } else if (_isLive) {
       final gamesRaw = scoreMap?['games'] as List?;
       final curIdx = (scoreMap?['current_game_index'] as num?)?.toInt() ??
@@ -508,20 +551,28 @@ class MatchCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Icon(_sportIcon, size: 16, color: primary),
-            const SizedBox(width: AppSpacing.xs + 2),
-            Text(
-              _sportHeaderLabel,
-              style: AppTypography.caption.copyWith(
-                color: primary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+        Expanded(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_sportIcon, size: 16, color: primary),
+              const SizedBox(width: AppSpacing.xs + 2),
+              Expanded(
+                child: Text(
+                  _sportHeaderLabel,
+                  style: AppTypography.caption.copyWith(
+                    color: primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(width: AppSpacing.sm),
         _buildStatusBadge(),
       ],
     );
@@ -581,7 +632,7 @@ class MatchCard extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Flexible(
+                Expanded(
                   child: Text(
                     teamName,
                     style: AppTypography.headline.copyWith(

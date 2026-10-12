@@ -36,17 +36,18 @@ class ProfessionalScorecard extends StatelessWidget {
       final sportLower = (match.sportName ?? '').toLowerCase().trim();
       dynamic resolvedState = scoringState;
 
-      if (resolvedState == null && match.score != null) {
+      if (resolvedState == null && (match.score != null || match.result != null)) {
         try {
+          final sourceData = match.score ?? match.result!;
           if (sportLower == 'cricket' || sportLower.isEmpty) {
-            resolvedState = CricketState.fromJson(Map<String, dynamic>.from(match.score!));
+            resolvedState = CricketState.fromJson(Map<String, dynamic>.from(sourceData));
           } else if (sportLower == 'football') {
-            resolvedState = FootballState.fromJson(Map<String, dynamic>.from(match.score!));
+            resolvedState = FootballState.fromJson(Map<String, dynamic>.from(sourceData));
           } else if (sportLower == 'badminton') {
-            resolvedState = BadmintonState.fromJson(Map<String, dynamic>.from(match.score!));
+            resolvedState = BadmintonState.fromJson(Map<String, dynamic>.from(sourceData));
           }
         } catch (e) {
-          debugPrint('Error parsing match.score: $e');
+          debugPrint('Error parsing match score/result: $e');
         }
       }
 
@@ -1149,84 +1150,99 @@ class _BadmintonScorecard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Column(
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(right: 6),
-                        decoration: BoxDecoration(
-                          color: colors.accent,
-                          shape: BoxShape.circle,
+              Expanded(
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: colors.accent,
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      Text(
-                        homeName,
-                        style: AppTypography.callout.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
+                        Flexible(
+                          child: Text(
+                            homeName,
+                            style: AppTypography.callout.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '${state.homeGamesWon}',
-                    style: AppTypography.titleLarge.copyWith(
-                      color: state.homeGamesWon > state.awayGamesWon ? colors.win : colors.textPrimary,
+                      ],
                     ),
-                  ),
-                  Text(
-                    'Games won',
-                    style: AppTypography.caption.copyWith(color: colors.textSecondary),
-                  ),
-                ],
-              ),
-              Text(
-                'VS',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colors.textTertiary,
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${state.homeGamesWon}',
+                      style: AppTypography.titleLarge.copyWith(
+                        color: state.homeGamesWon > state.awayGamesWon ? colors.win : colors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Games won',
+                      style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
                 ),
               ),
-              Column(
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        margin: const EdgeInsets.only(right: 6),
-                        decoration: BoxDecoration(
-                          color: colors.textSecondary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      Text(
-                        awayName,
-                        style: AppTypography.callout.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ],
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                child: Text(
+                  'VS',
+                  style: AppTypography.caption.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textTertiary,
                   ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '${state.awayGamesWon}',
-                    style: AppTypography.titleLarge.copyWith(
-                      color: state.awayGamesWon > state.homeGamesWon ? colors.win : colors.textPrimary,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: colors.textSecondary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            awayName,
+                            style: AppTypography.callout.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    'Games won',
-                    style: AppTypography.caption.copyWith(color: colors.textSecondary),
-                  ),
-                ],
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      '${state.awayGamesWon}',
+                      style: AppTypography.titleLarge.copyWith(
+                        color: state.awayGamesWon > state.homeGamesWon ? colors.win : colors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      'Games won',
+                      style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

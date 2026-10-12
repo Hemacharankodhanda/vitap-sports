@@ -132,7 +132,8 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
 
           dynamic derivedState;
           final engine = SportRegistry.getEngine(sport);
-          final scoreSnapshot = (rawStreamMatch?['score'] as Map?) ?? matchDetail.score;
+          final scoreSnapshot =
+              (rawStreamMatch?['score'] as Map?) ?? matchDetail.score ?? matchDetail.result;
 
           if (scoreSnapshot != null && engine != null) {
             try {
@@ -435,25 +436,84 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                Column(
-                  children: [
-                    Text(homeName, style: AppTypography.body.copyWith(color: secondaryText)),
-                    const SizedBox(height: AppSpacing.xs),
-                    AnimatedScore(value: derivedState.currentGame.homePoints),
-                    Text('Games: ${derivedState.homeGamesWon}', style: AppTypography.caption),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        homeName,
+                        style: AppTypography.body.copyWith(color: secondaryText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      AnimatedScore(
+                        value: status == 'completed'
+                            ? derivedState.homeGamesWon
+                            : derivedState.currentGame.homePoints,
+                      ),
+                      Text(
+                        status == 'completed'
+                            ? (derivedState.homeGamesWon > derivedState.awayGamesWon ? 'Winner' : '')
+                            : 'Games: ${derivedState.homeGamesWon}',
+                        style: AppTypography.caption.copyWith(
+                          color: status == 'completed' &&
+                                  derivedState.homeGamesWon > derivedState.awayGamesWon
+                              ? AppColors.success
+                              : null,
+                          fontWeight: status == 'completed' ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                Text(
-                  'G${derivedState.currentGameIndex + 1}',
-                  style: AppTypography.headline.copyWith(color: Theme.of(context).colorScheme.primary),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  child: Column(
+                    children: [
+                      Text(
+                        status == 'completed' ? 'FT' : 'G${derivedState.currentGameIndex + 1}',
+                        style: AppTypography.headline
+                            .copyWith(color: Theme.of(context).colorScheme.primary),
+                      ),
+                      if (status == 'completed' && derivedState.games.isNotEmpty)
+                        Text(
+                          derivedState.games.map((g) => '${g.homePoints}-${g.awayPoints}').join(', '),
+                          style: AppTypography.caption.copyWith(color: secondaryText, fontSize: 11),
+                        ),
+                    ],
+                  ),
                 ),
-                Column(
-                  children: [
-                    Text(awayName, style: AppTypography.body.copyWith(color: secondaryText)),
-                    const SizedBox(height: AppSpacing.xs),
-                    AnimatedScore(value: derivedState.currentGame.awayPoints),
-                    Text('Games: ${derivedState.awayGamesWon}', style: AppTypography.caption),
-                  ],
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        awayName,
+                        style: AppTypography.body.copyWith(color: secondaryText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      AnimatedScore(
+                        value: status == 'completed'
+                            ? derivedState.awayGamesWon
+                            : derivedState.currentGame.awayPoints,
+                      ),
+                      Text(
+                        status == 'completed'
+                            ? (derivedState.awayGamesWon > derivedState.homeGamesWon ? 'Winner' : '')
+                            : 'Games: ${derivedState.awayGamesWon}',
+                        style: AppTypography.caption.copyWith(
+                          color: status == 'completed' &&
+                                  derivedState.awayGamesWon > derivedState.homeGamesWon
+                              ? AppColors.success
+                              : null,
+                          fontWeight: status == 'completed' ? FontWeight.bold : null,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

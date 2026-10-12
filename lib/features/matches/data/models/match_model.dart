@@ -264,8 +264,16 @@ class MatchModel {
           [],
       homeTeamName: homeName,
       awayTeamName: awayName,
-      homeScore: json['home_score'] as int?,
-      awayScore: json['away_score'] as int?,
+      homeScore: (json['home_score'] as num?)?.toInt() ??
+          (scoreData?['home_score'] as num?)?.toInt() ??
+          (resultData?['home_score'] as num?)?.toInt() ??
+          (scoreData?['home_games_won'] as num?)?.toInt() ??
+          (resultData?['home_games_won'] as num?)?.toInt(),
+      awayScore: (json['away_score'] as num?)?.toInt() ??
+          (scoreData?['away_score'] as num?)?.toInt() ??
+          (resultData?['away_score'] as num?)?.toInt() ??
+          (scoreData?['away_games_won'] as num?)?.toInt() ??
+          (resultData?['away_games_won'] as num?)?.toInt(),
       config: configData,
       score: scoreData,
       result: resultData,

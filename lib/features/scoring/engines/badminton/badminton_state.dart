@@ -212,16 +212,25 @@ class BadmintonState {
           )
         : const <int, bool>{};
 
-    final pStats = (json['player_stats'] is Map)
-        ? (json['player_stats'] as Map).map(
-            (k, v) => MapEntry(
-              k.toString(),
-              (v is Map)
-                  ? (v).map((k2, v2) => MapEntry(k2.toString(), (v2 as num?)?.toInt() ?? 0))
-                  : <String, int>{},
-            ),
-          )
-        : const <String, Map<String, int>>{};
+    final pStats = <String, Map<String, int>>{};
+    if (json['player_stats'] is Map) {
+      (json['player_stats'] as Map).forEach((k, v) {
+        if (v is Map) {
+          final statsMap = <String, int>{};
+          v.forEach((k2, v2) {
+            if (v2 is num) {
+              statsMap[k2.toString()] = v2.toInt();
+            } else if (v2 != null) {
+              final parsed = int.tryParse(v2.toString());
+              if (parsed != null) {
+                statsMap[k2.toString()] = parsed;
+              }
+            }
+          });
+          pStats[k.toString()] = statsMap;
+        }
+      });
+    }
 
     return BadmintonState(
       homeId: json['home_id']?.toString() ?? 'home',
