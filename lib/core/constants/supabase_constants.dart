@@ -6,9 +6,9 @@ library;
 class SupabaseConstants {
   SupabaseConstants._();
 
-  static const String url = 'https://neubpyvgzjmilbeajxbv.supabase.co';
+  static const String url = 'supabase url';
 
-  static const String anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldWJweXZnemptaWxiZWFqeGJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5Nzc5MjQsImV4cCI6MjEwNDU1MzkyNH0.1fZAC7iWfstybcyAyI8wDKB2rumN2v2D2PGTmiSmzdM';
+  static const String anonKey = 'supabase anon key';
 
   // Storage bucket names
   static const String avatarsBucket = 'avatars';
