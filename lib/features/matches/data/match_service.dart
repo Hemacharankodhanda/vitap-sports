@@ -94,7 +94,16 @@ class MatchService {
         }).toList();
         await _client.from('match_participants').insert(rows);
       }
+    } else if (homePlayerIds != null && homePlayerIds.isNotEmpty) {
+      final rows = homePlayerIds.map((userId) => {
+        'match_id': matchId,
+        'user_id': userId,
+        'side': 'home',
+        'rsvp_status': 'confirmed',
+      }).toList();
+      await _client.from('match_participants').insert(rows);
     }
+
     if (awayTeamId != null) {
       await _client.from('match_participants').insert({
         'match_id': matchId,
@@ -112,6 +121,14 @@ class MatchService {
         }).toList();
         await _client.from('match_participants').insert(rows);
       }
+    } else if (awayPlayerIds != null && awayPlayerIds.isNotEmpty) {
+      final rows = awayPlayerIds.map((userId) => {
+        'match_id': matchId,
+        'user_id': userId,
+        'side': 'away',
+        'rsvp_status': 'confirmed',
+      }).toList();
+      await _client.from('match_participants').insert(rows);
     }
 
     return (await getMatch(matchId))!;

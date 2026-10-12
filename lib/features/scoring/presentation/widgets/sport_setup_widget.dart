@@ -46,6 +46,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
   late String _badmintonTossWinner;
   String _badmintonDecision = 'serve'; // 'serve' or 'receive'
   int _badmintonBestOf = 3;
+  String? _badmintonPlayer1;
+  String? _badmintonPlayer2;
+  final Set<String> _badmintonHomeDoubles = {};
+  final Set<String> _badmintonAwayDoubles = {};
 
   // Football state
   int _footballHalfLength = 20;
@@ -63,6 +67,17 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     _footballKickoffTeam = widget.state.homeId;
 
     final formatStr = widget.state.matchData?['format'] as String?;
+    final configFormat = widget.state.config['format'] as String?;
+    if (configFormat != null && configFormat.toLowerCase() == 'doubles') {
+      _badmintonFormat = 'doubles';
+    } else if (formatStr != null && formatStr.toLowerCase().contains('doubles')) {
+      _badmintonFormat = 'doubles';
+    } else if (configFormat != null && configFormat.toLowerCase() == 'singles') {
+      _badmintonFormat = 'singles';
+    } else if (formatStr != null && formatStr.toLowerCase().contains('singles')) {
+      _badmintonFormat = 'singles';
+    }
+
     if (formatStr != null && formatStr.contains('Overs')) {
       final oversStr = formatStr.split('Overs')[0].trim();
       final parsed = int.tryParse(oversStr);
@@ -72,6 +87,40 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     }
 
     _syncDefaultPlayers();
+    _syncBadmintonPlayers();
+  }
+
+  void _syncBadmintonPlayers() {
+    final homeList = widget.state.homePlayers;
+    final awayList = widget.state.awayPlayers;
+
+    if (homeList.isNotEmpty) {
+      _badmintonPlayer1 = homeList.first.id;
+    } else {
+      _badmintonPlayer1 = widget.state.homeName;
+    }
+
+    if (awayList.isNotEmpty) {
+      _badmintonPlayer2 = awayList.first.id;
+    } else {
+      _badmintonPlayer2 = widget.state.awayName;
+    }
+
+    _badmintonHomeDoubles.clear();
+    for (final p in homeList.take(2)) {
+      _badmintonHomeDoubles.add(p.id);
+    }
+
+    _badmintonAwayDoubles.clear();
+    for (final p in awayList.take(2)) {
+      _badmintonAwayDoubles.add(p.id);
+    }
+
+    if (_badmintonFormat == 'singles') {
+      _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId;
+    } else {
+      _badmintonTossWinner = widget.state.homeId;
+    }
   }
 
   String get _battingTeamId {
@@ -149,6 +198,35 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             _buildFootballSetup()
           else
             const Text('Configure rules to begin.'),
+
+          if (sport == 'badminton' &&
+              _badmintonFormat == 'doubles' &&
+              (_badmintonHomeDoubles.length != 2 || _badmintonAwayDoubles.length != 2)) ...[
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.error.withAlpha(25),
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                border: Border.all(color: AppColors.error.withAlpha(80)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Doubles matches require exactly 2 players per team before proceeding.',
+                      style: AppTypography.caption.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
 
           const SizedBox(height: AppSpacing.xl),
           AppButton(
@@ -473,6 +551,9 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
   }
 
   Widget _buildBadmintonSetup() {
+    final p1Name = _playerDisplayName(_badmintonPlayer1, widget.state.homePlayers, widget.state.homeName);
+    final p2Name = _playerDisplayName(_badmintonPlayer2, widget.state.awayPlayers, widget.state.awayName);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -483,37 +564,140 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             AppChip(
               label: 'Singles',
               isSelected: _badmintonFormat == 'singles',
-              onTap: () => setState(() => _badmintonFormat = 'singles'),
+              onTap: () {
+                setState(() {
+                  _badmintonFormat = 'singles';
+                  _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId;
+                });
+              },
             ),
             const SizedBox(width: AppSpacing.sm),
             AppChip(
               label: 'Doubles',
               isSelected: _badmintonFormat == 'doubles',
-              onTap: () => setState(() => _badmintonFormat = 'doubles'),
+              onTap: () {
+                setState(() {
+                  _badmintonFormat = 'doubles';
+                  _badmintonTossWinner = widget.state.homeId;
+                });
+              },
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-        const SizedBox(height: AppSpacing.xs),
-        Row(
-          children: [
-            AppChip(
-              label: widget.state.homeName,
-              isSelected: _badmintonTossWinner == widget.state.homeId,
-              onTap: () => setState(() => _badmintonTossWinner = widget.state.homeId),
+        // If Singles: Show option of PLAYERS, not teams!
+        if (_badmintonFormat == 'singles') ...[
+          Text('Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.xs),
+          _buildPlayerSelectorTile(
+            label: 'Player 1 (Home)',
+            playerName: p1Name,
+            teamName: widget.state.homeName,
+            onTap: () => _openPlayerPicker(
+              title: 'Select Player 1',
+              teamName: widget.state.homeName,
+              players: widget.state.homePlayers,
+              currentSelection: _badmintonPlayer1,
+              excludePlayerId: _badmintonPlayer2,
+              onSelected: (val) {
+                setState(() {
+                  _badmintonPlayer1 = val;
+                  if (_badmintonTossWinner == widget.state.homeId || _badmintonTossWinner == _badmintonPlayer1) {
+                    _badmintonTossWinner = val;
+                  }
+                });
+              },
             ),
-            const SizedBox(width: AppSpacing.sm),
-            AppChip(
-              label: widget.state.awayName,
-              isSelected: _badmintonTossWinner == widget.state.awayId,
-              onTap: () => setState(() => _badmintonTossWinner = widget.state.awayId),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _buildPlayerSelectorTile(
+            label: 'Player 2 (Away)',
+            playerName: p2Name,
+            teamName: widget.state.awayName,
+            onTap: () => _openPlayerPicker(
+              title: 'Select Player 2',
+              teamName: widget.state.awayName,
+              players: widget.state.awayPlayers,
+              currentSelection: _badmintonPlayer2,
+              excludePlayerId: _badmintonPlayer1,
+              onSelected: (val) {
+                setState(() {
+                  _badmintonPlayer2 = val;
+                  if (_badmintonTossWinner == widget.state.awayId || _badmintonTossWinner == _badmintonPlayer2) {
+                    _badmintonTossWinner = val;
+                  }
+                });
+              },
             ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
+          ),
+          const SizedBox(height: AppSpacing.md),
 
+          Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              AppChip(
+                label: p1Name,
+                isSelected: _badmintonTossWinner == (_badmintonPlayer1 ?? widget.state.homeId),
+                onTap: () => setState(() => _badmintonTossWinner = _badmintonPlayer1 ?? widget.state.homeId),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              AppChip(
+                label: p2Name,
+                isSelected: _badmintonTossWinner == (_badmintonPlayer2 ?? widget.state.awayId),
+                onTap: () => setState(() => _badmintonTossWinner = _badmintonPlayer2 ?? widget.state.awayId),
+              ),
+            ],
+          ),
+        ] else ...[
+          // If Doubles: Show Teams and require exactly 2 players per team!
+          Text(
+            '${widget.state.homeName} Pair (${_badmintonHomeDoubles.length}/2)',
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _buildDoublesPairCard(
+            teamName: widget.state.homeName,
+            isHome: true,
+            selectedPlayerIds: _badmintonHomeDoubles,
+            availablePlayers: widget.state.homePlayers,
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          Text(
+            '${widget.state.awayName} Pair (${_badmintonAwayDoubles.length}/2)',
+            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _buildDoublesPairCard(
+            teamName: widget.state.awayName,
+            isHome: false,
+            selectedPlayerIds: _badmintonAwayDoubles,
+            availablePlayers: widget.state.awayPlayers,
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: AppSpacing.xs),
+          Row(
+            children: [
+              AppChip(
+                label: widget.state.homeName,
+                isSelected: _badmintonTossWinner == widget.state.homeId,
+                onTap: () => setState(() => _badmintonTossWinner = widget.state.homeId),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              AppChip(
+                label: widget.state.awayName,
+                isSelected: _badmintonTossWinner == widget.state.awayId,
+                onTap: () => setState(() => _badmintonTossWinner = widget.state.awayId),
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: AppSpacing.md),
         Text('Elected To', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: AppSpacing.xs),
         Row(
@@ -548,6 +732,230 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildDoublesPairCard({
+    required String teamName,
+    required bool isHome,
+    required Set<String> selectedPlayerIds,
+    required List<PlayerOption> availablePlayers,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isReady = selectedPlayerIds.length == 2;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(
+          color: isReady
+              ? AppColors.success.withAlpha(120)
+              : (selectedPlayerIds.length > 2 ? AppColors.error : AppColors.warning),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                isReady
+                    ? '✓ 2 players selected'
+                    : (selectedPlayerIds.length > 2
+                        ? '⚠ ${selectedPlayerIds.length} players (must be 2)'
+                        : '⚠ ${selectedPlayerIds.length}/2 players selected'),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isReady
+                      ? AppColors.success
+                      : (selectedPlayerIds.length > 2 ? AppColors.error : AppColors.warning),
+                ),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.edit_outlined, size: 14),
+                label: const Text('Manage Pair', style: TextStyle(fontSize: 12)),
+                onPressed: () => _openDoublesSquadPicker(
+                  teamName: teamName,
+                  availablePlayers: availablePlayers,
+                  currentSelected: selectedPlayerIds,
+                  onConfirm: (res) {
+                    setState(() {
+                      if (isHome) {
+                        _badmintonHomeDoubles
+                          ..clear()
+                          ..addAll(res);
+                      } else {
+                        _badmintonAwayDoubles
+                          ..clear()
+                          ..addAll(res);
+                      }
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          if (selectedPlayerIds.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Wrap(
+              spacing: AppSpacing.xs,
+              children: selectedPlayerIds.map((id) {
+                final match = availablePlayers.where((p) => p.id == id).firstOrNull;
+                return Chip(
+                  avatar: const Icon(Icons.person, size: 14),
+                  label: Text(match?.name ?? id, style: const TextStyle(fontSize: 12)),
+                  visualDensity: VisualDensity.compact,
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDoublesSquadPicker({
+    required String teamName,
+    required List<PlayerOption> availablePlayers,
+    required Set<String> currentSelected,
+    required ValueChanged<Set<String>> onConfirm,
+  }) async {
+    final customCtrl = TextEditingController();
+    bool showCustom = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+      ),
+      builder: (ctx) {
+        final selected = Set<String>.from(currentSelected);
+        return StatefulBuilder(
+          builder: (c, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: AppSpacing.lg,
+                right: AppSpacing.lg,
+                top: AppSpacing.lg,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('$teamName Pair (${selected.length}/2)', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          selected.length == 2 ? 'Ready' : 'Must be exactly 2',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: selected.length == 2 ? AppColors.success : AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    if (!showCustom) ...[
+                      if (availablePlayers.isNotEmpty) ...[
+                        Text('Select 2 players for this pair:', style: AppTypography.caption),
+                        const SizedBox(height: AppSpacing.xs),
+                        ...availablePlayers.map((p) {
+                          final isChecked = selected.contains(p.id) || selected.contains(p.name);
+                          return CheckboxListTile(
+                            dense: true,
+                            title: Text(p.name),
+                            value: isChecked,
+                            onChanged: (val) {
+                              if (val == true && selected.length >= 2) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Doubles pair can only have 2 players. Deselect another player first.'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                                return;
+                              }
+                              setSheetState(() {
+                                if (val == true) {
+                                  selected.add(p.id);
+                                } else {
+                                  selected.remove(p.id);
+                                  selected.remove(p.name);
+                                }
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                      TextButton.icon(
+                        icon: const Icon(Icons.person_add_rounded, size: 18),
+                        label: const Text('+ Enter Custom Player Name'),
+                        onPressed: () => setSheetState(() => showCustom = true),
+                      ),
+                    ] else ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Custom Player Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          TextButton(
+                            onPressed: () => setSheetState(() => showCustom = false),
+                            child: const Text('← Pick from Squad'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      TextField(
+                        controller: customCtrl,
+                        autofocus: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Player Name',
+                          hintText: 'e.g. Lakshya Sen',
+                          isDense: true,
+                        ),
+                        onChanged: (val) => setSheetState(() {}),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      AppButton(
+                        label: 'Add to Pair',
+                        onPressed: customCtrl.text.trim().isNotEmpty && selected.length < 2
+                            ? () {
+                                setSheetState(() {
+                                  selected.add(customCtrl.text.trim());
+                                  customCtrl.clear();
+                                  showCustom = false;
+                                });
+                              }
+                            : null,
+                      ),
+                    ],
+
+                    const SizedBox(height: AppSpacing.md),
+                    AppButton(
+                      label: 'Confirm Pair (${selected.length}/2)',
+                      onPressed: selected.length == 2
+                          ? () {
+                              onConfirm(selected);
+                              Navigator.pop(ctx);
+                            }
+                          : null,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -631,17 +1039,60 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         };
         await widget.onStartMatch(config: config, extra: extra);
       } else if (sport == 'badminton') {
+        if (_badmintonFormat == 'doubles') {
+          if (_badmintonHomeDoubles.length != 2) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _badmintonHomeDoubles.length > 2
+                      ? '${widget.state.homeName} has ${_badmintonHomeDoubles.length} players. Doubles requires exactly 2 players.'
+                      : 'Please select exactly 2 players for ${widget.state.homeName} before proceeding.',
+                ),
+              ),
+            );
+            return;
+          }
+          if (_badmintonAwayDoubles.length != 2) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _badmintonAwayDoubles.length > 2
+                      ? '${widget.state.awayName} has ${_badmintonAwayDoubles.length} players. Doubles requires exactly 2 players.'
+                      : 'Please select exactly 2 players for ${widget.state.awayName} before proceeding.',
+                ),
+              ),
+            );
+            return;
+          }
+        }
+
         final config = {
           'format': _badmintonFormat,
           'best_of_games': _badmintonBestOf,
           'points_per_game': 21,
           'cap': 30,
         };
+
+        final homeList = _badmintonFormat == 'doubles'
+            ? _badmintonHomeDoubles.toList()
+            : [_badmintonPlayer1 ?? widget.state.homeId];
+        final awayList = _badmintonFormat == 'doubles'
+            ? _badmintonAwayDoubles.toList()
+            : [_badmintonPlayer2 ?? widget.state.awayId];
+
         final serverSide = _badmintonDecision == 'serve'
             ? _badmintonTossWinner
             : (_badmintonTossWinner == widget.state.homeId ? widget.state.awayId : widget.state.homeId);
+
+        final firstServerId = serverSide == widget.state.homeId
+            ? homeList.first
+            : awayList.first;
+
         final extra = {
-          'first_server_id': serverSide,
+          'first_server_id': firstServerId,
+          'first_server_team_id': serverSide,
+          'home_players': homeList,
+          'away_players': awayList,
         };
         await widget.onStartMatch(config: config, extra: extra);
       } else if (sport == 'football') {

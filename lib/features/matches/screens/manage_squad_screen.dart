@@ -4,14 +4,12 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../teams/providers/team_providers.dart';
-import '../data/match_service.dart';
 import '../providers/match_providers.dart';
 
 class ManageSquadScreen extends ConsumerStatefulWidget {
@@ -46,6 +44,26 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
   }
 
   Future<void> _saveSquad() async {
+    final match = ref.read(matchDetailProvider(widget.matchId)).valueOrNull;
+    final isBadminton = match?.sportName?.toLowerCase() == 'badminton';
+    final isDoubles = (match?.format?.toLowerCase().contains('doubles') ?? false) ||
+        (match?.config?['format'] == 'doubles');
+
+    if (isBadminton && isDoubles && _selectedUserIds.length != 2) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _selectedUserIds.length > 2
+                  ? 'Badminton doubles teams cannot have more than two players. Please select only two.'
+                  : 'Badminton doubles requires exactly 2 players (currently ${_selectedUserIds.length}).',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _isSaving = true);
     try {
       await ref.read(matchServiceProvider).setPlayingSquad(
@@ -71,7 +89,6 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
   Widget build(BuildContext context) {
     final teamAsync = ref.watch(teamDetailProvider(widget.teamId));
     final matchAsync = ref.watch(matchDetailProvider(widget.matchId));
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (teamAsync.isLoading || matchAsync.isLoading) {
       return const Scaffold(body: LoadingIndicator());
@@ -88,11 +105,19 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
       return const Scaffold(body: ErrorView(message: 'Not found'));
     }
 
+    final isBadminton = match.sportName?.toLowerCase() == 'badminton';
+    final isDoubles = (match.format?.toLowerCase().contains('doubles') ?? false) ||
+        (match.config?['format'] == 'doubles');
+
     _initializeSelection(match.participants);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${team.name} Squad (${_selectedUserIds.length})'),
+        title: Text(
+          isBadminton && isDoubles
+              ? '${team.name} Squad (${_selectedUserIds.length}/2)'
+              : '${team.name} Squad (${_selectedUserIds.length})',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -116,6 +141,15 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
                 subtitle: Text(member.role.toUpperCase()),
                 value: isSelected,
                 onChanged: (checked) {
+                  if (isBadminton && isDoubles && checked == true && _selectedUserIds.length >= 2) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Doubles pair can only have 2 players. Deselect another player first.'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
                   setState(() {
                     if (checked == true) {
                       _selectedUserIds.add(member.userId);
@@ -133,7 +167,9 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
           child: AppButton(
-            label: 'Save Squad',
+            label: isBadminton && isDoubles
+                ? 'Save Squad (${_selectedUserIds.length}/2 players)'
+                : 'Save Squad',
             onPressed: _saveSquad,
             isLoading: _isSaving,
           ),

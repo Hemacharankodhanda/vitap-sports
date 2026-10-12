@@ -26,6 +26,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   final _formKey = GlobalKey<FormState>();
   final _venueController = TextEditingController();
   final _oversController = TextEditingController(text: '20'); // Default to T20
+  final _player1CustomCtrl = TextEditingController();
+  final _player2CustomCtrl = TextEditingController();
   String? _selectedSportId;
   String? _selectedFormat;
   String? _homeTeamId;
@@ -34,6 +36,14 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   final Set<String> _awaySelectedUserIds = {};
   bool _homeSquadConfigured = false;
   bool _awaySquadConfigured = false;
+
+  // Badminton Singles / Doubles state
+  String _badmintonType = 'singles'; // 'singles' or 'doubles'
+  String? _selectedPlayer1Id;
+  String? _selectedPlayer2Id;
+  bool _isCustomP1 = false;
+  bool _isCustomP2 = false;
+
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _selectedTime = const TimeOfDay(hour: 17, minute: 0);
   bool _isLoading = false;
@@ -44,6 +54,8 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
   void dispose() {
     _venueController.dispose();
     _oversController.dispose();
+    _player1CustomCtrl.dispose();
+    _player2CustomCtrl.dispose();
     super.dispose();
   }
 
@@ -69,6 +81,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     required String teamId,
     required String teamName,
     required bool isTeam1,
+    bool isBadmintonDoubles = false,
   }) async {
     final team = await ref.read(teamDetailProvider(teamId).future);
     if (team == null || !mounted) return;
@@ -78,8 +91,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     );
     final configured = isTeam1 ? _homeSquadConfigured : _awaySquadConfigured;
     if (!configured) {
-      for (final m in team.members) {
-        currentSelected.add(m.userId);
+      if (isBadmintonDoubles) {
+        // For badminton doubles, take at most first 2 members initially
+        for (final m in team.members.take(2)) {
+          currentSelected.add(m.userId);
+        }
+      } else {
+        for (final m in team.members) {
+          currentSelected.add(m.userId);
+        }
       }
     }
 
@@ -110,28 +130,43 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '$teamName Squad (${selected.length})',
+                          isBadmintonDoubles
+                              ? '$teamName Squad (${selected.length}/2)'
+                              : '$teamName Squad (${selected.length})',
                           style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            setSheetState(() {
-                              if (selected.length == team.members.length) {
-                                selected.clear();
-                              } else {
-                                selected.clear();
-                                for (final m in team.members) {
-                                  selected.add(m.userId);
+                        if (!isBadmintonDoubles)
+                          TextButton(
+                            onPressed: () {
+                              setSheetState(() {
+                                if (selected.length == team.members.length) {
+                                  selected.clear();
+                                } else {
+                                  selected.clear();
+                                  for (final m in team.members) {
+                                    selected.add(m.userId);
+                                  }
                                 }
-                              }
-                            });
-                          },
-                          child: Text(
-                            selected.length == team.members.length ? 'Deselect All' : 'Select All',
+                              });
+                            },
+                            child: Text(
+                              selected.length == team.members.length ? 'Deselect All' : 'Select All',
+                            ),
                           ),
-                        ),
                       ],
                     ),
+                    if (isBadmintonDoubles) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Doubles matches require exactly 2 players.',
+                        style: AppTypography.caption.copyWith(
+                          color: selected.length == 2
+                              ? AppColors.success
+                              : (selected.length > 2 ? AppColors.error : AppColors.warning),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     const Divider(),
                     if (team.members.isEmpty)
                       const Padding(
@@ -151,6 +186,15 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                               subtitle: Text(member.role.toUpperCase()),
                               value: isChecked,
                               onChanged: (val) {
+                                if (isBadmintonDoubles && val == true && selected.length >= 2) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Badminton doubles allows only 2 players. Deselect another player first.'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 setSheetState(() {
                                   if (val == true) {
                                     selected.add(member.userId);
@@ -165,8 +209,24 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                       ),
                     const SizedBox(height: AppSpacing.md),
                     AppButton(
-                      label: 'Done (${selected.length} players)',
-                      onPressed: () => Navigator.of(ctx).pop(selected),
+                      label: isBadmintonDoubles
+                          ? 'Done (${selected.length}/2 players)'
+                          : 'Done (${selected.length} players)',
+                      onPressed: () {
+                        if (isBadmintonDoubles && selected.length != 2) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                selected.length > 2
+                                    ? 'More than 2 players selected. Please select only 2 players.'
+                                    : 'Please select exactly 2 players for badminton doubles.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                        Navigator.of(ctx).pop(selected);
+                      },
                     ),
                   ],
                 ),
@@ -214,33 +274,118 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
         _selectedTime.minute,
       );
       
-      // Determine if cricket is selected to include overs
       final sportsList = ref.read(sportsListProvider).valueOrNull ?? [];
-      final isCricket = sportsList.any((s) => s['id'] == _selectedSportId && s['name'] == 'Cricket');
-      
+      final selectedSport = sportsList.where((s) => s['id'] == _selectedSportId).firstOrNull;
+      final sportName = (selectedSport?['name'] as String? ?? '').toLowerCase();
+      final isCricket = sportName == 'cricket';
+      final isBadminton = sportName == 'badminton';
+
       String? finalFormat = _selectedFormat;
       if (isCricket && _oversController.text.isNotEmpty) {
         finalFormat = '${_oversController.text} Overs - ${finalFormat ?? "Match"}';
       }
 
-      Set<String> homePlayerIds = Set<String>.from(_homeSelectedUserIds);
-      if (!_homeSquadConfigured && _homeTeamId != null) {
-        try {
-          final t = await ref.read(teamDetailProvider(_homeTeamId!).future);
-          if (t != null) {
-            homePlayerIds = t.members.map((m) => m.userId).toSet();
-          }
-        } catch (_) {}
-      }
+      String? effectiveHomeTeamId = _homeTeamId;
+      String? effectiveAwayTeamId = _awayTeamId;
+      List<String> homePlayerIdsList = [];
+      List<String> awayPlayerIdsList = [];
 
-      Set<String> awayPlayerIds = Set<String>.from(_awaySelectedUserIds);
-      if (!_awaySquadConfigured && _awayTeamId != null) {
-        try {
-          final t = await ref.read(teamDetailProvider(_awayTeamId!).future);
-          if (t != null) {
-            awayPlayerIds = t.members.map((m) => m.userId).toSet();
+      if (isBadminton) {
+        if (_badmintonType == 'singles') {
+          final p1 = _isCustomP1 ? _player1CustomCtrl.text.trim() : _selectedPlayer1Id;
+          final p2 = _isCustomP2 ? _player2CustomCtrl.text.trim() : _selectedPlayer2Id;
+
+          if (p1 == null || p1.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select or enter Player 1')),
+            );
+            return;
           }
-        } catch (_) {}
+          if (p2 == null || p2.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select or enter Player 2')),
+            );
+            return;
+          }
+          if (p1.toLowerCase() == p2.toLowerCase()) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Player 1 and Player 2 cannot be the same person')),
+            );
+            return;
+          }
+
+          effectiveHomeTeamId = null;
+          effectiveAwayTeamId = null;
+          homePlayerIdsList = [p1];
+          awayPlayerIdsList = [p2];
+          finalFormat = 'Singles - ${finalFormat ?? "Match"}';
+        } else {
+          // Doubles
+          if (_homeTeamId == null || _awayTeamId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select both teams for doubles match')),
+            );
+            return;
+          }
+          if (_homeTeamId == _awayTeamId) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Team 1 and Team 2 cannot be the same')),
+            );
+            return;
+          }
+
+          if (_homeSelectedUserIds.length != 2) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _homeSelectedUserIds.length > 2
+                      ? 'Team 1 has ${_homeSelectedUserIds.length} players selected. Doubles requires exactly 2 players.'
+                      : 'Please select exactly 2 players for Team 1 before proceeding.',
+                ),
+              ),
+            );
+            return;
+          }
+          if (_awaySelectedUserIds.length != 2) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _awaySelectedUserIds.length > 2
+                      ? 'Team 2 has ${_awaySelectedUserIds.length} players selected. Doubles requires exactly 2 players.'
+                      : 'Please select exactly 2 players for Team 2 before proceeding.',
+                ),
+              ),
+            );
+            return;
+          }
+
+          homePlayerIdsList = _homeSelectedUserIds.toList();
+          awayPlayerIdsList = _awaySelectedUserIds.toList();
+          finalFormat = 'Doubles - ${finalFormat ?? "Match"}';
+        }
+      } else {
+        Set<String> homePlayerIds = Set<String>.from(_homeSelectedUserIds);
+        if (!_homeSquadConfigured && _homeTeamId != null) {
+          try {
+            final t = await ref.read(teamDetailProvider(_homeTeamId!).future);
+            if (t != null) {
+              homePlayerIds = t.members.map((m) => m.userId).toSet();
+            }
+          } catch (_) {}
+        }
+
+        Set<String> awayPlayerIds = Set<String>.from(_awaySelectedUserIds);
+        if (!_awaySquadConfigured && _awayTeamId != null) {
+          try {
+            final t = await ref.read(teamDetailProvider(_awayTeamId!).future);
+            if (t != null) {
+              awayPlayerIds = t.members.map((m) => m.userId).toSet();
+            }
+          } catch (_) {}
+        }
+
+        homePlayerIdsList = homePlayerIds.toList();
+        awayPlayerIdsList = awayPlayerIds.toList();
       }
 
       await ref.read(matchServiceProvider).createMatch(
@@ -249,10 +394,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             scheduledAt: scheduledAt,
             createdBy: userId,
             format: finalFormat,
-            homeTeamId: _homeTeamId,
-            awayTeamId: _awayTeamId,
-            homePlayerIds: homePlayerIds.toList(),
-            awayPlayerIds: awayPlayerIds.toList(),
+            homeTeamId: effectiveHomeTeamId,
+            awayTeamId: effectiveAwayTeamId,
+            homePlayerIds: homePlayerIdsList,
+            awayPlayerIds: awayPlayerIdsList,
           );
 
       ref.invalidate(matchesListProvider('upcoming'));
@@ -290,7 +435,7 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             const SizedBox(height: AppSpacing.sm),
             sportsAsync.when(
               loading: () => const CircularProgressIndicator(),
-              error: (_, __) => const Text('Failed to load sports'),
+              error: (err, stack) => const Text('Failed to load sports'),
               data: (sports) => Wrap(
                 spacing: AppSpacing.sm,
                 runSpacing: AppSpacing.sm,
@@ -302,6 +447,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             if (_selectedSportId != s['id']) {
                               setState(() {
                                 _selectedSportId = s['id'] as String;
+                                _badmintonType = 'singles';
+                                _selectedPlayer1Id = null;
+                                _selectedPlayer2Id = null;
+                                _player1CustomCtrl.clear();
+                                _player2CustomCtrl.clear();
+                                _isCustomP1 = false;
+                                _isCustomP2 = false;
                                 _homeTeamId = null;
                                 _awayTeamId = null;
                                 _homeSelectedUserIds.clear();
@@ -317,113 +469,217 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Teams Selection
-            Text('Teams', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-            const SizedBox(height: AppSpacing.sm),
-            ref.watch(teamsListProvider).when(
-                  loading: () => const CircularProgressIndicator(),
-                  error: (_, __) => const Text('Failed to load teams'),
-                  data: (teams) {
-                    final filteredTeams = teams
-                        .where((t) => t.sportId == _selectedSportId)
-                        .toList();
-                    final items = filteredTeams
-                        .map((t) => DropdownMenuItem(
-                              value: t.id,
-                              child: Text(t.name),
-                            ))
-                        .toList();
+            // Badminton Match Type: Singles or Doubles
+            if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false) ...[
+              Text('Match Type', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  AppChip(
+                    label: 'Singles',
+                    isSelected: _badmintonType == 'singles',
+                    onTap: () {
+                      setState(() {
+                        _badmintonType = 'singles';
+                        _homeTeamId = null;
+                        _awayTeamId = null;
+                        _homeSelectedUserIds.clear();
+                        _awaySelectedUserIds.clear();
+                      });
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  AppChip(
+                    label: 'Doubles',
+                    isSelected: _badmintonType == 'doubles',
+                    onTap: () {
+                      setState(() {
+                        _badmintonType = 'doubles';
+                        _selectedPlayer1Id = null;
+                        _selectedPlayer2Id = null;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
 
-                    final homeTeamObj = filteredTeams
-                        .where((t) => t.id == _homeTeamId)
-                        .firstOrNull;
-                    final awayTeamObj = filteredTeams
-                        .where((t) => t.id == _awayTeamId)
-                        .firstOrNull;
+            // If Badminton Singles: Do not show option of teams, show option of players
+            if ((sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false) &&
+                _badmintonType == 'singles') ...[
+              Text('Players', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
+              const SizedBox(height: AppSpacing.sm),
+              _buildSinglesPlayersSection(),
+              const SizedBox(height: AppSpacing.xl),
+            ] else ...[
+              // Teams Selection (For cricket, football, or badminton doubles)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Teams', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
+                  if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ?? false)
+                    Text(
+                      'Doubles: exactly 2 players per team',
+                      style: AppTypography.caption.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              ref.watch(teamsListProvider).when(
+                    loading: () => const CircularProgressIndicator(),
+                    error: (err, stack) => const Text('Failed to load teams'),
+                    data: (teams) {
+                      final isBadmintonDoubles = (sportsAsync.valueOrNull?.any(
+                              (s) => s['id'] == _selectedSportId && (s['name'] as String? ?? '').toLowerCase() == 'badminton') ??
+                          false) && _badmintonType == 'doubles';
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        DropdownButtonFormField<String>(
-                          value: _homeTeamId,
-                          decoration: const InputDecoration(
-                            labelText: 'Team 1',
-                            prefixIcon: Icon(Icons.shield_outlined),
-                            border: OutlineInputBorder(),
-                          ),
-                          items: items,
-                          onChanged: (v) {
-                            setState(() {
-                              _homeTeamId = v;
-                              _homeSelectedUserIds.clear();
-                              _homeSquadConfigured = false;
-                            });
-                          },
-                          validator: (v) => v == null ? 'Select Team 1' : null,
-                        ),
-                        if (_homeTeamId != null && homeTeamObj != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.group_outlined, size: 18),
-                              label: Text(
-                                _homeSquadConfigured
-                                    ? 'Manage ${homeTeamObj.name} Squad (${_homeSelectedUserIds.length} players)'
-                                    : 'Manage ${homeTeamObj.name} Squad',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              onPressed: () => _manageSquadForTeam(
-                                teamId: _homeTeamId!,
-                                teamName: homeTeamObj.name,
-                                isTeam1: true,
-                              ),
+                      final filteredTeams = teams
+                          .where((t) => t.sportId == _selectedSportId)
+                          .toList();
+                      final items = filteredTeams
+                          .map((t) => DropdownMenuItem(
+                                value: t.id,
+                                child: Text(t.name),
+                              ))
+                          .toList();
+
+                      final homeTeamObj = filteredTeams
+                          .where((t) => t.id == _homeTeamId)
+                          .firstOrNull;
+                      final awayTeamObj = filteredTeams
+                          .where((t) => t.id == _awayTeamId)
+                          .firstOrNull;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            initialValue: _homeTeamId,
+                            decoration: const InputDecoration(
+                              labelText: 'Team 1',
+                              prefixIcon: Icon(Icons.shield_outlined),
+                              border: OutlineInputBorder(),
                             ),
+                            items: items,
+                            onChanged: (v) {
+                              setState(() {
+                                _homeTeamId = v;
+                                _homeSelectedUserIds.clear();
+                                _homeSquadConfigured = false;
+                              });
+                            },
+                            validator: (v) => v == null ? 'Select Team 1' : null,
                           ),
-                        ],
-                        const SizedBox(height: AppSpacing.md),
-                        DropdownButtonFormField<String>(
-                          value: _awayTeamId,
-                          decoration: const InputDecoration(
-                            labelText: 'Team 2',
-                            prefixIcon: Icon(Icons.shield_outlined),
-                            border: OutlineInputBorder(),
-                          ),
-                          items: items,
-                          onChanged: (v) {
-                            setState(() {
-                              _awayTeamId = v;
-                              _awaySelectedUserIds.clear();
-                              _awaySquadConfigured = false;
-                            });
-                          },
-                          validator: (v) => v == null ? 'Select Team 2' : null,
-                        ),
-                        if (_awayTeamId != null && awayTeamObj != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.group_outlined, size: 18),
-                              label: Text(
-                                _awaySquadConfigured
-                                    ? 'Manage ${awayTeamObj.name} Squad (${_awaySelectedUserIds.length} players)'
-                                    : 'Manage ${awayTeamObj.name} Squad',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                              onPressed: () => _manageSquadForTeam(
-                                teamId: _awayTeamId!,
-                                teamName: awayTeamObj.name,
-                                isTeam1: false,
-                              ),
+                          if (_homeTeamId != null && homeTeamObj != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(Icons.group_outlined, size: 18),
+                                    label: Text(
+                                      _homeSquadConfigured
+                                          ? 'Manage ${homeTeamObj.name} Squad (${_homeSelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
+                                          : 'Manage ${homeTeamObj.name} Squad',
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    onPressed: () => _manageSquadForTeam(
+                                      teamId: _homeTeamId!,
+                                      teamName: homeTeamObj.name,
+                                      isTeam1: true,
+                                      isBadmintonDoubles: isBadmintonDoubles,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                            if (isBadmintonDoubles) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _homeSelectedUserIds.length == 2
+                                    ? '✓ 2 players selected for doubles'
+                                    : (_homeSelectedUserIds.length > 2
+                                        ? '⚠ ${_homeSelectedUserIds.length} players selected (must be exactly 2)'
+                                        : '⚠ ${_homeSelectedUserIds.length}/2 players selected (please select 2)'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _homeSelectedUserIds.length == 2
+                                      ? AppColors.success
+                                      : (_homeSelectedUserIds.length > 2 ? AppColors.error : AppColors.warning),
+                                ),
+                              ),
+                            ],
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          DropdownButtonFormField<String>(
+                            initialValue: _awayTeamId,
+                            decoration: const InputDecoration(
+                              labelText: 'Team 2',
+                              prefixIcon: Icon(Icons.shield_outlined),
+                              border: OutlineInputBorder(),
+                            ),
+                            items: items,
+                            onChanged: (v) {
+                              setState(() {
+                                _awayTeamId = v;
+                                _awaySelectedUserIds.clear();
+                                _awaySquadConfigured = false;
+                              });
+                            },
+                            validator: (v) => v == null ? 'Select Team 2' : null,
                           ),
+                          if (_awayTeamId != null && awayTeamObj != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(Icons.group_outlined, size: 18),
+                                    label: Text(
+                                      _awaySquadConfigured
+                                          ? 'Manage ${awayTeamObj.name} Squad (${_awaySelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
+                                          : 'Manage ${awayTeamObj.name} Squad',
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    onPressed: () => _manageSquadForTeam(
+                                      teamId: _awayTeamId!,
+                                      teamName: awayTeamObj.name,
+                                      isTeam1: false,
+                                      isBadmintonDoubles: isBadmintonDoubles,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (isBadmintonDoubles) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _awaySelectedUserIds.length == 2
+                                    ? '✓ 2 players selected for doubles'
+                                    : (_awaySelectedUserIds.length > 2
+                                        ? '⚠ ${_awaySelectedUserIds.length} players selected (must be exactly 2)'
+                                        : '⚠ ${_awaySelectedUserIds.length}/2 players selected (please select 2)'),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: _awaySelectedUserIds.length == 2
+                                      ? AppColors.success
+                                      : (_awaySelectedUserIds.length > 2 ? AppColors.error : AppColors.warning),
+                                ),
+                              ),
+                            ],
+                          ],
                         ],
-                      ],
-                    );
-                  },
-                ),
-            const SizedBox(height: AppSpacing.xl),
+                      );
+                    },
+                  ),
+              const SizedBox(height: AppSpacing.xl),
+            ],
             
             // Check if Cricket is selected to show Overs input
             if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && s['name'] == 'Cricket') ?? false) ...[
@@ -500,6 +756,157 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSinglesPlayersSection() {
+    final allPlayersAsync = ref.watch(allPlayersProvider);
+
+    return allPlayersAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: CircularProgressIndicator(),
+        ),
+      ),
+      error: (err, stack) => Column(
+        children: [
+          AppTextField(
+            controller: _player1CustomCtrl,
+            label: 'Player 1',
+            hint: 'e.g., P.V. Sindhu',
+            prefixIcon: Icons.person_outline,
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 1 name' : null,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _player2CustomCtrl,
+            label: 'Player 2',
+            hint: 'e.g., Saina Nehwal',
+            prefixIcon: Icons.person_outline,
+            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter Player 2 name' : null,
+          ),
+        ],
+      ),
+      data: (players) {
+        final playerItems = players
+            .map((p) => DropdownMenuItem<String>(
+                  value: p['id'] as String,
+                  child: Text(
+                    p['name'] as String? ?? 'Player',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ))
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Player 1
+            if (!_isCustomP1) ...[
+              DropdownButtonFormField<String>(
+                initialValue: _selectedPlayer1Id,
+                decoration: InputDecoration(
+                  labelText: 'Player 1',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isCustomP1 = true;
+                        _selectedPlayer1Id = null;
+                      });
+                    },
+                    child: const Text('Custom', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+                items: playerItems,
+                onChanged: (v) => setState(() => _selectedPlayer1Id = v),
+                validator: (v) => v == null ? 'Select Player 1' : null,
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _player1CustomCtrl,
+                      label: 'Player 1 Name',
+                      hint: 'e.g., P.V. Sindhu',
+                      prefixIcon: Icons.person_outline,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Enter Player 1 name' : null,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isCustomP1 = false;
+                        _player1CustomCtrl.clear();
+                      });
+                    },
+                    child: const Text('From List', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+
+            // Player 2
+            if (!_isCustomP2) ...[
+              DropdownButtonFormField<String>(
+                initialValue: _selectedPlayer2Id,
+                decoration: InputDecoration(
+                  labelText: 'Player 2',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isCustomP2 = true;
+                        _selectedPlayer2Id = null;
+                      });
+                    },
+                    child: const Text('Custom', style: TextStyle(fontSize: 12)),
+                  ),
+                ),
+                items: playerItems,
+                onChanged: (v) => setState(() => _selectedPlayer2Id = v),
+                validator: (v) {
+                  if (v == null) return 'Select Player 2';
+                  if (v == _selectedPlayer1Id) return 'Player 2 must be different from Player 1';
+                  return null;
+                },
+              ),
+            ] else ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      controller: _player2CustomCtrl,
+                      label: 'Player 2 Name',
+                      hint: 'e.g., Saina Nehwal',
+                      prefixIcon: Icons.person_outline,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Enter Player 2 name' : null,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _isCustomP2 = false;
+                        _player2CustomCtrl.clear();
+                      });
+                    },
+                    child: const Text('From List', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
