@@ -230,32 +230,36 @@ class TournamentModel {
 
   factory TournamentModel.fromJson(Map<String, dynamic> json) {
     return TournamentModel(
-      id: json['id'] as String,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? 'Untitled Tournament',
       sport: json['sport'] as String? ?? 'cricket',
       sportId: json['sport_id'] as String?,
       format: TournamentFormat.fromString(json['format'] as String? ?? 'knockout'),
       status: TournamentStatus.fromString(json['status'] as String? ?? 'draft'),
-      config: (json['config'] as Map<String, dynamic>?) ?? {},
+      config: json['config'] is Map
+          ? Map<String, dynamic>.from(json['config'] as Map)
+          : {},
       scope: TournamentScope.fromString(json['scope'] as String? ?? 'open'),
-      eligibility: (json['eligibility'] as Map<String, dynamic>?) ?? {},
+      eligibility: json['eligibility'] is Map
+          ? Map<String, dynamic>.from(json['eligibility'] as Map)
+          : {},
       organiserId: json['organiser_id'] as String?,
       isOfficial: json['is_official'] as bool? ?? false,
       registrationDeadline: json['registration_deadline'] != null
-          ? DateTime.tryParse(json['registration_deadline'] as String)
+          ? DateTime.tryParse(json['registration_deadline'].toString())
           : null,
       maxEntries: (json['max_entries'] as num?)?.toInt(),
       startDate: json['start_date'] != null
-          ? DateTime.tryParse(json['start_date'] as String)
+          ? DateTime.tryParse(json['start_date'].toString())
           : null,
       endDate: json['end_date'] != null
-          ? DateTime.tryParse(json['end_date'] as String)
+          ? DateTime.tryParse(json['end_date'].toString())
           : null,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'] as String)
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
@@ -309,8 +313,8 @@ class TournamentEntry {
 
   factory TournamentEntry.fromJson(Map<String, dynamic> json) {
     return TournamentEntry(
-      id: json['id'] as String,
-      tournamentId: json['tournament_id'] as String,
+      id: json['id']?.toString() ?? '',
+      tournamentId: json['tournament_id']?.toString() ?? '',
       kind: EntryKind.fromString(json['kind'] as String? ?? 'team'),
       teamId: json['team_id'] as String?,
       playerIds: (json['player_ids'] as List<dynamic>?)
@@ -321,11 +325,11 @@ class TournamentEntry {
       seed: (json['seed'] as num?)?.toInt(),
       groupId: json['group_id'] as String?,
       status: EntryStatus.fromString(json['status'] as String? ?? 'pending'),
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String)
+      createdAt: (json['created_at'] ?? json['registered_at']) != null
+          ? DateTime.tryParse((json['created_at'] ?? json['registered_at']).toString())
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'] as String)
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }
@@ -384,10 +388,12 @@ class TournamentGroup {
 
   factory TournamentGroup.fromJson(Map<String, dynamic> json) {
     return TournamentGroup(
-      id: json['id'] as String,
-      tournamentId: json['tournament_id'] as String,
-      name: json['name'] as String,
-      position: (json['position'] as num?)?.toInt() ?? 1,
+      id: json['id']?.toString() ?? '',
+      tournamentId: json['tournament_id']?.toString() ?? '',
+      name: json['name'] as String? ?? 'Group',
+      position: (json['position'] as num?)?.toInt() ??
+          (json['order_index'] as num?)?.toInt() ??
+          1,
     );
   }
 
@@ -454,8 +460,8 @@ class TournamentFixture {
 
   factory TournamentFixture.fromJson(Map<String, dynamic> json) {
     return TournamentFixture(
-      id: json['id'] as String,
-      tournamentId: json['tournament_id'] as String,
+      id: json['id']?.toString() ?? '',
+      tournamentId: json['tournament_id']?.toString() ?? '',
       stage: FixtureStage.fromString(json['stage'] as String? ?? 'knockout'),
       groupId: json['group_id'] as String?,
       round: (json['round'] as num?)?.toInt() ?? 1,
@@ -469,20 +475,22 @@ class TournamentFixture {
       sourceOutcomeB: json['source_outcome_b'] as String?,
       isBye: json['is_bye'] as bool? ?? false,
       scheduledAt: json['scheduled_at'] != null
-          ? DateTime.tryParse(json['scheduled_at'] as String)
+          ? DateTime.tryParse(json['scheduled_at'].toString())
           : null,
       venue: json['venue'] as String?,
       status: FixtureStatus.fromString(json['status'] as String? ?? 'pending'),
       matchId: json['match_id'] as String?,
-      result: (json['result'] as Map<String, dynamic>?) ?? {},
+      result: json['result'] is Map
+          ? Map<String, dynamic>.from(json['result'] as Map)
+          : {},
       winnerEntryId: json['winner_entry_id'] as String?,
       nextFixtureId: json['next_fixture_id'] as String?,
       nextSlot: json['next_slot'] as String?,
       createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
       updatedAt: json['updated_at'] != null
-          ? DateTime.tryParse(json['updated_at'] as String)
+          ? DateTime.tryParse(json['updated_at'].toString())
           : null,
     );
   }

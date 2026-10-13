@@ -108,9 +108,9 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
             return const EmptyState(title: 'Tournament not found');
           }
 
-          final entries = entriesAsync.value ?? [];
-          final fixtures = fixturesAsync.value ?? [];
-          final isAdmin = isAdminAsync.value ?? false;
+          final entries = entriesAsync.valueOrNull ?? [];
+          final fixtures = fixturesAsync.valueOrNull ?? [];
+          final isAdmin = isAdminAsync.valueOrNull ?? false;
 
           return TabBarView(
             controller: _tabController,
@@ -473,7 +473,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
       loading: () => const Center(child: LoadingIndicator()),
       error: (e, _) => ErrorView(message: e.toString()),
       data: (tables) {
-        if (tables.isEmpty) {
+        if (tables.isEmpty || tables.values.every((list) => list.isEmpty)) {
           return const Center(
             child: EmptyState(
               title: 'No standings data',
