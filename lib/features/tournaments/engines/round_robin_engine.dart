@@ -19,18 +19,39 @@ class RoundRobinEngine {
     String? groupId,
     bool doubleRoundRobin = false,
   }) {
-    if (entries.length < 2) {
-      throw ArgumentError('Round-robin requires at least 2 entries');
+    // Deduplicate entries by ID, teamId, userId, and normalized displayName
+    final uniqueEntries = <TournamentEntry>[];
+    final seenIds = <String>{};
+    final seenTeamIds = <String>{};
+    final seenUserIds = <String>{};
+    final seenNames = <String>{};
+
+    for (final e in entries) {
+      if (e.id.isNotEmpty && seenIds.contains(e.id)) continue;
+      if (e.teamId != null && e.teamId!.isNotEmpty && seenTeamIds.contains(e.teamId)) continue;
+      if (e.userId != null && e.userId!.isNotEmpty && seenUserIds.contains(e.userId)) continue;
+      final normName = e.displayName.trim().toLowerCase();
+      if (normName.isNotEmpty && seenNames.contains(normName)) continue;
+
+      if (e.id.isNotEmpty) seenIds.add(e.id);
+      if (e.teamId != null && e.teamId!.isNotEmpty) seenTeamIds.add(e.teamId!);
+      if (e.userId != null && e.userId!.isNotEmpty) seenUserIds.add(e.userId!);
+      if (normName.isNotEmpty) seenNames.add(normName);
+      uniqueEntries.add(e);
     }
 
-    final n = entries.length;
+    if (uniqueEntries.length < 2) {
+      throw ArgumentError('Round-robin requires at least 2 distinct entries');
+    }
+
+    final n = uniqueEntries.length;
     final isOdd = n % 2 != 0;
     final totalTeams = isOdd ? n + 1 : n;
     final roundsCount = totalTeams - 1;
     final matchesPerRound = totalTeams ~/ 2;
 
     // Build working list of entries (null represents rest bye for odd n)
-    final teamList = List<TournamentEntry?>.from(entries);
+    final teamList = List<TournamentEntry?>.from(uniqueEntries);
     if (isOdd) {
       teamList.add(null);
     }

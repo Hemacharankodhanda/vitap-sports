@@ -63,7 +63,7 @@ class TournamentService {
       }
       return 0;
     });
-    return entries;
+    return _deduplicateEntries(entries);
   }
 
   /// Fetches groups for [tournamentId].
@@ -145,8 +145,46 @@ class TournamentService {
             }
             return 0;
           });
-          return entries;
+          return _deduplicateEntries(entries);
         });
+  }
+
+  /// Sanitizes and collapses duplicate entries for the same team or user.
+  List<TournamentEntry> _deduplicateEntries(List<TournamentEntry> raw) {
+    final seenIds = <String>{};
+    final seenTeamIds = <String>{};
+    final seenUserIds = <String>{};
+    final seenNames = <String>{};
+    final unique = <TournamentEntry>[];
+
+    for (final e in raw) {
+      if (e.status == EntryStatus.withdrawn || e.status == EntryStatus.disqualified) {
+        continue;
+      }
+
+      if (e.id.isNotEmpty && seenIds.contains(e.id)) continue;
+
+      if (e.teamId != null && e.teamId!.isNotEmpty && seenTeamIds.contains(e.teamId)) {
+        continue;
+      }
+
+      if (e.userId != null && e.userId!.isNotEmpty && seenUserIds.contains(e.userId)) {
+        continue;
+      }
+
+      final normName = e.displayName.trim().toLowerCase();
+      if (normName.isNotEmpty && seenNames.contains(normName)) {
+        continue;
+      }
+
+      if (e.id.isNotEmpty) seenIds.add(e.id);
+      if (e.teamId != null && e.teamId!.isNotEmpty) seenTeamIds.add(e.teamId!);
+      if (e.userId != null && e.userId!.isNotEmpty) seenUserIds.add(e.userId!);
+      if (normName.isNotEmpty) seenNames.add(normName);
+
+      unique.add(e);
+    }
+    return unique;
   }
 
   // ─── RPC Operations ──────────────────────────────────────────────────────

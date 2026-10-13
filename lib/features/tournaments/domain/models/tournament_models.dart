@@ -290,6 +290,8 @@ class TournamentEntry {
     required this.tournamentId,
     this.kind = EntryKind.team,
     this.teamId,
+    this.userId,
+    this.registeredBy,
     this.playerIds = const [],
     required this.displayName,
     this.seed,
@@ -303,6 +305,8 @@ class TournamentEntry {
   final String tournamentId;
   final EntryKind kind;
   final String? teamId;
+  final String? userId;
+  final String? registeredBy;
   final List<String> playerIds;
   final String displayName;
   final int? seed;
@@ -317,6 +321,8 @@ class TournamentEntry {
       tournamentId: json['tournament_id']?.toString() ?? '',
       kind: EntryKind.fromString(json['kind'] as String? ?? 'team'),
       teamId: json['team_id'] as String?,
+      userId: json['user_id'] as String?,
+      registeredBy: json['registered_by'] as String?,
       playerIds: (json['player_ids'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
@@ -338,11 +344,13 @@ class TournamentEntry {
         'id': id,
         'tournament_id': tournamentId,
         'kind': kind.name,
-        'team_id': teamId,
+        if (teamId != null) 'team_id': teamId,
+        if (userId != null) 'user_id': userId,
+        if (registeredBy != null) 'registered_by': registeredBy,
         'player_ids': playerIds,
         'display_name': displayName,
-        'seed': seed,
-        'group_id': groupId,
+        if (seed != null) 'seed': seed,
+        if (groupId != null) 'group_id': groupId,
         'status': status.name,
       };
 
@@ -351,6 +359,8 @@ class TournamentEntry {
     String? tournamentId,
     EntryKind? kind,
     String? teamId,
+    String? userId,
+    String? registeredBy,
     List<String>? playerIds,
     String? displayName,
     int? seed,
@@ -362,6 +372,8 @@ class TournamentEntry {
       tournamentId: tournamentId ?? this.tournamentId,
       kind: kind ?? this.kind,
       teamId: teamId ?? this.teamId,
+      userId: userId ?? this.userId,
+      registeredBy: registeredBy ?? this.registeredBy,
       playerIds: playerIds ?? this.playerIds,
       displayName: displayName ?? this.displayName,
       seed: seed ?? this.seed,

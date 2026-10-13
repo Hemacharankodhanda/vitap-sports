@@ -68,7 +68,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_entries_unique_team
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_entries_unique_user 
   ON public.tournament_entries (tournament_id, user_id) 
-  WHERE user_id IS NOT NULL AND kind = 'solo';
+  WHERE user_id IS NOT NULL AND kind IN ('solo', 'player');
 
 -- 5. Create Tournament Fixtures Table
 CREATE TABLE IF NOT EXISTS public.tournament_fixtures (
@@ -357,6 +357,25 @@ BEGIN
     END IF;
     v_display_name := COALESCE(v_display_name, v_team.name);
     
+    -- Check if team or team name is already registered
+    IF EXISTS (
+      SELECT 1 FROM public.tournament_entries 
+      WHERE tournament_id = p_tournament_id 
+        AND team_id = p_team_id 
+        AND status NOT IN ('withdrawn', 'rejected')
+    ) THEN
+      RAISE EXCEPTION 'This team is already registered for this tournament';
+    END IF;
+
+    IF EXISTS (
+      SELECT 1 FROM public.tournament_entries 
+      WHERE tournament_id = p_tournament_id 
+        AND LOWER(TRIM(display_name)) = LOWER(TRIM(v_display_name))
+        AND status NOT IN ('withdrawn', 'rejected')
+    ) THEN
+      RAISE EXCEPTION 'A team with the name "%" is already registered for this tournament', v_display_name;
+    END IF;
+
     IF NOT EXISTS (SELECT 1 FROM public.team_members WHERE team_id = p_team_id AND user_id = v_caller) 
        AND v_team.captain_id != v_caller 
        AND NOT public.is_tournament_admin(p_tournament_id, v_caller) THEN
@@ -373,6 +392,16 @@ BEGIN
     IF p_kind = 'pair' AND p_partner_id IS NOT NULL THEN
       SELECT * INTO v_partner_profile FROM public.users WHERE id = p_partner_id;
       v_display_name := v_display_name || ' / ' || COALESCE(v_partner_profile.name, 'Partner');
+    END IF;
+
+    -- Check if user is already registered
+    IF EXISTS (
+      SELECT 1 FROM public.tournament_entries 
+      WHERE tournament_id = p_tournament_id 
+        AND (user_id = v_target_user_id OR LOWER(TRIM(display_name)) = LOWER(TRIM(v_display_name)))
+        AND status NOT IN ('withdrawn', 'rejected')
+    ) THEN
+      RAISE EXCEPTION 'Participant is already registered for this tournament';
     END IF;
 
     -- Check Scope Eligibility (Hostel, Branch, Year)
