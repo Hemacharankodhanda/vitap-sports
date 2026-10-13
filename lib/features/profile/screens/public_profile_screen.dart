@@ -14,6 +14,8 @@ import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/section_header.dart';
+import '../../tournaments/presentation/widgets/tournament_honours_section.dart';
+import '../../tournaments/providers/tournament_providers.dart';
 import '../providers/profile_provider.dart';
 import '../widgets/badge_grid.dart';
 import '../widgets/player_career_stats_card.dart';
@@ -148,6 +150,17 @@ class PublicProfileScreen extends ConsumerWidget {
                           ))
                       .toList(),
                 ),
+              const SizedBox(height: AppSpacing.sectionGap),
+
+              // ─── Tournament Honours ─────────────────────
+              Consumer(
+                builder: (context, ref, _) {
+                  final honoursAsync = ref.watch(playerTournamentHonoursProvider(profile.id));
+                  return TournamentHonoursSection(
+                    honours: honoursAsync.value ?? const [],
+                  );
+                },
+              ),
               const SizedBox(height: AppSpacing.sectionGap),
 
               // ─── Achievements ───────────────────────────
