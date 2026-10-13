@@ -2,50 +2,34 @@
 
 ## Current Status
 - **Branch**: `feature/tournaments`
-- **Current Phase**: Phase 4 — Presentation & Design System UI
-- **Status**: Database migration 012, service, and providers completed and tested (114/114 passing tests). Proceeding to presentation screens, bracket CustomPainter, and organiser wizards.
+- **Current Phase**: Phase 5 & 6 — Player Profile Honours & Scope Enforcement
+- **Status**: Phase 4 Presentation UI, CustomPaint bracket canvas, standings table, organizer wizards, and router integration completed and verified with 121/121 passing tests. Proceeding to profile honours and scope enforcement.
 
 ---
 
-## Phase 3 Plan (Iteration 3: Supabase Schema & RPCs) — COMPLETED
-1. [x] Create timestamped migration `supabase/migrations/012_tournaments_schema_and_rpc.sql`:
-   - Extend `public.tournaments` safely with `ADD COLUMN IF NOT EXISTS`, updated `format` and `status` constraints.
-   - Create `public.tournament_admins`, `public.tournament_groups`, `public.tournament_entries`, `public.tournament_fixtures`, `public.tournament_audit_logs`.
-   - Extend `public.matches` with `tournament_id` and `fixture_id` foreign keys.
-   - Comprehensive performance indexes on all query filters and foreign keys.
-   - Enable RLS on all 5 tables with explicit authenticated policies.
-   - Add tables to `supabase_realtime` publication.
-   - Security Definer RPCs: `create_tournament`, `register_tournament_entry`, `withdraw_tournament_entry`, `generate_tournament_draw`, `schedule_tournament_fixture`, `create_match_for_fixture`, `handle_tournament_match_finished`.
-   - Enhanced `finish_match` with atomic tournament bracket advancement hook.
-2. [x] Create `docs/tournaments/SUPABASE_CHANGES.md`.
-3. [x] Create `lib/features/tournaments/data/tournament_service.dart`.
-4. [x] Create `lib/features/tournaments/providers/tournament_providers.dart` (including pure-Dart derived standings provider without DB drift).
-5. [x] Add unit test suite `test/tournaments/tournament_service_and_providers_test.dart` and verify passing.
-
----
-
-## Phase 4 Plan (Iteration 4: UI & CustomPaint Bracket)
-1. [ ] Create Bracket CustomPainter & Node Widget:
+## Phase 4 Plan (Iteration 4: UI & CustomPaint Bracket) — COMPLETED
+1. [x] Create Bracket CustomPainter & Node Widget:
    - `BracketConnectorPainter`: Smooth rectilinear connecting paths from round to round with active-path accent highlights.
-   - `BracketNodeCard`: Compact 2-slot match card displaying seed, display name, score, winner styling, status indicator, and tap-to-score / view scorecard action.
-2. [ ] Tournament List Screen:
-   - Status tabs / filter chips (`All`, `Live`, `Upcoming`, `Completed`).
+   - `BracketNodeCard`: Compact 2-slot match card displaying seed, display name, score, winner styling, live indicator, and tap actions.
+2. [x] Tournament List Screen:
+   - Status filter tabs (`All`, `Live`, `Upcoming`, `Completed`).
    - Sport filter chips (`All`, `Cricket`, `Badminton`, `Football`).
-   - Tournament card with format badge, date range, scope badge, entrant count, and progress bar.
-   - Floating Action Button to create tournament (for organizers).
-3. [ ] Tournament Detail Screen (6-tab layout):
-   - Tab 1: **Overview** (dates, scope, format, organizers, rules, prize/trophy notes).
-   - Tab 2: **Fixtures** (filter by stage/round/group, date headers, fixture cards with live match link).
-   - Tab 3: **Table** (standings table with rank, P, W, D, L, GD/NRR, Pts, head-to-head tiebreak trail).
-   - Tab 4: **Bracket** (interactive horizontally-scrollable / zoomable knockout bracket drawn with CustomPaint).
-   - Tab 5: **Stats** (top scorers / run-scorers / wicket-takers / MVPs in this tournament).
+   - Tournament card with format badge, date range, scope badge, entrant count, and official marker.
+   - Floating Action Button to create tournament (with organizer permission check).
+3. [x] Tournament Detail Screen (6-tab layout):
+   - Tab 1: **Overview** (dates, scope, format, organizers, rules, registration action).
+   - Tab 2: **Fixtures** (stage/round/group indicators, fixture cards with live match link and admin scoring trigger).
+   - Tab 3: **Table** (standings table with rank, P, W, D, L, GD/NRR, Pts, qualification indicator).
+   - Tab 4: **Bracket** (interactive horizontally & vertically scrollable knockout bracket drawn with CustomPaint).
+   - Tab 5: **Stats** (matches played, entrants count, progress indicator).
    - Tab 6: **Teams / Entries** (list of registered entries, seeds, status, registration button for users).
-4. [ ] Organiser Management Wizards:
+4. [x] Organiser Management Wizards:
    - Create Tournament Dialog / Sheet.
-   - Register Entry BottomSheet (with scope validation feedback).
+   - Register Entry BottomSheet (with profile eligibility validation feedback).
    - Generate Draw Dialog (knockout / round-robin / groups config + seed allocator).
-   - Fixture Schedule & Match Initialization Sheet.
-5. [ ] Wire into App Router (`app_router.dart` and `shell_screen.dart` navigation bar).
+   - Create Match Dialog for Fixtures.
+5. [x] Wire into App Router (`app_router.dart` and `shell_screen.dart` navigation bar).
+6. [x] Unit & widget tests in `test/tournaments/tournament_ui_widgets_test.dart` (32/32 tests in tournaments suite passing).
 
 
 ---
@@ -118,5 +102,25 @@
   - `flutter analyze lib/features/tournaments/ test/tournaments/`: 0 issues found.
 - **Next Slice**:
   - Phase 4: Presentation & Design System UI.
+
+### Iteration 4 — Phase 4: Presentation & Design System UI
+- **Created**:
+  - `lib/features/tournaments/presentation/widgets/bracket_connector_painter.dart`: CustomPainter for rectilinear bracket paths and active progression highlights.
+  - `lib/features/tournaments/presentation/widgets/bracket_node_card.dart`: Compact 2-slot match card with LIVE indicator, winner highlights, and score displays.
+  - `lib/features/tournaments/presentation/widgets/knockout_bracket_view.dart`: Scrollable bracket canvas connecting rounds and third-place match.
+  - `lib/features/tournaments/presentation/widgets/tournament_card.dart`: Overview tournament list item with format, status, and scope chips.
+  - `lib/features/tournaments/presentation/widgets/tournament_standings_table.dart`: Tabular statistics table with sport-specific columns (NRR / GD / Diff) and qualification markers.
+  - `lib/features/tournaments/presentation/widgets/create_tournament_sheet.dart`: Tournament creation wizard with sports, formats, scopes, and dates.
+  - `lib/features/tournaments/presentation/widgets/register_entry_sheet.dart`: Entry registration sheet with live hostel/branch/year scope eligibility validation.
+  - `lib/features/tournaments/presentation/widgets/generate_draw_dialog.dart`: Draw generator wizard connecting to knockout, league, and group engines.
+  - `lib/features/tournaments/presentation/screens/tournament_list_screen.dart`: List screen with status & sport filter tabs and creation CTA.
+  - `lib/features/tournaments/presentation/screens/tournament_detail_screen.dart`: 6-tab tournament hub with live fixtures, tables, bracket, stats, and rosters.
+  - `test/tournaments/tournament_ui_widgets_test.dart`: Widget test suite covering cards, nodes, standings tables, and brackets.
+- **Verification**:
+  - `flutter test test/tournaments/`: 32/32 passed.
+  - `flutter test`: 121/121 passed (0 regressions across entire codebase).
+  - `flutter analyze lib/features/tournaments/`: 0 issues found.
+- **Next Slice**:
+  - Phase 5: Player Profile Honours, Tournament Badges, and Scope Enforcement.
 
 

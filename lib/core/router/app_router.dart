@@ -23,7 +23,6 @@ import '../../features/profile/screens/edit_profile_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/public_profile_screen.dart';
 import '../../features/scorecards/screens/scorecard_edit_screen.dart';
-import '../../features/scorecards/screens/scorecard_view_screen.dart';
 import '../../features/settings/screens/theme_settings_screen.dart';
 import '../../features/teams/screens/create_team_screen.dart';
 import '../../features/teams/screens/recruitment_screen.dart';
@@ -32,7 +31,6 @@ import '../../features/teams/screens/teams_list_screen.dart';
 import '../../features/tournaments/screens/create_tournament_screen.dart';
 import '../../features/tournaments/screens/tournament_detail_screen.dart';
 import '../../features/tournaments/screens/tournaments_list_screen.dart';
-import '../widgets/app_scaffold.dart';
 import 'shell_screen.dart';
 
 // Route names
@@ -91,7 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isOnLoginPage = state.matchedLocation == AppRoutes.login;
       final isOnOnboarding = state.matchedLocation == AppRoutes.onboarding;
 
-      if (!hasSession && !isOnLoginPage) return AppRoutes.login;
+      if (!hasSession && !isOnLoginPage && !isOnOnboarding) return AppRoutes.login;
       if (hasSession && isOnLoginPage) return AppRoutes.home;
       return null;
     },
@@ -108,6 +106,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (_, __) => const OnboardingScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.tournaments,
+        builder: (_, __) => const TournamentsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            builder: (_, __) => const CreateTournamentScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (_, state) => TournamentDetailScreen(
+              tournamentId: state.pathParameters['id']!,
+            ),
+          ),
+        ],
       ),
 
       // ─── Main Shell (bottom nav) ─────────────────────
