@@ -16,7 +16,6 @@ import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/error_view.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../data/profile_service.dart';
 import '../providers/profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {

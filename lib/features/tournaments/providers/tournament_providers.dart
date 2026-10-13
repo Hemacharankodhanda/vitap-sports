@@ -168,3 +168,10 @@ final tournamentStandingsProvider =
     return AsyncValue.data(resultMap);
   }
 });
+
+/// Player tournament honours provider (Champions, Runner-ups, 3rd place)
+final playerTournamentHonoursProvider =
+    FutureProvider.family<List<TournamentHonour>, String>((ref, userId) async {
+  final service = ref.watch(tournamentServiceProvider);
+  return service.fetchPlayerHonours(userId);
+});

@@ -681,3 +681,72 @@ class TournamentStandingsRow {
     );
   }
 }
+
+/// Podium Honour Rank
+enum HonourRank {
+  champion,
+  runnerUp,
+  thirdPlace;
+
+  String get label {
+    switch (this) {
+      case HonourRank.champion:
+        return 'Champion';
+      case HonourRank.runnerUp:
+        return 'Runner-Up';
+      case HonourRank.thirdPlace:
+        return '3rd Place';
+    }
+  }
+}
+
+/// Tournament Trophy / Medal Honour for Player Profiles
+class TournamentHonour {
+  const TournamentHonour({
+    required this.tournamentId,
+    required this.tournamentName,
+    required this.sport,
+    required this.rank,
+    required this.year,
+    required this.teamOrEntryName,
+    this.isOfficial = false,
+  });
+
+  final String tournamentId;
+  final String tournamentName;
+  final String sport;
+  final HonourRank rank;
+  final String year;
+  final String teamOrEntryName;
+  final bool isOfficial;
+
+  factory TournamentHonour.fromJson(Map<String, dynamic> json) {
+    HonourRank r = HonourRank.champion;
+    final rStr = (json['rank'] as String?)?.toLowerCase();
+    if (rStr == 'runner_up' || rStr == 'runnerup') {
+      r = HonourRank.runnerUp;
+    } else if (rStr == 'third_place' || rStr == 'thirdplace') {
+      r = HonourRank.thirdPlace;
+    }
+
+    return TournamentHonour(
+      tournamentId: json['tournament_id'] as String? ?? '',
+      tournamentName: json['tournament_name'] as String? ?? 'Tournament',
+      sport: json['sport'] as String? ?? 'cricket',
+      rank: r,
+      year: json['year']?.toString() ?? '2026',
+      teamOrEntryName: json['team_or_entry_name'] as String? ?? 'Entry',
+      isOfficial: json['is_official'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'tournament_id': tournamentId,
+    'tournament_name': tournamentName,
+    'sport': sport,
+    'rank': rank.name,
+    'year': year,
+    'team_or_entry_name': teamOrEntryName,
+    'is_official': isOfficial,
+  };
+}

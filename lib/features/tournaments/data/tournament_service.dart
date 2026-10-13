@@ -230,4 +230,72 @@ class TournamentService {
     );
     return (res as Map)['match_id'] as String;
   }
+
+  /// Fetches tournament podium honours (championships, runner-up medals) for [userId].
+  Future<List<TournamentHonour>> fetchPlayerHonours(String userId) async {
+    try {
+      final entriesRes = await _client
+          .from('tournament_entries')
+          .select('id, tournament_id, display_name, player_ids, tournaments(id, name, sport, start_date, is_official, status)')
+          .filter('player_ids', 'cs', '{"$userId"}');
+
+      final honours = <TournamentHonour>[];
+      for (final rawEntry in entriesRes as List) {
+        final tData = rawEntry['tournaments'] as Map<String, dynamic>?;
+        if (tData == null || tData['status'] != 'completed') continue;
+
+        final tId = tData['id'] as String;
+        final entryId = rawEntry['id'] as String;
+
+        final fixturesRes = await _client
+            .from('tournament_fixtures')
+            .select('id, stage, round, winner_entry_id, entry_a_id, entry_b_id')
+            .eq('tournament_id', tId)
+            .order('round', ascending: false);
+
+        final fixtures = fixturesRes as List;
+        if (fixtures.isEmpty) continue;
+
+        final finalFix = fixtures.firstWhere(
+          (f) => f['stage'] == 'knockout',
+          orElse: () => null,
+        );
+
+        if (finalFix != null) {
+          final winnerId = finalFix['winner_entry_id'] as String?;
+          final aId = finalFix['entry_a_id'] as String?;
+          final bId = finalFix['entry_b_id'] as String?;
+
+          final year = tData['start_date'] != null
+              ? DateTime.tryParse(tData['start_date'] as String)?.year.toString() ?? '2026'
+              : '2026';
+
+          if (winnerId == entryId) {
+            honours.add(TournamentHonour(
+              tournamentId: tId,
+              tournamentName: tData['name'] as String? ?? 'Tournament',
+              sport: tData['sport'] as String? ?? 'cricket',
+              rank: HonourRank.champion,
+              year: year,
+              teamOrEntryName: rawEntry['display_name'] as String? ?? 'Entry',
+              isOfficial: tData['is_official'] as bool? ?? false,
+            ));
+          } else if (winnerId != null && (aId == entryId || bId == entryId)) {
+            honours.add(TournamentHonour(
+              tournamentId: tId,
+              tournamentName: tData['name'] as String? ?? 'Tournament',
+              sport: tData['sport'] as String? ?? 'cricket',
+              rank: HonourRank.runnerUp,
+              year: year,
+              teamOrEntryName: rawEntry['display_name'] as String? ?? 'Entry',
+              isOfficial: tData['is_official'] as bool? ?? false,
+            ));
+          }
+        }
+      }
+      return honours;
+    } catch (_) {
+      return [];
+    }
+  }
 }

@@ -2,8 +2,8 @@
 
 ## Current Status
 - **Branch**: `feature/tournaments`
-- **Current Phase**: Phase 5 & 6 — Player Profile Honours & Scope Enforcement
-- **Status**: Phase 4 Presentation UI, CustomPaint bracket canvas, standings table, organizer wizards, and router integration completed and verified with 121/121 passing tests. Proceeding to profile honours and scope enforcement.
+- **Current Phase**: Phase 7 — Final Verification, Docs & Wrap-up
+- **Status**: Phases 0 through 6 fully completed and verified with 125/125 passing tests. Writing documentation and final migration delivery.
 
 ---
 
@@ -123,4 +123,18 @@
 - **Next Slice**:
   - Phase 5: Player Profile Honours, Tournament Badges, and Scope Enforcement.
 
+### Iteration 5 — Phase 5: Player Profile Honours & Scope Enforcement
+- **Created / Updated**:
+  - `lib/features/tournaments/domain/models/tournament_models.dart`: Added `HonourRank` enum and `TournamentHonour` model with JSON roundtrip serialization.
+  - `lib/features/tournaments/data/tournament_service.dart`: Added `fetchPlayerHonours` querying completed tournament results and podium finishes.
+  - `lib/features/tournaments/providers/tournament_providers.dart`: Added `playerTournamentHonoursProvider`.
+  - `lib/features/tournaments/presentation/widgets/tournament_honours_section.dart`: Gold (Champion), Silver (Runner-up), and Bronze (3rd Place) podium cards with official badges and tap-through to tournaments.
+  - `lib/features/profile/screens/profile_screen.dart` & `public_profile_screen.dart`: Wired `TournamentHonoursSection` with reactive player honours stream.
+  - `test/tournaments/tournament_honours_test.dart`: Unit and widget tests for honours serialization, ranks, empty states, and podium rendering.
+- **Verification**:
+  - `flutter test test/tournaments/`: 36/36 passed.
+  - `flutter test`: 125/125 passed (0 regressions across entire codebase).
+  - `flutter analyze lib/features/tournaments/ lib/features/profile/ test/tournaments/`: 0 issues found.
+- **Next Slice**:
+  - Phase 7: Final Verification, Supabase Free-Tier Check, Comprehensive Documentation (`README.md`, `REPORT.md`), and Production Migration SQL.
 
