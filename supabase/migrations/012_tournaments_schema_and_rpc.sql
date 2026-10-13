@@ -426,7 +426,7 @@ BEGIN
   )
   VALUES (
     p_tournament_id, p_kind, p_team_id, v_target_user_id, p_partner_id, v_display_name,
-    'approved', COALESCE(p_metadata, '{}'::JSONB), v_caller
+    'pending', COALESCE(p_metadata, '{}'::JSONB), v_caller
   )
   RETURNING * INTO v_entry;
 
@@ -518,7 +518,92 @@ BEGIN
 END;
 $$;
 
--- 11.4 Generate Tournament Draw
+-- 11.4 Approve Entry
+CREATE OR REPLACE FUNCTION public.approve_tournament_entry(
+  p_tournament_id UUID,
+  p_entry_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_caller UUID := auth.uid();
+  v_entry RECORD;
+BEGIN
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT public.is_tournament_admin(p_tournament_id, v_caller) THEN
+    RAISE EXCEPTION 'Only tournament organisers can approve entries';
+  END IF;
+
+  SELECT * INTO v_entry 
+  FROM public.tournament_entries 
+  WHERE id = p_entry_id AND tournament_id = p_tournament_id;
+
+  IF v_entry.id IS NULL THEN
+    RAISE EXCEPTION 'Entry not found';
+  END IF;
+
+  UPDATE public.tournament_entries
+  SET status = 'approved'
+  WHERE id = p_entry_id AND tournament_id = p_tournament_id
+  RETURNING * INTO v_entry;
+
+  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, before, after)
+  VALUES (p_tournament_id, v_caller, 'entry_approved', jsonb_build_object('status', 'pending'), to_jsonb(v_entry));
+
+  RETURN to_jsonb(v_entry);
+END;
+$$;
+
+-- 11.5 Reject Entry
+CREATE OR REPLACE FUNCTION public.reject_tournament_entry(
+  p_tournament_id UUID,
+  p_entry_id UUID,
+  p_reason TEXT DEFAULT 'Entry rejected by organiser'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_caller UUID := auth.uid();
+  v_entry RECORD;
+BEGIN
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT public.is_tournament_admin(p_tournament_id, v_caller) THEN
+    RAISE EXCEPTION 'Only tournament organisers can reject entries';
+  END IF;
+
+  SELECT * INTO v_entry 
+  FROM public.tournament_entries 
+  WHERE id = p_entry_id AND tournament_id = p_tournament_id;
+
+  IF v_entry.id IS NULL THEN
+    RAISE EXCEPTION 'Entry not found';
+  END IF;
+
+  UPDATE public.tournament_entries
+  SET status = 'rejected'
+  WHERE id = p_entry_id AND tournament_id = p_tournament_id
+  RETURNING * INTO v_entry;
+
+  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, reason, before, after)
+  VALUES (p_tournament_id, v_caller, 'entry_rejected', p_reason, jsonb_build_object('status', v_entry.status), to_jsonb(v_entry));
+
+  RETURN to_jsonb(v_entry);
+END;
+$$;
+
+-- 11.6 Generate Tournament Draw
 CREATE OR REPLACE FUNCTION public.generate_tournament_draw(
   p_tournament_id UUID,
   p_fixtures JSONB,

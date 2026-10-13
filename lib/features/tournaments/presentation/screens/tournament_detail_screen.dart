@@ -40,6 +40,8 @@ class TournamentDetailScreen extends ConsumerStatefulWidget {
 class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  String _teamsFilter = 'all';
+  String? _actionInProgressEntryId;
 
   @override
   void initState() {
@@ -53,6 +55,93 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     super.dispose();
   }
 
+  Future<void> _approveEntry(TournamentModel tournament, TournamentEntry entry) async {
+    setState(() => _actionInProgressEntryId = entry.id);
+    try {
+      final service = ref.read(tournamentServiceProvider);
+      await service.approveEntry(
+        tournamentId: tournament.id,
+        entryId: entry.id,
+      );
+      ref.invalidate(tournamentEntriesProvider(tournament.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Approved "${entry.displayName}" to join ${tournament.name}'),
+            backgroundColor: AppColors.win,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error approving entry: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _actionInProgressEntryId = null);
+      }
+    }
+  }
+
+  Future<void> _rejectEntry(TournamentModel tournament, TournamentEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Decline Application?'),
+        content: Text('Are you sure you want to decline "${entry.displayName}" from joining this tournament?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.loss),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _actionInProgressEntryId = entry.id);
+    try {
+      final service = ref.read(tournamentServiceProvider);
+      await service.rejectEntry(
+        tournamentId: tournament.id,
+        entryId: entry.id,
+      );
+      ref.invalidate(tournamentEntriesProvider(tournament.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Declined "${entry.displayName}" application'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error declining entry: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _actionInProgressEntryId = null);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tournamentAsync = ref.watch(tournamentDetailProvider(widget.tournamentId));
@@ -60,6 +149,10 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     final fixturesAsync = ref.watch(tournamentFixturesProvider(widget.tournamentId));
     final isAdminAsync = ref.watch(isTournamentAdminProvider(widget.tournamentId));
     final standingsAsync = ref.watch(tournamentStandingsProvider(widget.tournamentId));
+
+    final entries = entriesAsync.valueOrNull ?? [];
+    final isAdmin = isAdminAsync.valueOrNull ?? false;
+    final pendingCount = entries.where((e) => e.status == EntryStatus.pending).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -88,13 +181,38 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
           unselectedLabelColor: context.appColors.textSecondary,
           indicatorColor: AppColors.accent,
           indicatorWeight: 2.5,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Fixtures'),
-            Tab(text: 'Table'),
-            Tab(text: 'Bracket'),
-            Tab(text: 'Stats'),
-            Tab(text: 'Teams'),
+          tabs: [
+            const Tab(text: 'Overview'),
+            const Tab(text: 'Fixtures'),
+            const Tab(text: 'Table'),
+            const Tab(text: 'Bracket'),
+            const Tab(text: 'Stats'),
+            Tab(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Teams'),
+                  if (pendingCount > 0 && isAdmin) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: AppColors.loss,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$pendingCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -154,18 +272,76 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     final userTeamIds = userTeamsAsync.valueOrNull?.map((t) => t.id).toSet() ?? <String>{};
 
     final isRegOpen = tournament.status == TournamentStatus.registrationOpen;
-    final isAlreadyRegistered = user != null &&
-        entries.any((e) =>
-            e.playerIds.contains(user.id) ||
-            e.userId == user.id ||
-            e.registeredBy == user.id ||
-            (e.teamId != null && userTeamIds.contains(e.teamId)));
+    final userEntry = user == null
+        ? null
+        : entries.cast<TournamentEntry?>().firstWhere(
+            (e) =>
+                e != null &&
+                (e.playerIds.contains(user.id) ||
+                    e.userId == user.id ||
+                    e.registeredBy == user.id ||
+                    (e.teamId != null && userTeamIds.contains(e.teamId))),
+            orElse: () => null,
+          );
+
+    final approvedEntries = entries.where((e) => e.status == EntryStatus.approved).toList();
+    final pendingCount = entries.where((e) => e.status == EntryStatus.pending).length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Organiser Pending Applications Alert Banner
+          if (isAdmin && pendingCount > 0) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.amber.shade700, width: 1.0),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.notification_important, color: Colors.amber.shade700, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$pendingCount Team Application${pendingCount > 1 ? 's' : ''} Pending',
+                          style: AppTypography.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: Colors.amber.shade900,
+                          ),
+                        ),
+                        Text(
+                          'Review and approve teams before generating tournament draws.',
+                          style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.amber.shade900,
+                      side: BorderSide(color: Colors.amber.shade700),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    onPressed: () {
+                      setState(() => _teamsFilter = 'pending');
+                      _tabController.animateTo(5);
+                    },
+                    child: const Text('Review'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Registration & Action Callout
           if (isRegOpen) ...[
             Container(
@@ -193,28 +369,102 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Entries: ${entries.length}${tournament.maxEntries != null ? ' / ${tournament.maxEntries}' : ''}',
+                    'Approved: ${approvedEntries.length}${tournament.maxEntries != null ? ' / ${tournament.maxEntries}' : ''}'
+                    '${pendingCount > 0 ? ' ($pendingCount awaiting approval)' : ''}',
                     style: AppTypography.caption.copyWith(color: colors.textSecondary),
                   ),
                   const SizedBox(height: 12),
-                  if (isAlreadyRegistered)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: colors.surface,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'You are already registered for this tournament',
-                        style: AppTypography.caption.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.win,
+                  if (userEntry != null) ...[
+                    if (userEntry.status == EntryStatus.pending)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade700, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.hourglass_top, color: Colors.amber.shade700, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Application Pending Approval',
+                                    style: AppTypography.caption.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.amber.shade900,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Your entry for "${userEntry.displayName}" has been submitted. Awaiting organiser approval.',
+                                    style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (userEntry.status == EntryStatus.approved)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: colors.win.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: colors.win, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: colors.win, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Registered & Approved',
+                                    style: AppTypography.caption.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.win,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Your team "${userEntry.displayName}" is confirmed for this tournament.',
+                                    style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else if (userEntry.status == EntryStatus.rejected)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: colors.loss.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: colors.loss, width: 0.8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.cancel, color: colors.loss, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Your application for "${userEntry.displayName}" was declined by the organiser.',
+                                style: AppTypography.caption.copyWith(color: colors.loss, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    )
-                  else
+                  ] else
                     AppButton(
-                      label: 'Register Entry',
+                      label: 'Apply to Join',
                       onPressed: () => RegisterEntrySheet.show(context, tournament),
                     ),
                 ],
@@ -242,17 +492,35 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Generate or regenerate bracket/fixtures from approved entries (${entries.length} available).',
+                    'Generate or regenerate bracket/fixtures from approved entries '
+                    '(${approvedEntries.length} approved${pendingCount > 0 ? ', $pendingCount pending' : ''}).',
                     style: AppTypography.caption.copyWith(color: colors.textSecondary),
                   ),
                   const SizedBox(height: 12),
-                  AppButton(
-                    label: 'Generate Draw',
-                    onPressed: () => GenerateDrawDialog.show(
-                      context,
-                      tournament: tournament,
-                      entries: entries,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'Generate Draw',
+                          onPressed: () => GenerateDrawDialog.show(
+                            context,
+                            tournament: tournament,
+                            entries: approvedEntries,
+                          ),
+                        ),
+                      ),
+                      if (pendingCount > 0) ...[
+                        const SizedBox(width: 10),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.pending_actions, size: 18),
+                          label: Text('Review ($pendingCount)'),
+                          onPressed: () {
+                            setState(() => _teamsFilter = 'pending');
+                            _tabController.animateTo(5);
+                          },
+                        ),
+                      ],
+                    ],
                   ),
                 ],
               ),
@@ -618,52 +886,262 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
       return const Center(child: EmptyState(title: 'No registered entries yet'));
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: entries.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              if (entry.seed != null) ...[
-                Container(
-                  width: 28,
-                  height: 28,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.accentSurface,
-                    shape: BoxShape.circle,
+    final pendingEntries = entries.where((e) => e.status == EntryStatus.pending).toList();
+    final approvedEntries = entries.where((e) => e.status == EntryStatus.approved).toList();
+
+    final filteredEntries = entries.where((e) {
+      if (_teamsFilter == 'pending') return e.status == EntryStatus.pending;
+      if (_teamsFilter == 'approved') return e.status == EntryStatus.approved;
+      return true;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Filter row when organiser or multiple statuses exist
+        if (isAdmin || pendingEntries.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ChoiceChip(
+                    label: Text('All (${entries.length})'),
+                    selected: _teamsFilter == 'all',
+                    onSelected: (_) => setState(() => _teamsFilter = 'all'),
                   ),
-                  child: Text(
-                    '${entry.seed}',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.accent,
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Pending'),
+                        if (pendingEntries.isNotEmpty) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade800,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '${pendingEntries.length}',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    selected: _teamsFilter == 'pending',
+                    onSelected: (_) => setState(() => _teamsFilter = 'pending'),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: Text('Approved (${approvedEntries.length})'),
+                    selected: _teamsFilter == 'approved',
+                    onSelected: (_) => setState(() => _teamsFilter = 'approved'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+        Expanded(
+          child: filteredEntries.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'No ${_teamsFilter} entries found.',
+                      style: AppTypography.body.copyWith(color: colors.textSecondary),
                     ),
                   ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filteredEntries.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final entry = filteredEntries[index];
+                    final isProcessing = _actionInProgressEntryId == entry.id;
+
+                    return AppCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (entry.seed != null) ...[
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.accentSurface,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Text(
+                                    '${entry.seed}',
+                                    style: AppTypography.caption.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.accent,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                              ] else ...[
+                                Icon(
+                                  entry.kind == EntryKind.team ? Icons.groups_outlined : Icons.person_outline,
+                                  color: colors.accent,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 10),
+                              ],
+                              Expanded(
+                                child: InkWell(
+                                  onTap: entry.teamId != null
+                                      ? () => context.push('/teams/${entry.teamId}')
+                                      : null,
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        entry.displayName,
+                                        style: AppTypography.body.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          color: entry.teamId != null ? colors.accent : colors.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        entry.kind == EntryKind.team ? 'Team Entrant' : 'Solo Entrant',
+                                        style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              _buildStatusBadge(entry.status, colors),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              if (entry.teamId != null)
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.info_outline, size: 16),
+                                  label: const Text('Team Info'),
+                                  style: OutlinedButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  ),
+                                  onPressed: () => context.push('/teams/${entry.teamId}')
+                                ),
+                              const Spacer(),
+                              if (isAdmin && entry.status == EntryStatus.pending) ...[
+                                OutlinedButton.icon(
+                                  icon: const Icon(Icons.close, size: 16, color: AppColors.loss),
+                                  label: const Text('Decline', style: TextStyle(color: AppColors.loss)),
+                                  style: OutlinedButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                    side: const BorderSide(color: AppColors.loss, width: 0.8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  ),
+                                  onPressed: isProcessing ? null : () => _rejectEntry(tournament, entry),
+                                ),
+                                const SizedBox(width: 8),
+                                FilledButton.icon(
+                                  icon: isProcessing
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                        )
+                                      : const Icon(Icons.check, size: 16),
+                                  label: const Text('Approve'),
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: AppColors.win,
+                                    visualDensity: VisualDensity.compact,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  ),
+                                  onPressed: isProcessing ? null : () => _approveEntry(tournament, entry),
+                                ),
+                              ] else if (isAdmin && entry.status == EntryStatus.approved) ...[
+                                TextButton.icon(
+                                  icon: const Icon(Icons.remove_circle_outline, size: 14, color: AppColors.loss),
+                                  label: Text('Remove', style: AppTypography.caption.copyWith(color: AppColors.loss)),
+                                  onPressed: isProcessing ? null : () => _rejectEntry(tournament, entry),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(width: 12),
-              ],
-              Expanded(
-                child: Text(
-                  entry.displayName,
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              Text(
-                entry.status.name.toUpperCase(),
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: entry.status == EntryStatus.approved ? AppColors.win : colors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge(EntryStatus status, AppColorsExtension colors) {
+    Color bg;
+    Color fg;
+    String label;
+
+    switch (status) {
+      case EntryStatus.approved:
+        bg = colors.win.withValues(alpha: 0.12);
+        fg = colors.win;
+        label = 'APPROVED';
+        break;
+      case EntryStatus.pending:
+        bg = Colors.amber.withValues(alpha: 0.15);
+        fg = Colors.amber.shade900;
+        label = 'PENDING';
+        break;
+      case EntryStatus.rejected:
+        bg = colors.loss.withValues(alpha: 0.12);
+        fg = colors.loss;
+        label = 'DECLINED';
+        break;
+      case EntryStatus.waitlisted:
+        bg = colors.surface;
+        fg = colors.textSecondary;
+        label = 'WAITLISTED';
+        break;
+      case EntryStatus.withdrawn:
+        bg = colors.surface;
+        fg = colors.textSecondary;
+        label = 'WITHDRAWN';
+        break;
+      case EntryStatus.disqualified:
+        bg = colors.loss.withValues(alpha: 0.12);
+        fg = colors.loss;
+        label = 'DISQUALIFIED';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: fg,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.4,
+        ),
+      ),
     );
   }
 }

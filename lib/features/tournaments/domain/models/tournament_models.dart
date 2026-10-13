@@ -116,6 +116,7 @@ enum EntryStatus {
   approved,
   waitlisted,
   withdrawn,
+  rejected,
   disqualified;
 
   static EntryStatus fromString(String val) {
@@ -126,6 +127,8 @@ enum EntryStatus {
         return EntryStatus.waitlisted;
       case 'withdrawn':
         return EntryStatus.withdrawn;
+      case 'rejected':
+        return EntryStatus.rejected;
       case 'disqualified':
         return EntryStatus.disqualified;
       case 'pending':
