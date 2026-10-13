@@ -191,6 +191,76 @@ void main() {
         expect(bracket1[i].entryBId, bracket2[i].entryBId);
       }
     });
+
+    test('rejects duplicate entries for the same team/user and prevents self-matches', () {
+      final duplicateEntries = [
+        const TournamentEntry(
+          id: 'entry_1',
+          tournamentId: 't1',
+          teamId: 'team_deepak',
+          displayName: 'deepak',
+          seed: 1,
+        ),
+        const TournamentEntry(
+          id: 'entry_2',
+          tournamentId: 't1',
+          teamId: 'team_deepak',
+          displayName: 'deepak',
+          seed: 2,
+        ),
+      ];
+
+      // After deduplicating, only 1 entrant remains -> throws ArgumentError
+      expect(
+        () => engine.generateBracket(
+          tournamentId: 't1',
+          entries: duplicateEntries,
+        ),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          contains('distinct entries'),
+        )),
+      );
+    });
+
+    test('deduplicates duplicate entries when mixed with distinct teams', () {
+      final mixedEntries = [
+        const TournamentEntry(
+          id: 'entry_1',
+          tournamentId: 't1',
+          teamId: 'team_deepak',
+          displayName: 'deepak',
+          seed: 1,
+        ),
+        const TournamentEntry(
+          id: 'entry_2',
+          tournamentId: 't1',
+          teamId: 'team_deepak',
+          displayName: 'deepak',
+          seed: 2,
+        ),
+        const TournamentEntry(
+          id: 'entry_3',
+          tournamentId: 't1',
+          teamId: 'team_vikram',
+          displayName: 'vikram',
+          seed: 3,
+        ),
+      ];
+
+      final fixtures = engine.generateBracket(
+        tournamentId: 't1',
+        entries: mixedEntries,
+      );
+
+      // size for 2 distinct entrants is 2 -> 1 final match
+      expect(fixtures.length, 1);
+      final match = fixtures.first;
+      expect(match.entryAId, 'entry_1');
+      expect(match.entryBId, 'entry_3');
+      expect(match.entryAId, isNot(equals(match.entryBId)));
+    });
   });
 
   group('RoundRobinEngine Tests', () {
@@ -287,6 +357,35 @@ void main() {
         (f) => f.entryAId == leg1Match.entryBId && f.entryBId == leg1Match.entryAId,
       );
       expect(leg2Match.round, leg1Match.round + 3);
+    });
+
+    test('rejects duplicate entries for the same team/user in round-robin', () {
+      final duplicateEntries = [
+        const TournamentEntry(
+          id: 'e1',
+          tournamentId: 't1',
+          displayName: 'deepak',
+          teamId: 't_deepak',
+        ),
+        const TournamentEntry(
+          id: 'e2',
+          tournamentId: 't1',
+          displayName: 'deepak',
+          teamId: 't_deepak',
+        ),
+      ];
+
+      expect(
+        () => engine.generateSchedule(
+          tournamentId: 't1',
+          entries: duplicateEntries,
+        ),
+        throwsA(isA<ArgumentError>().having(
+          (e) => e.message,
+          'message',
+          contains('distinct entries'),
+        )),
+      );
     });
   });
 

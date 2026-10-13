@@ -45,12 +45,34 @@ class GroupStageEngine {
     if (groupsCount < 2) {
       throw ArgumentError('Group stage requires at least 2 groups');
     }
-    if (entries.length < groupsCount * 2) {
-      throw ArgumentError('Not enough entries to form $groupsCount groups (minimum 2 per group)');
+
+    // Deduplicate entries by ID, teamId, userId, and normalized displayName
+    final uniqueEntries = <TournamentEntry>[];
+    final seenIds = <String>{};
+    final seenTeamIds = <String>{};
+    final seenUserIds = <String>{};
+    final seenNames = <String>{};
+
+    for (final e in entries) {
+      if (e.id.isNotEmpty && seenIds.contains(e.id)) continue;
+      if (e.teamId != null && e.teamId!.isNotEmpty && seenTeamIds.contains(e.teamId)) continue;
+      if (e.userId != null && e.userId!.isNotEmpty && seenUserIds.contains(e.userId)) continue;
+      final normName = e.displayName.trim().toLowerCase();
+      if (normName.isNotEmpty && seenNames.contains(normName)) continue;
+
+      if (e.id.isNotEmpty) seenIds.add(e.id);
+      if (e.teamId != null && e.teamId!.isNotEmpty) seenTeamIds.add(e.teamId!);
+      if (e.userId != null && e.userId!.isNotEmpty) seenUserIds.add(e.userId!);
+      if (normName.isNotEmpty) seenNames.add(normName);
+      uniqueEntries.add(e);
+    }
+
+    if (uniqueEntries.length < groupsCount * 2) {
+      throw ArgumentError('Not enough distinct entries to form $groupsCount groups (minimum 2 per group)');
     }
 
     // 1. Sort entries by seed (assigning default 1..N if null)
-    final sortedEntries = List<TournamentEntry>.from(entries);
+    final sortedEntries = List<TournamentEntry>.from(uniqueEntries);
     sortedEntries.sort((a, b) {
       if (a.seed != null && b.seed != null) return a.seed!.compareTo(b.seed!);
       if (a.seed != null) return -1;

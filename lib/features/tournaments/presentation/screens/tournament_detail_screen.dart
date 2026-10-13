@@ -17,6 +17,7 @@ import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../../teams/providers/team_providers.dart';
 import '../../domain/models/tournament_models.dart';
 import '../../providers/tournament_providers.dart';
 import '../widgets/generate_draw_dialog.dart';
@@ -149,9 +150,16 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     final colors = context.appColors;
     final dateFormat = DateFormat('MMMM d, yyyy');
     final user = ref.watch(currentUserProvider);
+    final userTeamsAsync = ref.watch(userTeamsProvider);
+    final userTeamIds = userTeamsAsync.valueOrNull?.map((t) => t.id).toSet() ?? <String>{};
 
     final isRegOpen = tournament.status == TournamentStatus.registrationOpen;
-    final isAlreadyRegistered = user != null && entries.any((e) => e.playerIds.contains(user.id));
+    final isAlreadyRegistered = user != null &&
+        entries.any((e) =>
+            e.playerIds.contains(user.id) ||
+            e.userId == user.id ||
+            e.registeredBy == user.id ||
+            (e.teamId != null && userTeamIds.contains(e.teamId)));
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

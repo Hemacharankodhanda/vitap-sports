@@ -61,6 +61,8 @@ void main() {
         'tournament_id': 't1',
         'kind': 'team',
         'team_id': 'tm1',
+        'user_id': 'usr_1',
+        'registered_by': 'usr_1',
         'display_name': 'Block B Warriors',
         'seed': 1,
         'status': 'approved',
@@ -70,11 +72,15 @@ void main() {
       expect(entry.id, 'e1');
       expect(entry.kind, EntryKind.team);
       expect(entry.teamId, 'tm1');
+      expect(entry.userId, 'usr_1');
+      expect(entry.registeredBy, 'usr_1');
       expect(entry.seed, 1);
       expect(entry.status, EntryStatus.approved);
 
       final output = entry.toJson();
       expect(output['kind'], 'team');
+      expect(output['user_id'], 'usr_1');
+      expect(output['registered_by'], 'usr_1');
       expect(output['status'], 'approved');
     });
 

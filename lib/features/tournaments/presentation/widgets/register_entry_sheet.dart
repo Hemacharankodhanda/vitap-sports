@@ -92,12 +92,35 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
   }
 
   Future<void> _submit(UserModel? user) async {
+    if (_isLoading) return;
     if (!_isEligible(user)) return;
 
     final isTeam = widget.tournament.sport.toLowerCase() != 'badminton' || _selectedTeamId != null;
     if (isTeam && _selectedTeamId == null) {
       setState(() => _errorMessage = 'Please select a team to register');
       return;
+    }
+
+    // Check duplicate against current tournament entries
+    final currentEntries = ref.read(tournamentEntriesProvider(widget.tournament.id)).valueOrNull ?? [];
+    if (isTeam && _selectedTeamId != null) {
+      final inputName = _displayNameController.text.trim().toLowerCase();
+      final isAlreadyRegistered = currentEntries.any((e) =>
+          e.teamId == _selectedTeamId ||
+          (inputName.isNotEmpty && e.displayName.trim().toLowerCase() == inputName));
+      if (isAlreadyRegistered) {
+        setState(() => _errorMessage = 'This team is already registered for this tournament.');
+        return;
+      }
+    } else if (!isTeam && user != null) {
+      final isAlreadyRegistered = currentEntries.any((e) =>
+          e.userId == user.id ||
+          e.playerIds.contains(user.id) ||
+          e.registeredBy == user.id);
+      if (isAlreadyRegistered) {
+        setState(() => _errorMessage = 'You are already registered for this tournament.');
+        return;
+      }
     }
 
     setState(() {
@@ -140,9 +163,19 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
     final user = profileAsync.valueOrNull;
     final eligible = _isEligible(user);
     final teamsAsync = ref.watch(userTeamsProvider);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final entriesAsync = ref.watch(tournamentEntriesProvider(widget.tournament.id));
+    final entries = entriesAsync.valueOrNull ?? [];
+    final registeredTeamIds = entries.map((e) => e.teamId).whereType<String>().toSet();
 
     final isTeamSport = widget.tournament.sport.toLowerCase() != 'badminton';
+    final isSoloUserAlreadyRegistered = !isTeamSport &&
+        user != null &&
+        entries.any((e) =>
+            e.userId == user.id ||
+            e.playerIds.contains(user.id) ||
+            e.registeredBy == user.id);
+
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -196,6 +229,33 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
               const SizedBox(height: 16),
             ],
 
+            if (isSoloUserAlreadyRegistered) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colors.win.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: colors.win, width: 0.8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: colors.win, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'You are already registered for this tournament.',
+                        style: AppTypography.caption.copyWith(
+                          color: colors.win,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             if (_errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -223,8 +283,14 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Text('Error loading teams: $e'),
                 data: (teams) {
-                  final filtered = teams.where((t) => t.sportId == widget.tournament.sportId || t.name.isNotEmpty).toList();
-                  if (filtered.isEmpty) {
+                  final availableTeams = teams
+                      .where((t) => t.sportId == widget.tournament.sportId || t.name.isNotEmpty)
+                      .toList();
+                  final filtered = availableTeams
+                      .where((t) => !registeredTeamIds.contains(t.id))
+                      .toList();
+
+                  if (availableTeams.isEmpty) {
                     return Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -235,6 +301,32 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
                       child: Text(
                         'You are not a captain or member of any team in ${widget.tournament.sport}. Create a team first to enter.',
                         style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                      ),
+                    );
+                  }
+
+                  if (filtered.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colors.win.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: colors.win, width: 0.8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: colors.win, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'All of your eligible teams are already registered in this tournament.',
+                              style: AppTypography.caption.copyWith(
+                                color: colors.win,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   }
@@ -277,7 +369,7 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
             AppButton(
               label: 'Confirm Registration',
               isLoading: _isLoading,
-              onPressed: (!eligible || _isLoading) ? null : () => _submit(user),
+              onPressed: (!eligible || _isLoading || isSoloUserAlreadyRegistered) ? null : () => _submit(user),
             ),
           ],
         ),
