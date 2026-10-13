@@ -150,4 +150,57 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Something went wrong'), findsOneWidget);
   });
+
+  testWidgets('TournamentDetailScreen displays pending entries with Team Info, Approve, and Decline buttons for organiser', (tester) async {
+    final tournament = TournamentModel(
+      id: 't-test-approval',
+      name: 'Approval Championship',
+      sport: 'cricket',
+      format: TournamentFormat.knockout,
+      status: TournamentStatus.registrationOpen,
+      scope: TournamentScope.open,
+    );
+
+    final entries = [
+      const TournamentEntry(
+        id: 'entry-1',
+        tournamentId: 't-test-approval',
+        kind: EntryKind.team,
+        teamId: 'team-deepak',
+        displayName: 'Deepak XI',
+        status: EntryStatus.pending,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        tournamentId: 't-test-approval',
+        overrides: [
+          tournamentDetailProvider('t-test-approval').overrideWith((ref) => Future.value(tournament)),
+          tournamentEntriesProvider('t-test-approval').overrideWith((ref) => Stream.value(entries)),
+          tournamentFixturesProvider('t-test-approval').overrideWith((ref) => Stream.value([])),
+          tournamentGroupsProvider('t-test-approval').overrideWith((ref) => Future.value([])),
+          isTournamentAdminProvider('t-test-approval').overrideWith((ref) => Future.value(true)),
+          currentUserProvider.overrideWith((ref) => null),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // In Overview tab: Organiser alert for pending applications is shown
+    expect(find.text('1 Team Application Pending'), findsOneWidget);
+    expect(find.text('Review'), findsOneWidget);
+
+    // Switch to Teams tab
+    await tester.tap(find.text('Teams'));
+    await tester.pumpAndSettle();
+
+    // Verify team details, badges, and action buttons
+    expect(find.text('Deepak XI'), findsOneWidget);
+    expect(find.text('PENDING'), findsOneWidget);
+    expect(find.text('Team Info'), findsOneWidget);
+    expect(find.text('Approve'), findsOneWidget);
+    expect(find.text('Decline'), findsOneWidget);
+  });
 }

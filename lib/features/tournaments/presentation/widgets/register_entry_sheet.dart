@@ -145,6 +145,12 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
 
       if (mounted) {
         Navigator.of(context).pop(entry);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Application submitted! Awaiting organiser approval.'),
+            backgroundColor: AppColors.accent,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -190,12 +196,24 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Register Entry',
-                  style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Apply to Join Tournament',
+                        style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Applications require organiser review before joining.',
+                        style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.of(context).pop(),
@@ -367,7 +385,7 @@ class _RegisterEntrySheetState extends ConsumerState<RegisterEntrySheet> {
 
             // Submit Button
             AppButton(
-              label: 'Confirm Registration',
+              label: 'Submit Application',
               isLoading: _isLoading,
               onPressed: (!eligible || _isLoading || isSoloUserAlreadyRegistered) ? null : () => _submit(user),
             ),

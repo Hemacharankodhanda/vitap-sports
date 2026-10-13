@@ -157,7 +157,14 @@ class TournamentService {
     final seenNames = <String>{};
     final unique = <TournamentEntry>[];
 
-    for (final e in raw) {
+    final sorted = List<TournamentEntry>.from(raw);
+    sorted.sort((a, b) {
+      if (a.status == EntryStatus.approved && b.status != EntryStatus.approved) return -1;
+      if (b.status == EntryStatus.approved && a.status != EntryStatus.approved) return 1;
+      return 0;
+    });
+
+    for (final e in sorted) {
       if (e.status == EntryStatus.withdrawn || e.status == EntryStatus.disqualified) {
         continue;
       }
@@ -259,6 +266,38 @@ class TournamentService {
         'p_reason': reason,
       },
     );
+  }
+
+  /// Approves a pending entry for [tournamentId].
+  Future<TournamentEntry> approveEntry({
+    required String tournamentId,
+    required String entryId,
+  }) async {
+    final res = await _client.rpc(
+      'approve_tournament_entry',
+      params: {
+        'p_tournament_id': tournamentId,
+        'p_entry_id': entryId,
+      },
+    );
+    return TournamentEntry.fromJson(Map<String, dynamic>.from(res as Map));
+  }
+
+  /// Rejects an entry for [tournamentId].
+  Future<TournamentEntry> rejectEntry({
+    required String tournamentId,
+    required String entryId,
+    String reason = 'Entry rejected by organiser',
+  }) async {
+    final res = await _client.rpc(
+      'reject_tournament_entry',
+      params: {
+        'p_tournament_id': tournamentId,
+        'p_entry_id': entryId,
+        'p_reason': reason,
+      },
+    );
+    return TournamentEntry.fromJson(Map<String, dynamic>.from(res as Map));
   }
 
   /// Saves the generated tournament draw (groups + fixtures).

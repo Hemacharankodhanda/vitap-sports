@@ -84,6 +84,21 @@ void main() {
       expect(output['status'], 'approved');
     });
 
+    test('TournamentEntry parses and serializes rejected status', () {
+      final json = {
+        'id': 'e2',
+        'tournament_id': 't1',
+        'kind': 'team',
+        'team_id': 'tm2',
+        'display_name': 'Block C Warriors',
+        'status': 'rejected',
+      };
+
+      final entry = TournamentEntry.fromJson(json);
+      expect(entry.status, EntryStatus.rejected);
+      expect(entry.toJson()['status'], 'rejected');
+    });
+
     test('TournamentFixture fromJson and toJson roundtrip', () {
       final json = {
         'id': 'f1',
@@ -123,8 +138,8 @@ void main() {
       );
 
       final entries = [
-        const TournamentEntry(id: 'team_a', tournamentId: 't_fb', displayName: 'Team A'),
-        const TournamentEntry(id: 'team_b', tournamentId: 't_fb', displayName: 'Team B'),
+        const TournamentEntry(id: 'team_a', tournamentId: 't_fb', displayName: 'Team A', status: EntryStatus.approved),
+        const TournamentEntry(id: 'team_b', tournamentId: 't_fb', displayName: 'Team B', status: EntryStatus.approved),
       ];
 
       final fixtures = [
@@ -177,6 +192,54 @@ void main() {
       expect(rows[1].entryId, 'team_b');
       expect(rows[1].points, 0);
       expect(rows[1].goalDifference, -2);
+    });
+
+    test('tournamentStandingsProvider ignores pending entries', () async {
+      const tournament = TournamentModel(
+        id: 't_pending',
+        name: 'League With Pending',
+        sport: 'football',
+        format: TournamentFormat.league,
+        status: TournamentStatus.live,
+      );
+
+      final entries = [
+        const TournamentEntry(
+          id: 'team_a',
+          tournamentId: 't_pending',
+          displayName: 'Team A',
+          status: EntryStatus.approved,
+        ),
+        const TournamentEntry(
+          id: 'team_pending',
+          tournamentId: 't_pending',
+          displayName: 'Pending Team',
+          status: EntryStatus.pending,
+        ),
+      ];
+
+      final container = ProviderContainer(
+        overrides: [
+          tournamentDetailProvider('t_pending').overrideWith((ref) => Future.value(tournament)),
+          tournamentEntriesProvider('t_pending').overrideWith((ref) => Stream.value(entries)),
+          tournamentFixturesProvider('t_pending').overrideWith((ref) => Stream.value([])),
+          tournamentGroupsProvider('t_pending').overrideWith((ref) => Future.value([])),
+        ],
+      );
+
+      await container.read(tournamentDetailProvider('t_pending').future);
+      await container.read(tournamentEntriesProvider('t_pending').future);
+      await container.read(tournamentFixturesProvider('t_pending').future);
+      await container.read(tournamentGroupsProvider('t_pending').future);
+      await Future<void>.delayed(Duration.zero);
+
+      final standingsAsync = container.read(tournamentStandingsProvider('t_pending'));
+      expect(standingsAsync.hasValue, isTrue);
+
+      final tables = standingsAsync.value!;
+      final rows = tables['overall']!;
+      expect(rows.length, 1);
+      expect(rows[0].entryId, 'team_a');
     });
   });
 }

@@ -115,7 +115,8 @@ final tournamentStandingsProvider =
   }
 
   final tournament = tournamentAsync.valueOrNull;
-  final entries = entriesAsync.valueOrNull ?? [];
+  final allEntries = entriesAsync.valueOrNull ?? [];
+  final entries = allEntries.where((e) => e.status == EntryStatus.approved).toList();
   final fixtures = fixturesAsync.valueOrNull ?? [];
   final groups = groupsAsync.valueOrNull ?? [];
 
