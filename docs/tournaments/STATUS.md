@@ -2,27 +2,51 @@
 
 ## Current Status
 - **Branch**: `feature/tournaments`
-- **Current Phase**: Phase 3 — Supabase Schema, RLS & RPCs
-- **Status**: Pure-Dart engines completed and verified (108/108 tests passing). Proceeding to Supabase migrations and RPCs.
+- **Current Phase**: Phase 4 — Presentation & Design System UI
+- **Status**: Database migration 012, service, and providers completed and tested (114/114 passing tests). Proceeding to presentation screens, bracket CustomPainter, and organiser wizards.
 
 ---
 
-## Phase 2 Plan (Iteration 2: Pure-Dart Engines) — COMPLETED
-1. [x] Implement immutable tournament domain models (`TournamentEntry`, `TournamentFixture`, `TournamentGroup`, `FixtureResult`, `TournamentStandingsRow`, `TieBreakTrail`).
-2. [x] Build `KnockoutBracketEngine`:
-   - Power of 2 sizing, standard seeding layout ($1 \times 8, 4 \times 5, 3 \times 6, 2 \times 7$), top seed byes with automatic advancement, third-place playoff, reproducible random seeds.
-3. [x] Build `RoundRobinEngine`:
-   - Circle method, odd $N$ rest rounds, single & double round-robin, round grouping.
-4. [x] Build `GroupStageEngine`:
-   - Snake seeding across $G$ groups, per-group round-robin, cross-pairing qualification ($A_1 \times B_2$, $B_1 \times A_2$).
-5. [x] Build sport-specific `StandingsEngine`:
-   - Football: 3/1/0 pts, goal difference, goals for, head-to-head mini-tables, 3-0 walkover.
-   - Cricket: 2/1/1/0 pts, Net Run Rate (NRR) with all-out innings quota rule and balls-to-overs conversion, NR exclusions.
-   - Badminton: match wins, game difference, point difference, head-to-head.
-   - Multi-way tie-break resolution and `"needs_organiser_decision"` flag.
-6. [x] Build `AdvancementEngine`:
-   - Slot advancement to `next_fixture_id` / `next_slot`, third-place loser routing, walkover score application, withdrawal / disqualification waterfall, downstream reset validations.
-7. [x] Implement comprehensive pure-Dart test suite covering all desk-checks and edge cases ($N=2 \dots 64$, desk check 5 & 6 entrants, odd round robin, cricket NRR example, football 3-way tie). Verify clean analysis and green tests.
+## Phase 3 Plan (Iteration 3: Supabase Schema & RPCs) — COMPLETED
+1. [x] Create timestamped migration `supabase/migrations/012_tournaments_schema_and_rpc.sql`:
+   - Extend `public.tournaments` safely with `ADD COLUMN IF NOT EXISTS`, updated `format` and `status` constraints.
+   - Create `public.tournament_admins`, `public.tournament_groups`, `public.tournament_entries`, `public.tournament_fixtures`, `public.tournament_audit_logs`.
+   - Extend `public.matches` with `tournament_id` and `fixture_id` foreign keys.
+   - Comprehensive performance indexes on all query filters and foreign keys.
+   - Enable RLS on all 5 tables with explicit authenticated policies.
+   - Add tables to `supabase_realtime` publication.
+   - Security Definer RPCs: `create_tournament`, `register_tournament_entry`, `withdraw_tournament_entry`, `generate_tournament_draw`, `schedule_tournament_fixture`, `create_match_for_fixture`, `handle_tournament_match_finished`.
+   - Enhanced `finish_match` with atomic tournament bracket advancement hook.
+2. [x] Create `docs/tournaments/SUPABASE_CHANGES.md`.
+3. [x] Create `lib/features/tournaments/data/tournament_service.dart`.
+4. [x] Create `lib/features/tournaments/providers/tournament_providers.dart` (including pure-Dart derived standings provider without DB drift).
+5. [x] Add unit test suite `test/tournaments/tournament_service_and_providers_test.dart` and verify passing.
+
+---
+
+## Phase 4 Plan (Iteration 4: UI & CustomPaint Bracket)
+1. [ ] Create Bracket CustomPainter & Node Widget:
+   - `BracketConnectorPainter`: Smooth rectilinear connecting paths from round to round with active-path accent highlights.
+   - `BracketNodeCard`: Compact 2-slot match card displaying seed, display name, score, winner styling, status indicator, and tap-to-score / view scorecard action.
+2. [ ] Tournament List Screen:
+   - Status tabs / filter chips (`All`, `Live`, `Upcoming`, `Completed`).
+   - Sport filter chips (`All`, `Cricket`, `Badminton`, `Football`).
+   - Tournament card with format badge, date range, scope badge, entrant count, and progress bar.
+   - Floating Action Button to create tournament (for organizers).
+3. [ ] Tournament Detail Screen (6-tab layout):
+   - Tab 1: **Overview** (dates, scope, format, organizers, rules, prize/trophy notes).
+   - Tab 2: **Fixtures** (filter by stage/round/group, date headers, fixture cards with live match link).
+   - Tab 3: **Table** (standings table with rank, P, W, D, L, GD/NRR, Pts, head-to-head tiebreak trail).
+   - Tab 4: **Bracket** (interactive horizontally-scrollable / zoomable knockout bracket drawn with CustomPaint).
+   - Tab 5: **Stats** (top scorers / run-scorers / wicket-takers / MVPs in this tournament).
+   - Tab 6: **Teams / Entries** (list of registered entries, seeds, status, registration button for users).
+4. [ ] Organiser Management Wizards:
+   - Create Tournament Dialog / Sheet.
+   - Register Entry BottomSheet (with scope validation feedback).
+   - Generate Draw Dialog (knockout / round-robin / groups config + seed allocator).
+   - Fixture Schedule & Match Initialization Sheet.
+5. [ ] Wire into App Router (`app_router.dart` and `shell_screen.dart` navigation bar).
+
 
 ---
 
@@ -74,5 +98,25 @@
   - `flutter test`: 108/108 passed (0 regressions).
   - `flutter analyze lib/features/tournaments/ test/tournaments/`: 0 issues found.
 - **Next Slice**:
-  - Phase 3: Supabase Schema, RLS & RPCs (`supabase/migrations/012_tournaments_schema_and_rpc.sql`).
+  - Phase 3: Supabase Schema, RLS & RPCs.
+
+### Iteration 3 — Phase 3: Supabase Schema, RLS & RPCs
+- **Created**:
+  - `supabase/migrations/012_tournaments_schema_and_rpc.sql`:
+    - Safely altered `tournaments` and `matches`.
+    - Created `tournament_admins`, `tournament_groups`, `tournament_entries`, `tournament_fixtures`, `tournament_audit_logs`.
+    - Created performance indexes and RLS policies on all 5 tables.
+    - Security Definer RPCs: `create_tournament`, `register_tournament_entry`, `withdraw_tournament_entry`, `generate_tournament_draw`, `schedule_tournament_fixture`, `create_match_for_fixture`, `handle_tournament_match_finished`.
+    - Enhanced `finish_match` with atomic tournament bracket advancement hook.
+  - `docs/tournaments/SUPABASE_CHANGES.md`: Full specification of migrations, schemas, RLS, and RPCs.
+  - `lib/features/tournaments/data/tournament_service.dart`: Client queries, realtime streams, and RPC wrappers.
+  - `lib/features/tournaments/providers/tournament_providers.dart`: Riverpod providers with live derived standings.
+  - `test/tournaments/tournament_service_and_providers_test.dart`: Model serialization & provider tests.
+- **Verification**:
+  - `flutter test test/tournaments/`: 25/25 passed.
+  - `flutter test`: 114/114 passed (0 regressions).
+  - `flutter analyze lib/features/tournaments/ test/tournaments/`: 0 issues found.
+- **Next Slice**:
+  - Phase 4: Presentation & Design System UI.
+
 
