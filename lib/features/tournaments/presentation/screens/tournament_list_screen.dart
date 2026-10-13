@@ -147,7 +147,14 @@ class TournamentListScreen extends ConsumerWidget {
                       final item = tournaments[index];
                       return TournamentCard(
                         tournament: item,
-                        onTap: () => context.push('/tournaments/${item.id}'),
+                        onTap: () {
+                          final path = GoRouterState.of(context).uri.path;
+                          if (path.startsWith('/leaderboard')) {
+                            context.push('/leaderboard/tournaments/${item.id}');
+                          } else {
+                            context.push('/tournaments/${item.id}');
+                          }
+                        },
                       );
                     },
                   ),

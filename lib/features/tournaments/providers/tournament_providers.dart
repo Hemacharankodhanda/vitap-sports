@@ -105,19 +105,19 @@ final tournamentStandingsProvider =
   }
 
   if (tournamentAsync.hasError) {
-    return AsyncValue.error(tournamentAsync.error!, tournamentAsync.stackTrace!);
+    return AsyncValue.error(tournamentAsync.error!, tournamentAsync.stackTrace ?? StackTrace.current);
   }
   if (entriesAsync.hasError) {
-    return AsyncValue.error(entriesAsync.error!, entriesAsync.stackTrace!);
+    return AsyncValue.error(entriesAsync.error!, entriesAsync.stackTrace ?? StackTrace.current);
   }
   if (fixturesAsync.hasError) {
-    return AsyncValue.error(fixturesAsync.error!, fixturesAsync.stackTrace!);
+    return AsyncValue.error(fixturesAsync.error!, fixturesAsync.stackTrace ?? StackTrace.current);
   }
 
-  final tournament = tournamentAsync.value;
-  final entries = entriesAsync.value ?? [];
-  final fixtures = fixturesAsync.value ?? [];
-  final groups = groupsAsync.value ?? [];
+  final tournament = tournamentAsync.valueOrNull;
+  final entries = entriesAsync.valueOrNull ?? [];
+  final fixtures = fixturesAsync.valueOrNull ?? [];
+  final groups = groupsAsync.valueOrNull ?? [];
 
   if (tournament == null) {
     return const AsyncValue.data({});

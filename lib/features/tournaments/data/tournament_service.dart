@@ -47,11 +47,23 @@ class TournamentService {
     final data = await _client
         .from('tournament_entries')
         .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('seed', ascending: true, nullsFirst: false)
-        .order('registered_at', ascending: true);
+        .eq('tournament_id', tournamentId);
 
-    return (data as List).map((e) => TournamentEntry.fromJson(e as Map<String, dynamic>)).toList();
+    final entries = (data as List)
+        .map((e) => TournamentEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+    entries.sort((a, b) {
+      if (a.seed != null && b.seed != null) {
+        return a.seed!.compareTo(b.seed!);
+      }
+      if (a.seed != null) return -1;
+      if (b.seed != null) return 1;
+      if (a.createdAt != null && b.createdAt != null) {
+        return a.createdAt!.compareTo(b.createdAt!);
+      }
+      return 0;
+    });
+    return entries;
   }
 
   /// Fetches groups for [tournamentId].
@@ -70,11 +82,17 @@ class TournamentService {
     final data = await _client
         .from('tournament_fixtures')
         .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('round', ascending: true)
-        .order('position', ascending: true);
+        .eq('tournament_id', tournamentId);
 
-    return (data as List).map((e) => TournamentFixture.fromJson(e as Map<String, dynamic>)).toList();
+    final fixtures = (data as List)
+        .map((e) => TournamentFixture.fromJson(e as Map<String, dynamic>))
+        .toList();
+    fixtures.sort((a, b) {
+      final rComp = a.round.compareTo(b.round);
+      if (rComp != 0) return rComp;
+      return a.position.compareTo(b.position);
+    });
+    return fixtures;
   }
 
   /// Checks if current user is an admin or organiser of [tournamentId].
@@ -97,8 +115,15 @@ class TournamentService {
         .from('tournament_fixtures')
         .stream(primaryKey: ['id'])
         .eq('tournament_id', tournamentId)
-        .order('round', ascending: true)
-        .map((data) => data.map((e) => TournamentFixture.fromJson(e)).toList());
+        .map((data) {
+          final fixtures = data.map((e) => TournamentFixture.fromJson(e)).toList();
+          fixtures.sort((a, b) {
+            final rComp = a.round.compareTo(b.round);
+            if (rComp != 0) return rComp;
+            return a.position.compareTo(b.position);
+          });
+          return fixtures;
+        });
   }
 
   /// Realtime stream of tournament entries.
@@ -107,8 +132,21 @@ class TournamentService {
         .from('tournament_entries')
         .stream(primaryKey: ['id'])
         .eq('tournament_id', tournamentId)
-        .order('registered_at', ascending: true)
-        .map((data) => data.map((e) => TournamentEntry.fromJson(e)).toList());
+        .map((data) {
+          final entries = data.map((e) => TournamentEntry.fromJson(e)).toList();
+          entries.sort((a, b) {
+            if (a.seed != null && b.seed != null) {
+              return a.seed!.compareTo(b.seed!);
+            }
+            if (a.seed != null) return -1;
+            if (b.seed != null) return 1;
+            if (a.createdAt != null && b.createdAt != null) {
+              return a.createdAt!.compareTo(b.createdAt!);
+            }
+            return 0;
+          });
+          return entries;
+        });
   }
 
   // ─── RPC Operations ──────────────────────────────────────────────────────
