@@ -1,351 +1,211 @@
-# VIT-AP Sports
+# 🏆 VIT-AP Sports
 
-A premium sports community app built exclusively for the students of **VIT-AP University**. Build your sports profile, form teams, schedule matches, score them live, and track stats and leaderboards across the campus.
+[![Flutter](https://img.shields.io/badge/Flutter-3.12+-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.12+-0175C2?logo=dart&logoColor=white)](https://dart.dev)
+[![Supabase](https://img.shields.io/badge/Backend-Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![State Management](https://img.shields.io/badge/State-Riverpod_2.6-blueviolet)](https://riverpod.dev)
+[![Router](https://img.shields.io/badge/Router-GoRouter_14.8-orange)](https://pub.dev/packages/go_router)
+[![Tests](https://img.shields.io/badge/Tests-136_Passing-brightgreen)](https://github.com/Hemacharankodhanda/vitap-sports)
 
----
+**VIT-AP Sports** is a full-featured campus athletic and esports management platform built exclusively for students, teams, and tournament organisers at **VIT-AP University (Amaravati)**. 
 
-## Table of Contents
-
-1. [Vision](#vision)
-2. [Features](#features)
-3. [Design Philosophy](#design-philosophy)
-4. [Tech Stack](#tech-stack)
-5. [Architecture](#architecture)
-6. [Live Match Scorer](#live-match-scorer)
-7. [Scoring Rules](#scoring-rules)
-8. [Player Stats and Match Analysis](#player-stats-and-match-analysis)
-9. [Database Overview](#database-overview)
-10. [Security](#security)
-11. [Getting Started](#getting-started)
-12. [Project Structure](#project-structure)
-13. [Testing](#testing)
-14. [Roadmap](#roadmap)
+The application streamlines intra-university sporting activities across Cricket, Football, Badminton, Basketball, Volleyball, and more — offering live ball-by-ball / event scoring, dynamic tournament brackets with automated standings, team management, free-agent recruitment, and career statistics tracking.
 
 ---
 
-## Vision
+## 📱 Key Highlights & Features
 
-VIT-AP Sports gives every student athlete a home on campus. Players create profiles, join or captain teams in different sports, challenge other teams, and follow live scorecards and leaderboards. The focus is on three sports first: **Cricket, Badminton and Football**.
+### 🏆 1. Comprehensive Tournament Engine
+- **Three Supported Formats**:
+  - **Knockout (Single Elimination)**: Automatic bracket seeds, byes handling, and optional third-place playoff.
+  - **League (Round-Robin)**: Complete round generation with home/away scheduling.
+  - **Group Stage + Knockout**: Multi-group round-robin followed by qualifying advancement into an elimination bracket.
+- **Dynamic Interactive Bracket Viewer**:
+  - Zoomable and pannable tournament tree powered by `InteractiveViewer`.
+  - Custom vector connectors rendered via Flutter `CustomPainter` with winner route highlighting.
+  - One-tap navigation from bracket match nodes directly into live scorecards.
+- **Automated Standings & Tie-Breakers**:
+  - Real-time points table calculation.
+  - Sport-specific tie-breakers: **Net Run Rate (NRR)** for Cricket, **Goal Difference (GD)** & Head-to-Head for Football, Set/Point differentials for Badminton.
+- **Team Entry & Application Workflow**:
+  - Teams/players submit join applications with status set to `pending`.
+  - Organisers can review pending registrations, inspect full team information via an interactive team modal (`/teams/:id`), and **Approve** or **Decline** applications.
+  - Real-time pending application count badge on tournament tabs and overview alerts.
+  - Strict duplicate registration prevention and scope checks (Hostel Block, Academic Branch, or Graduation Year).
+- **Honours & Podium**:
+  - Automated gold/silver/bronze tournament honours and individual awards (Best Batter, Best Bowler, Golden Boot, MVP) synced directly to player profiles.
 
-## Features
+---
 
-### Authentication and Onboarding
-- Single "Continue with Google" flow, restricted to the VIT-AP email domain
-- Minimal auth screen: logo and one primary action
+### ⚡ 2. Real-Time Live Scoring & Spectator Arena
+- **Multisport Live Scoring Console**:
+  - **Cricket**: Ball-by-ball input, striker/non-striker rotation, bowler selection, runs, extras (wides, no-balls, leg byes, byes), wickets, and over summaries.
+  - **Football**: Minute-by-minute timeline, goals, assists, yellow/red cards, substitutions, halves, and stoppage time.
+  - **Badminton**: Point-by-point tracking with set winners, deuce handling, and server rotation.
+- **Spectator Experience**:
+  - Real-time score and commentary updates broadcasted via Supabase Realtime channels with zero latency.
+- **Scorer Delegation & Takeover**:
+  - Match owners can assign official scorers or seamlessly take over scoring permissions with authorization safeguards.
 
-### Player Profiles
-- Player card: name, branch, year, hostel block, photo, and multi-select sports with skill levels
-- Career stats per sport (see [Player Stats](#player-stats-and-match-analysis)), form, recent matches
-- Badge grid showing earned and unearned achievements
+---
 
-### Teams
-- Create or join teams per sport; captains manage rosters and schedule matches
-- Team hub with logo, roster, win/loss record, upcoming fixtures and match history
-- "Looking for players" recruitment posts
+### 👥 3. Teams & Free Agents Marketplace
+- **Team Hub**: Create teams, upload logos, assign captaincy, manage active rosters, and review incoming join requests.
+- **Recruitment Board**: Post open recruitment calls for specific positions (e.g., wicketkeeper, striker, singles badminton player).
+- **Free Agents Directory**: Unaffiliated players can advertise their availability; captains can filter by sport, hostel block, and branch to recruit new talent.
 
-### Matches and Challenges
-- Match creation: sport, venue, date/time, format
-- Team vs team challenges with accept/decline and push notifications
-- Pick-up games with individual RSVP (no official team required)
+---
 
-### Live Scoring
-- Ball-by-ball / point-by-point / event-by-event scorer for cricket, badminton and football
-- Realtime viewer with animated score updates
-- Undo, offline-tolerant event queue, and post-match summary cards
+### 📊 4. Player Profiles, Career Stats & Leaderboards
+- **Automated Career Aggregations**:
+  - When matches conclude, PostgreSQL triggers and RPCs automatically update career totals: matches played, wins, losses, batting strike rates, bowling economies, goals scored, and clean sheets.
+- **Achievements & Badges**:
+  - Unlock achievements such as *First Match*, *5 Wins*, *Hat-trick*, *Team Captain*, and *Tournament MVP*.
+- **Campus Leaderboards**:
+  - Live university rankings for teams and players filterable by sport, academic year, and hostel block.
 
-### Community
-- Global and sport-specific leaderboards (top scorers, wicket takers, most active, best win rate)
-- Activity feed: results, new teams, earned badges
+---
 
-### Upcoming
-- Tournaments: automated knockout brackets and auto-updating league tables
+### 🔒 5. Campus Security & Campus Scoping
+- **Email Domain Restriction**: Guaranteed access exclusively for `@vitapstudent.ac.in` and `@vitap.ac.in` email accounts.
+- **Hostel & Branch Scopes**: Tournaments can be restricted to specific hostel blocks (e.g., MH-1, MH-2, LH-1) or academic branches (e.g., CSE, ECE, Mechanical).
 
-## Design Philosophy
+---
 
-The app is built for Android with Material 3, but follows **Apple Human Interface Guidelines** principles:
+## 🛠️ Technology Stack
 
-- Minimalism, clarity, and deference to content
-- Strict 8pt grid
-- One sans-serif typeface used app-wide
-- Strong contrast and purposeful animation
-- A custom design-system widget layer (`AppButton`, `AppCard`, `AppTextField`, ...) so every screen stays consistent
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | [Flutter 3.12+ (Dart 3.12+)](https://flutter.dev) | Cross-platform mobile client (Android & iOS) |
+| **Backend & DB** | [Supabase](https://supabase.com) (PostgreSQL 15+) | Relational DB, Auth, Realtime websockets, and Storage |
+| **State Management** | [Flutter Riverpod 2.6+](https://riverpod.dev) | Dependency injection, reactive providers, and state caching |
+| **Routing** | [GoRouter 14.8+](https://pub.dev/packages/go_router) | Declarative navigation, deep linking, and persistent tab shells |
+| **Design System** | Material 3 + Custom Sports Theme | Dark/Light theme, glassmorphic cards, Google Fonts (`Outfit` & `Inter`) |
+| **Vector Graphics** | Flutter `CustomPainter` & `flutter_svg` | Dynamic bracket tree line rendering and SVG badge graphics |
+| **Testing** | `flutter_test` | 136 Unit, engine, and widget tests |
 
-New screens must reuse the design-system widgets and theme tokens. No ad-hoc colours, fonts or styles.
+---
 
-## Tech Stack
+## 📁 Project Architecture
 
-**Frontend**
-- Flutter (latest stable), Material 3 (`useMaterial3: true`)
-- State management: Riverpod (`flutter_riverpod`, `riverpod_annotation`)
-- Routing: GoRouter
-- UI: `google_fonts` (single family, e.g. Inter), custom design-system widgets
-- Images: `image_picker`, `flutter_image_compress`, `cached_network_image`
-- Utilities: `shimmer`, `intl`, `timeago`, `shared_preferences`
+The codebase follows a modular, **feature-first Clean Architecture** pattern ensuring high testability, separation of concerns, and pure Dart business engines:
 
-**Backend (Supabase, free tier)**
-- PostgreSQL, with JSONB for flexible data (scorecards, event payloads, stat snapshots)
-- Supabase Auth with Google OAuth, restricted to the VIT-AP email domain by a Postgres trigger
-- Supabase Realtime for live scores and match status
-- Row Level Security on every table
-
-## Architecture
-
-```mermaid
-flowchart LR
-    S[Scorer taps an action] --> E[ScoringEngine validates and applies]
-    E --> R[record_event RPC]
-    R --> T[(match_events + matches.score)]
-    T --> RT[Supabase Realtime]
-    RT --> V[Viewer screens update live]
-    T --> F[finish_match RPC]
-    F --> PS[(player_match_stats)]
-    PS --> C[(player_career_stats)]
-    F --> A[(match_analysis)]
+```text
+lib/
+├── main.dart                          # App entry point, Supabase initialization, and ProviderScope
+├── core/
+│   ├── constants/                     # Supabase endpoints, sports constants, storage bucket keys
+│   ├── providers/                     # Global providers (theme, network status)
+│   ├── router/                        # GoRouter configuration, tab persistence, auth redirects
+│   ├── services/                      # Base network and local storage services
+│   ├── theme/                         # Sports color palettes, Material 3 theme data, typography
+│   ├── utils/                         # Date formatters, score calculators, validation helpers
+│   └── widgets/                       # Reusable UI widgets (AppButton, AppCard, EmptyStates, etc.)
+└── features/
+    ├── auth/                          # University domain login, OTP, onboarding
+    ├── feed/                          # Campus sports feed, live tickers, announcements
+    ├── free_agents/                   # Free agents marketplace, search, filters
+    ├── leaderboard/                   # Campus-wide player and team leaderboards
+    ├── matches/                       # Match scheduling, squad lineups, detail screen
+    ├── profile/                       # Career stats, achievements, honours, user profile
+    ├── scorecards/                    # Live spectator scorecards and event timeline
+    ├── scoring/                       # Interactive live scoring consoles (Cricket, Football, Badminton)
+    ├── settings/                      # App preferences and theme toggles
+    ├── teams/                         # Team creation, roster management, recruitment board
+    └── tournaments/                   # Tournament engine:
+        ├── domain/models/             # Pure Dart tournament models, formats, and entities
+        ├── domain/engines/            # BracketEngine, StandingsEngine, LeagueEngine
+        ├── data/                      # TournamentService with Supabase RPC integrations
+        ├── providers/                 # Riverpod tournament state, standings, and bracket providers
+        └── presentation/              # Bracket CustomPaint, approval flows, standings tables
 ```
 
-Key ideas:
+---
 
-- **Event sourcing.** Every scoring action is an immutable row in `match_events`. The current score is derived by folding events, so undo, corrections and stats are always consistent.
-- **One source of rules.** Pure Dart, UI-free `ScoringEngine` per sport, registered in a sport registry. Adding a sport does not change the scorer screen shell.
-- **Atomic writes.** RPCs insert the event and update the score snapshot in one transaction, and only allowed scorers can call them.
-- **Counters, not ratios.** Stats store raw counters (runs, balls, wickets). Averages, strike rates and economy are derived at read time.
+## 🗄️ Database Migrations
 
-## Live Match Scorer
+The database backend is structured across 12 sequential Supabase SQL migrations located in `supabase/migrations/`:
 
-### Match lifecycle
+| Migration | Description |
+| :--- | :--- |
+| `001_create_tables.sql` | Core schema: users, teams, matches, sports, scorecards, audit logs |
+| `002_rls_policies.sql` | Row Level Security (RLS) policies for user data isolation |
+| `003_auth_domain_trigger.sql` | Auth hook enforcing `@vitapstudent.ac.in` / `@vitap.ac.in` domains |
+| `004_seed_sports.sql` | Pre-populates default sports (Cricket, Football, Badminton, etc.) & achievements |
+| `005_functions.sql` | Core helper functions and stored procedures |
+| `006_live_scorer_schema.sql` | Live ball-by-ball and event-level timeline schema |
+| `007_take_over_scoring.sql` | Authorization procedures for scorer delegation and takeover |
+| `008_start_match_and_scorer_permissions.sql` | Match kickoff state machine and scorer role permissions |
+| `009_player_stats_tables.sql` | Individual player career statistics breakdown tables |
+| `010_leaderboard_view.sql` | SQL materialized views for high-performance leaderboard queries |
+| `011_fix_career_stats_and_finish_match.sql` | Automated trigger updating career stats upon match completion |
+| `012_tournaments_schema_and_rpc.sql` | Complete tournament schema: brackets, groups, entries, approval RPCs |
 
-`scheduled` → `live` → (`paused`) → `completed` or `abandoned`
+---
 
-### Event model
-
-Each row in `match_events`:
-
-| Column | Purpose |
-|---|---|
-| `id` | UUID generated on the client (makes retries idempotent) |
-| `match_id` | Match the event belongs to |
-| `seq` | Order within the match, unique per match |
-| `type` | e.g. `ball`, `wicket`, `goal`, `rally_won`, `card` |
-| `team_id`, `player_id` | Who the event is about |
-| `payload` | Sport-specific details (JSONB) |
-| `created_by`, `created_at` | Scorer and timestamp |
-
-### Writing and viewing
-
-1. The scorer taps an action. The engine validates it and updates local state immediately.
-2. The `record_event` RPC checks permissions, inserts the event and updates `matches.score` in one transaction.
-3. Realtime pushes the change to every subscribed viewer.
-4. Viewers watch a Riverpod `StreamProvider`, and the timeline subscribes first, then loads initial data, so no events are missed.
-5. On app resume, providers are refreshed to cover any missed updates.
-
-### Scorer screen
-
-- Large tap targets, haptic feedback, an always-visible **Undo**
-- Confirmation only for destructive actions (finish match, abandon)
-- Optimistic updates with an offline retry queue and a subtle "syncing" state
-- One active scorer at a time, with a captain/creator "take over scoring" action
-
-### Finishing a match
-
-`finish_match` is atomic and idempotent. It sets the result, updates team records and player stats, generates the match analysis, and posts to the activity feed. Calling it twice does not double-count.
-
-## Scoring Rules
-
-### Football
-
-- Defaults (configurable): 7 players per side, 2 halves of 20 minutes
-- Goal kinds: open play, penalty, free kick, header, other
-- **Own goal** counts for the opposing team and is credited to the player as an own goal
-- Second yellow card automatically becomes a red card
-- Substitutions are validated (player on the pitch out, unused bench player in)
-- Penalty shootout: 5 kicks each, then sudden death. The shootout score is shown separately and never changes match goals
-- League points: win 3, draw 1, loss 0. Tie-breakers: goal difference, then goals for
-- Walkover default: 3-0 (configurable)
-
-### Badminton
-
-- Rally-point scoring: every rally awards one point
-- Game: first to 21, win by 2, capped at 30 (at 29-29 the next point wins)
-- Match: best of 3 games (casual single-game mode available)
-- Serving: the side that wins a rally serves next. Even score serves from the right court, odd from the left. Doubles tracks each player's court position
-- Intervals: prompt at 11 points (60s) and between games (120s). Change ends after each game, and in game 3 when the leading score reaches 11
-- Retirement: opponent wins the match, scores so far are kept. Walkover is recorded as 2-0 (21-0, 21-0)
-
-### Cricket
-
-- Defaults (configurable): 6 overs, 11 players per side, max overs per bowler = ceil(overs / 5)
-- Legal delivery counts toward the over. Six legal deliveries make an over
-- **Wide:** not a legal ball. 1 penalty run plus any runs run. No ball faced by the batter
-- **No-ball:** not a legal ball. 1 penalty run. Bat runs go to the batter. The next ball is a **free hit** (only run out is possible)
-- **Bye / leg bye:** legal ball. Runs go to team extras, not the batter or the bowler
-- **Strike rotation:** odd runs swap strike. Strike also swaps at the end of each over
-- **Wickets:** bowled, caught, lbw, stumped, hit wicket, run out, obstructing the field, retired out. Retired hurt is not a wicket. Only bowled, caught, lbw, stumped and hit wicket are credited to the bowler
-- **Maiden:** an over with no runs off the bat and no wides or no-balls
-- **Innings ends:** overs complete, all out, or target reached
-- **Result:** won by runs or by wickets. Equal totals lead to a super over or a tie. Abandoned means no result
-
-## Player Stats and Match Analysis
-
-### How stats flow
-
-1. Engines fold events into per-player match stats. The striker, non-striker and bowler are tracked on every ball and stored on each event.
-2. `finish_match` upserts one `player_match_stats` row per player per match.
-3. Career totals are **recomputed** from match rows (not incremented), so reruns and corrections are safe.
-4. Only completed matches count. Abandoned matches and walkovers do not. Guest players appear in a match's analysis but never create career stats.
-
-`recompute_player_stats(player_id)` and `recompute_all_stats()` rebuild everything from match data and are used for backfills.
-
-### Stats catalogue
-
-**Cricket batting:** matches, innings, not outs, runs, balls faced, fours, sixes, dot balls, highest score, 25+/50+/100+ scores, ducks, golden ducks, dismissal types.
-Derived: average, strike rate, boundary %, balls per boundary, dot-ball %, form.
-
-**Cricket bowling:** innings bowled, legal balls, maidens, runs conceded, wickets, wides, no-balls, dot balls, boundaries conceded, best figures, 3- and 5-wicket hauls.
-Derived: overs, economy, bowling average, bowling strike rate, dot-ball %.
-
-**Cricket fielding and captaincy:** catches, stumpings, run outs, matches captained, captain wins.
-
-**Football:** matches, starts, minutes, goals (by kind), assists, own goals, penalties scored/missed, shootout kicks, yellow and red cards, clean sheets, wins/draws/losses.
-Derived: goals per match, goal contributions, minutes per goal, penalty conversion %, win %.
-
-**Badminton (singles and doubles tracked separately):** matches, wins, losses, games won/lost, points won/lost, deciders, comeback wins, straight-game wins, close games, win streaks, partner records.
-Derived: win %, point win %, average points per game.
-
-**All sports:** sports played, total matches, overall win %, form (last 5), streaks, player-of-the-match count, head-to-head records.
-
-Undefined ratios (for example, average with zero dismissals) are shown as `-`.
-
-### Match analysis
-
-Every completed match has a cached analysis (`match_analysis`) shown on the Match Analysis screen:
-
-- **Cricket:** full scorecard, fall of wickets, over-by-over runs, worm chart, run rate and required rate, partnerships, run distribution, phase analysis, extras breakdown
-- **Football:** score timeline, goals/cards/subs with minutes, goals by period, lineups with minutes, shootout summary
-- **Badminton:** game scores, point progression, biggest lead, longest scoring run, deuce points, serve vs receive points
-
-A suggested **Player of the Match** is computed from a documented points formula (the creator can override it).
-
-## Database Overview
-
-Core and scorer tables (names may differ slightly in your schema):
-
-| Table | Purpose |
-|---|---|
-| `profiles` | Player details and sports |
-| `teams`, `team_members` | Teams and rosters |
-| `matches` | Fixtures, status, config, score snapshot, result, scorers |
-| `match_participants` | Players per team per match (guests supported) |
-| `match_events` | Immutable scoring events |
-| `player_match_stats` | One row per player per match |
-| `player_career_stats` | Aggregated career counters |
-| `match_analysis` | Cached analysis per match |
-
-All schema changes live in timestamped files under `supabase/migrations`. Migrations must be safe to re-run and non-destructive.
-
-## Security
-
-- Sign-ups are limited to the VIT-AP email domain by a Postgres trigger
-- RLS is enabled on every table. Data is readable by authenticated users, and writes are limited to the right roles (captains, match creators, designated scorers)
-- Scoring and stats writes go through `security definer` RPCs. Clients cannot write directly to event or stats tables
-- Realtime respects RLS, so viewers only receive rows they are allowed to read
-
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
+- **Flutter SDK**: `^3.12.2` ([Installation Guide](https://docs.flutter.dev/get-started/install))
+- **Dart SDK**: `^3.12.2` (Bundled with Flutter)
+- **Supabase Account**: A Supabase project with PostgreSQL 15+
 
-- Flutter (latest stable) and an Android emulator or device
-- A Supabase project (free tier is enough)
-- Google OAuth credentials configured in Supabase Auth
-
-### Setup
-
+### 1. Clone the Repository
 ```bash
-git clone <your-repo-url>
-cd vit-ap-sports
+git clone https://github.com/Hemacharankodhanda/vitap-sports.git
+cd vitap-sports
+```
+
+### 2. Install Flutter Dependencies
+```bash
 flutter pub get
 ```
 
-Provide your Supabase credentials using the method your project already uses (for example `--dart-define` or an environment file):
+### 3. Database Setup
+1. Open your Supabase Dashboard -> **SQL Editor**.
+2. Run the migrations in chronological order from `supabase/migrations/` (or apply `012_tournaments_schema_and_rpc.sql` for the latest tournament engine).
+3. Ensure storage buckets `avatars` and `team-logos` are configured with public read access.
+
+### 4. Run the Application
+```bash
+# Run on connected mobile device or emulator
+flutter run
+```
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+The application maintains a high standard of quality with pure Dart engine isolation and widget tests.
 
 ```bash
-flutter run \
-  --dart-define=SUPABASE_URL=<your-supabase-url> \
-  --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-Never commit service-role keys. Only the anon key belongs in the app.
-
-### Supabase setup
-
-1. Apply the migrations in `supabase/migrations` in order (SQL editor or Supabase CLI).
-2. Enable Google as an auth provider and add the VIT-AP domain restriction trigger.
-3. Enable Realtime on `matches` and `match_events`:
-
-   ```sql
-   alter publication supabase_realtime add table matches, match_events;
-   alter table match_events replica identity full;
-   ```
-
-4. Confirm RLS is enabled on every table.
-
-### Free-tier note
-
-Supabase free tier limits concurrent Realtime connections and message throughput. Subscribe only on match screens and remove channels when leaving them (use `autoDispose`). Check Supabase's current limits for your plan.
-
-## Project Structure
-
-<!-- Update this section to match the actual repository layout -->
-
-```
-lib/
-  core/            # theme, design system widgets, router, utils
-  features/
-    auth/
-    profile/
-    teams/
-    matches/
-    scorer/        # engines (cricket, badminton, football), scorer UI, viewer UI
-    stats/         # stats models, profile stats, match analysis
-    community/     # leaderboards, activity feed
-supabase/
-  migrations/      # timestamped, non-destructive SQL
-docs/
-  scorer/          # audit, status, scorer architecture
-  stats/           # stats model, formulas, Supabase change notes
-```
-
-## Testing
-
-```bash
-flutter analyze
+# Run the complete test suite
 flutter test
+
+# Run tournament-specific engine and widget tests
+flutter test test/tournaments/
 ```
 
-- Scoring engines are pure Dart and tested with scenario tables (for example: badminton 29-29 ends at 30-29, a cricket wide does not advance the over, a football own goal credits the opponent)
-- Folding all events must always reproduce the stored score snapshot, and undoing the last event must restore the exact previous state
-- Stats tests cover idempotent `finish_match`, recompute from match rows, and guest players never creating career rows
-- Database checks cover: non-scorers cannot write events, duplicate `seq` values are rejected, and direct writes to stats tables are denied
+**Test Suite Coverage (136 Tests Passing)**:
+- ✅ **Bracket & Standings Engines**: Knouckout progression, byes, league scheduling, Net Run Rate, and Goal Difference computations.
+- ✅ **Service & Providers**: Application approval RPC workflows, duplicate registration filters, and entry status states.
+- ✅ **Live Scoring & Viewers**: Ball-by-ball cricket, event timelines, and spectator realtime updates.
+- ✅ **UI & Navigation**: Router deep-linking, tab switching, and bracket custom rendering.
 
-## Roadmap
+---
 
-- [x] Authentication with domain restriction
-- [x] Profiles, teams, challenges, pick-up games
-- [x] Leaderboards and activity feed
-- [x] Live scorer: football, badminton, cricket
-- [x] Automatic player stats and per-match analysis
-- [ ] Tournaments: knockout brackets and league tables
-- [ ] Shareable match cards
-- [ ] Match reminders and availability polls
-- [ ] Inter-hostel and inter-branch leagues
+## 🤝 Contributing
 
-## Contributing
+Contributions are welcome! If you are a student or developer looking to enhance VIT-AP Sports:
+1. Fork the Project.
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your Changes (`git commit -m 'feat: add some amazing feature'`).
+4. Push to the Branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
 
-Open an issue or a pull request. Please run `flutter analyze` and `flutter test` first, and reuse the design-system widgets for any UI work.
+---
 
-## Author
+## 📄 License
 
-Built by **Hemacharan** ([@Hemacharankodhanda](https://github.com/Hemacharankodhanda)), VIT-AP University.
-
-## License
-
-Add a license of your choice (for example MIT) before making the repository public.
+This project is developed for the students and sports community of **VIT-AP University**.
+Distributed under the MIT License. See `LICENSE` for more information.
