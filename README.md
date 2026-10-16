@@ -174,17 +174,6 @@ flutter run
 
 ---
 
-## 🧪 Testing & Quality Assurance
-
-The application maintains a high standard of quality with pure Dart engine isolation and widget tests.
-
-```bash
-# Run the complete test suite
-flutter test
-
-# Run tournament-specific engine and widget tests
-flutter test test/tournaments/
-```
 
 **Test Suite Coverage (136 Tests Passing)**:
 - ✅ **Bracket & Standings Engines**: Knouckout progression, byes, league scheduling, Net Run Rate, and Goal Difference computations.
