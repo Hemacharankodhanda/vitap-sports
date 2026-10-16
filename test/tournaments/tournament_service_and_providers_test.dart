@@ -55,6 +55,14 @@ void main() {
       expect(output['scope'], 'hostel');
     });
 
+    test('TournamentStatus sqlValue and fromString roundtrip for all values', () {
+      for (final status in TournamentStatus.values) {
+        final sqlVal = status.sqlValue;
+        final parsed = TournamentStatus.fromString(sqlVal);
+        expect(parsed, status);
+      }
+    });
+
     test('TournamentEntry fromJson and toJson roundtrip', () {
       final json = {
         'id': 'e1',

@@ -86,6 +86,16 @@ void main() {
       expect(find.text('Titans'), findsWidgets);
       // Verify live score is visible
       expect(find.textContaining('142/3'), findsOneWidget);
+
+      // Scroll down to Quick Actions
+      await tester.drag(find.byType(ListView).first, const Offset(0, -300));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Verify Quick Actions section renders Create Team, New Match, and wide Tournaments button
+      expect(find.text('Quick Actions'), findsOneWidget);
+      expect(find.text('Create Team'), findsOneWidget);
+      expect(find.text('New Match'), findsOneWidget);
+      expect(find.text('Tournaments'), findsOneWidget);
     });
 
     testWidgets('MatchDetailScreen updates live score in real time via liveMatchStreamProvider', (tester) async {

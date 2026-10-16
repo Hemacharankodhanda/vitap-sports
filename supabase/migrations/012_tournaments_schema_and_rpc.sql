@@ -800,7 +800,7 @@ BEGIN
     sport_id, scheduled_at, venue, status, tournament_id, fixture_id, created_by
   )
   VALUES (
-    v_tournament.sport_id,
+    COALESCE(v_tournament.sport_id, (SELECT id FROM public.sports WHERE LOWER(name) = v_sport_name LIMIT 1)),
     COALESCE(v_fix.scheduled_at, NOW()),
     v_fix.venue,
     'upcoming',
@@ -1139,3 +1139,54 @@ BEGIN
   );
 END;
 $$;
+
+-- 11.9 Update Tournament Status
+CREATE OR REPLACE FUNCTION public.update_tournament_status(
+  p_tournament_id UUID,
+  p_status TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_caller UUID := auth.uid();
+  v_tournament RECORD;
+BEGIN
+  IF v_caller IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT public.is_tournament_admin(p_tournament_id, v_caller) THEN
+    RAISE EXCEPTION 'Only tournament organisers can change tournament status';
+  END IF;
+
+  IF p_status NOT IN ('draft', 'registration_open', 'registration_closed', 'ready', 'live', 'completed', 'cancelled') THEN
+    RAISE EXCEPTION 'Invalid tournament status: %', p_status;
+  END IF;
+
+  SELECT * INTO v_tournament FROM public.tournaments WHERE id = p_tournament_id;
+  IF v_tournament.id IS NULL THEN
+    RAISE EXCEPTION 'Tournament not found';
+  END IF;
+
+  UPDATE public.tournaments
+  SET status = p_status,
+      updated_at = NOW()
+  WHERE id = p_tournament_id
+  RETURNING * INTO v_tournament;
+
+  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, before, after)
+  VALUES (
+    p_tournament_id, 
+    v_caller, 
+    'status_updated', 
+    jsonb_build_object('status', v_tournament.status), 
+    to_jsonb(v_tournament)
+  );
+
+  RETURN to_jsonb(v_tournament);
+END;
+$$;
+

@@ -118,6 +118,7 @@ class _GenerateDrawDialogState extends ConsumerState<GenerateDrawDialog> {
       ref.invalidate(tournamentDetailProvider(tId));
       ref.invalidate(tournamentFixturesProvider(tId));
       ref.invalidate(tournamentGroupsProvider(tId));
+      ref.invalidate(tournamentStandingsProvider(tId));
 
       if (mounted) {
         Navigator.of(context).pop(true);
