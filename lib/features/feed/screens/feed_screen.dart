@@ -93,7 +93,7 @@ class FeedScreen extends ConsumerWidget {
           ),
 
           // ─── Quick Actions ────────────────────────────
-          SectionHeader(
+          const SectionHeader(
             title: 'Quick Actions',
           ),
           const SizedBox(height: AppSpacing.md),
@@ -116,6 +116,13 @@ class FeedScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: AppSpacing.md),
+          _WideQuickActionCard(
+            icon: Icons.emoji_events_rounded,
+            label: 'Tournaments',
+            subtitle: 'Browse campus tournaments, fixtures, tables & brackets',
+            onTap: () => context.push('/tournaments'),
+          ),
           const SizedBox(height: AppSpacing.sectionGap),
 
           // ─── Activity Feed ────────────────────────────
@@ -125,6 +132,81 @@ class FeedScreen extends ConsumerWidget {
             icon: Icons.dynamic_feed_rounded,
             title: 'No recent activity',
             subtitle: 'Match results, new teams, and achievements will appear here.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WideQuickActionCard extends StatelessWidget {
+  const _WideQuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: primaryColor.withAlpha(25),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: primaryColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isDark
+                        ? AppColors.darkTextPrimary
+                        : AppColors.lightTextPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AppTypography.caption.copyWith(
+                    color: isDark
+                        ? AppColors.darkTextSecondary
+                        : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
           ),
         ],
       ),

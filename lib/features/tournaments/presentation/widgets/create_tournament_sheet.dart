@@ -16,8 +16,8 @@ import '../../providers/tournament_providers.dart';
 class CreateTournamentSheet extends ConsumerStatefulWidget {
   const CreateTournamentSheet({super.key});
 
-  static Future<TournamentModel?> show(BuildContext context) {
-    return showModalBottomSheet<TournamentModel>(
+  static Future<TournamentModel?> show(BuildContext context) async {
+    final created = await showModalBottomSheet<TournamentModel>(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.appColors.surface,
@@ -26,6 +26,8 @@ class CreateTournamentSheet extends ConsumerStatefulWidget {
       ),
       builder: (_) => const CreateTournamentSheet(),
     );
+
+    return created;
   }
 
   @override
@@ -41,6 +43,7 @@ class _CreateTournamentSheetState extends ConsumerState<CreateTournamentSheet> {
   TournamentFormat _selectedFormat = TournamentFormat.knockout;
   TournamentScope _selectedScope = TournamentScope.open;
   int _maxEntries = 8;
+  bool _openRegistrationImmediately = true;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -70,7 +73,7 @@ class _CreateTournamentSheetState extends ConsumerState<CreateTournamentSheet> {
       }
 
       final service = ref.read(tournamentServiceProvider);
-      final created = await service.createTournament(
+      var created = await service.createTournament(
         name: _nameController.text.trim(),
         sport: _selectedSport,
         format: _selectedFormat,
@@ -78,6 +81,17 @@ class _CreateTournamentSheetState extends ConsumerState<CreateTournamentSheet> {
         maxEntries: _maxEntries,
         eligibility: eligibility,
       );
+
+      if (_openRegistrationImmediately) {
+        try {
+          created = await service.updateTournamentStatus(
+            tournamentId: created.id,
+            status: TournamentStatus.registrationOpen,
+          );
+        } catch (_) {
+          // If status update RPC fails, keep initial created tournament
+        }
+      }
 
       // Refresh list
       ref.invalidate(tournamentsListProvider);
@@ -249,7 +263,18 @@ class _CreateTournamentSheetState extends ConsumerState<CreateTournamentSheet> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              // Open registration immediately toggle
+              SwitchListTile.adaptive(
+                title: Text('Open Registration Immediately', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                subtitle: Text('Allow players and teams to apply right away', style: AppTypography.caption.copyWith(color: colors.textSecondary)),
+                value: _openRegistrationImmediately,
+                onChanged: (val) => setState(() => _openRegistrationImmediately = val),
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.accent,
+              ),
+              const SizedBox(height: 16),
 
               // Submit Button
               AppButton(

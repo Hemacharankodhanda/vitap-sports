@@ -227,6 +227,21 @@ class TournamentService {
     return TournamentModel.fromJson(Map<String, dynamic>.from(res as Map));
   }
 
+  /// Updates the lifecycle status of [tournamentId].
+  Future<TournamentModel> updateTournamentStatus({
+    required String tournamentId,
+    required TournamentStatus status,
+  }) async {
+    final res = await _client.rpc(
+      'update_tournament_status',
+      params: {
+        'p_tournament_id': tournamentId,
+        'p_status': status.sqlValue,
+      },
+    );
+    return TournamentModel.fromJson(Map<String, dynamic>.from(res as Map));
+  }
+
   /// Registers an entry for [tournamentId].
   Future<TournamentEntry> registerEntry({
     required String tournamentId,

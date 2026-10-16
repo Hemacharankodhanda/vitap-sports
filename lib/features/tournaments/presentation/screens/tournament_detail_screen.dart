@@ -55,6 +55,35 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     super.dispose();
   }
 
+  Future<void> _updateStatus(TournamentModel tournament, TournamentStatus newStatus) async {
+    try {
+      final service = ref.read(tournamentServiceProvider);
+      await service.updateTournamentStatus(
+        tournamentId: tournament.id,
+        status: newStatus,
+      );
+      ref.invalidate(tournamentDetailProvider(tournament.id));
+      ref.invalidate(tournamentsListProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tournament status changed to ${newStatus.name.toUpperCase()}'),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating status: ${e.toString().replaceAll('Exception: ', '')}'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _approveEntry(TournamentModel tournament, TournamentEntry entry) async {
     setState(() => _actionInProgressEntryId = entry.id);
     try {
@@ -244,7 +273,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
               _buildStandingsTab(tournament, standingsAsync),
 
               // Tab 4: Bracket (CustomPaint)
-              _buildBracketTab(tournament, fixtures, entries),
+              _buildBracketTab(tournament, fixtures, entries, isAdmin),
 
               // Tab 5: Stats
               _buildStatsTab(tournament, fixtures, entries),
@@ -473,8 +502,8 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
             const SizedBox(height: 16),
           ],
 
-          // Admin Draw Trigger Banner
-          if (isAdmin && (tournament.status == TournamentStatus.draft || tournament.status == TournamentStatus.registrationOpen || tournament.status == TournamentStatus.registrationClosed)) ...[
+          // Organiser Controls Banner
+          if (isAdmin) ...[
             AppCard(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -488,38 +517,107 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                         'Organiser Controls',
                         style: AppTypography.headline.copyWith(fontWeight: FontWeight.w700),
                       ),
+                      const Spacer(),
+                      _buildStatusBadge(
+                        tournament.status == TournamentStatus.registrationOpen || tournament.status == TournamentStatus.live
+                            ? EntryStatus.approved
+                            : EntryStatus.pending,
+                        colors,
+                        customLabel: tournament.status.name.toUpperCase(),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Generate or regenerate bracket/fixtures from approved entries '
-                    '(${approvedEntries.length} approved${pendingCount > 0 ? ', $pendingCount pending' : ''}).',
+                    'Status: ${tournament.status.name.toUpperCase()} • '
+                    '${approvedEntries.length} approved entry${approvedEntries.length == 1 ? '' : 'ies'}'
+                    '${pendingCount > 0 ? ', $pendingCount awaiting review' : ''}.',
                     style: AppTypography.caption.copyWith(color: colors.textSecondary),
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      Expanded(
-                        child: AppButton(
-                          label: 'Generate Draw',
-                          onPressed: () => GenerateDrawDialog.show(
-                            context,
-                            tournament: tournament,
-                            entries: approvedEntries,
+                      if (tournament.status == TournamentStatus.draft)
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.win,
+                            foregroundColor: Colors.white,
                           ),
+                          icon: const Icon(Icons.how_to_reg, size: 18),
+                          label: const Text('Open Registration'),
+                          onPressed: () => _updateStatus(tournament, TournamentStatus.registrationOpen),
+                        )
+                      else if (tournament.status == TournamentStatus.registrationOpen)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.lock_clock, size: 18),
+                          label: const Text('Close Registration'),
+                          onPressed: () => _updateStatus(tournament, TournamentStatus.registrationClosed),
+                        )
+                      else if (tournament.status == TournamentStatus.registrationClosed)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.lock_open, size: 18),
+                          label: const Text('Reopen Registration'),
+                          onPressed: () => _updateStatus(tournament, TournamentStatus.registrationOpen),
+                        ),
+                      if (tournament.status == TournamentStatus.live)
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.win,
+                            side: BorderSide(color: colors.win),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text('Mark Completed'),
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('Complete Tournament?'),
+                                content: const Text('Mark this tournament as completed and finalize standings & honours?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(ctx).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colors.win,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: () => Navigator.of(ctx).pop(true),
+                                    child: const Text('Complete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirm == true) {
+                              _updateStatus(tournament, TournamentStatus.completed);
+                            }
+                          },
+                        ),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accent,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: const Icon(Icons.account_tree_outlined, size: 18),
+                        label: Text(fixtures.isEmpty ? 'Generate Draw' : 'Regenerate Draw'),
+                        onPressed: () => GenerateDrawDialog.show(
+                          context,
+                          tournament: tournament,
+                          entries: approvedEntries,
                         ),
                       ),
-                      if (pendingCount > 0) ...[
-                        const SizedBox(width: 10),
+                      if (pendingCount > 0)
                         OutlinedButton.icon(
                           icon: const Icon(Icons.pending_actions, size: 18),
-                          label: Text('Review ($pendingCount)'),
+                          label: Text('Review Pending ($pendingCount)'),
                           onPressed: () {
                             setState(() => _teamsFilter = 'pending');
                             _tabController.animateTo(5);
                           },
                         ),
-                      ],
                     ],
                   ),
                 ],
@@ -731,7 +829,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
               final matchId = await service.createMatchForFixture(fix.id);
               ref.invalidate(tournamentFixturesProvider(widget.tournamentId));
               if (mounted) {
-                context.push('/matches/$matchId/score');
+                context.push('/matches/$matchId');
               }
             },
           ),
@@ -791,13 +889,26 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     TournamentModel tournament,
     List<TournamentFixture> fixtures,
     List<TournamentEntry> entries,
+    bool isAdmin,
   ) {
+    if (tournament.format == TournamentFormat.league) {
+      return const Center(
+        child: EmptyState(
+          icon: Icons.table_chart_outlined,
+          title: 'League Format Tournament',
+          subtitle: 'League tournaments do not use knockout elimination brackets. Check the Table and Fixtures tabs for round-robin standings and matches.',
+        ),
+      );
+    }
+
     return KnockoutBracketView(
       fixtures: fixtures,
       entries: entries,
       onFixtureTap: (f) {
         if (f.matchId != null) {
           context.push('/matches/${f.matchId}');
+        } else if (isAdmin && f.entryAId != null && f.entryBId != null) {
+          _showCreateMatchDialog(f);
         }
       },
     );
@@ -1089,7 +1200,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     );
   }
 
-  Widget _buildStatusBadge(EntryStatus status, AppColorsExtension colors) {
+  Widget _buildStatusBadge(EntryStatus status, AppColorsExtension colors, {String? customLabel}) {
     Color bg;
     Color fg;
     String label;
@@ -1134,7 +1245,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        label,
+        customLabel ?? label,
         style: TextStyle(
           color: fg,
           fontSize: 11,
