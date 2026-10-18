@@ -115,6 +115,8 @@ CREATE TABLE IF NOT EXISTS public.tournament_audit_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+ALTER TABLE public.tournament_audit_logs ADD COLUMN IF NOT EXISTS reason TEXT;
+
 -- 8. Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_tournaments_sport_status ON public.tournaments (sport, status);
 CREATE INDEX IF NOT EXISTS idx_tournaments_organiser ON public.tournaments (organiser_id);
@@ -511,8 +513,14 @@ BEGIN
     END IF;
   END LOOP;
 
-  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, reason, before, after)
-  VALUES (p_tournament_id, v_caller, 'entry_withdrawn', p_reason, to_jsonb(v_entry), jsonb_build_object('status', 'withdrawn'));
+  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, before, after)
+  VALUES (
+    p_tournament_id, 
+    v_caller, 
+    'entry_withdrawn', 
+    to_jsonb(v_entry), 
+    jsonb_build_object('status', 'withdrawn', 'reason', p_reason)
+  );
 
   RETURN jsonb_build_object('success', true, 'entry_id', p_entry_id);
 END;
@@ -596,8 +604,14 @@ BEGIN
   WHERE id = p_entry_id AND tournament_id = p_tournament_id
   RETURNING * INTO v_entry;
 
-  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, reason, before, after)
-  VALUES (p_tournament_id, v_caller, 'entry_rejected', p_reason, jsonb_build_object('status', v_entry.status), to_jsonb(v_entry));
+  INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, before, after)
+  VALUES (
+    p_tournament_id, 
+    v_caller, 
+    'entry_rejected', 
+    jsonb_build_object('status', v_entry.status), 
+    jsonb_build_object('status', 'rejected', 'reason', p_reason, 'entry', to_jsonb(v_entry))
+  );
 
   RETURN to_jsonb(v_entry);
 END;
