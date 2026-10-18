@@ -62,13 +62,15 @@ CREATE TABLE IF NOT EXISTS public.tournament_entries (
   registered_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+DROP INDEX IF EXISTS public.idx_tournament_entries_unique_team;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_entries_unique_team 
   ON public.tournament_entries (tournament_id, team_id) 
-  WHERE team_id IS NOT NULL;
+  WHERE team_id IS NOT NULL AND status NOT IN ('withdrawn', 'rejected');
 
+DROP INDEX IF EXISTS public.idx_tournament_entries_unique_user;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_entries_unique_user 
   ON public.tournament_entries (tournament_id, user_id) 
-  WHERE user_id IS NOT NULL AND kind IN ('solo', 'player');
+  WHERE user_id IS NOT NULL AND kind IN ('solo', 'player') AND status NOT IN ('withdrawn', 'rejected');
 
 -- 5. Create Tournament Fixtures Table
 CREATE TABLE IF NOT EXISTS public.tournament_fixtures (
@@ -582,6 +584,8 @@ AS $$
 DECLARE
   v_caller UUID := auth.uid();
   v_entry RECORD;
+  v_fix RECORD;
+  v_other_entry_id UUID;
 BEGIN
   IF v_caller IS NULL THEN
     RAISE EXCEPTION 'Authentication required';
@@ -599,18 +603,100 @@ BEGIN
     RAISE EXCEPTION 'Entry not found';
   END IF;
 
+  -- 1. Delete all matches that were drawn with this team/entry in this tournament
+  DELETE FROM public.matches
+  WHERE tournament_id = p_tournament_id
+    AND (
+      id IN (
+        SELECT match_id FROM public.tournament_fixtures
+        WHERE tournament_id = p_tournament_id
+          AND (entry_a_id = p_entry_id OR entry_b_id = p_entry_id)
+          AND match_id IS NOT NULL
+      )
+      OR fixture_id IN (
+        SELECT id FROM public.tournament_fixtures
+        WHERE tournament_id = p_tournament_id
+          AND (entry_a_id = p_entry_id OR entry_b_id = p_entry_id)
+      )
+      OR (v_entry.team_id IS NOT NULL AND (team1_id = v_entry.team_id OR team2_id = v_entry.team_id))
+      OR id IN (
+        SELECT match_id FROM public.match_participants
+        WHERE (v_entry.team_id IS NOT NULL AND team_id = v_entry.team_id)
+           OR (v_entry.user_id IS NOT NULL AND user_id = v_entry.user_id)
+      )
+    );
+
+  -- 2. Delete and clean up tournament_fixtures drawn with this entry
+  FOR v_fix IN 
+    SELECT * FROM public.tournament_fixtures 
+    WHERE tournament_id = p_tournament_id 
+      AND (entry_a_id = p_entry_id OR entry_b_id = p_entry_id)
+  LOOP
+    -- In knockout brackets: promote opponent to next fixture slot as a bye
+    IF v_fix.next_fixture_id IS NOT NULL THEN
+      IF v_fix.entry_a_id = p_entry_id THEN
+        v_other_entry_id := v_fix.entry_b_id;
+      ELSE
+        v_other_entry_id := v_fix.entry_a_id;
+      END IF;
+
+      IF v_other_entry_id IS NOT NULL THEN
+        IF v_fix.next_slot = 'a' THEN
+          UPDATE public.tournament_fixtures
+          SET entry_a_id = v_other_entry_id,
+              source_fixture_a_id = NULL
+          WHERE id = v_fix.next_fixture_id;
+        ELSIF v_fix.next_slot = 'b' THEN
+          UPDATE public.tournament_fixtures
+          SET entry_b_id = v_other_entry_id,
+              source_fixture_b_id = NULL
+          WHERE id = v_fix.next_fixture_id;
+        END IF;
+      ELSE
+        IF v_fix.next_slot = 'a' THEN
+          UPDATE public.tournament_fixtures
+          SET source_fixture_a_id = NULL
+          WHERE id = v_fix.next_fixture_id;
+        ELSIF v_fix.next_slot = 'b' THEN
+          UPDATE public.tournament_fixtures
+          SET source_fixture_b_id = NULL
+          WHERE id = v_fix.next_fixture_id;
+        END IF;
+      END IF;
+    END IF;
+
+    -- Delete this drawn fixture
+    DELETE FROM public.tournament_fixtures WHERE id = v_fix.id;
+  END LOOP;
+
+  -- 3. Clear any remaining references to this entry in later rounds
+  UPDATE public.tournament_fixtures
+  SET entry_a_id = NULL
+  WHERE tournament_id = p_tournament_id AND entry_a_id = p_entry_id;
+
+  UPDATE public.tournament_fixtures
+  SET entry_b_id = NULL
+  WHERE tournament_id = p_tournament_id AND entry_b_id = p_entry_id;
+
+  UPDATE public.tournament_fixtures
+  SET winner_entry_id = NULL
+  WHERE tournament_id = p_tournament_id AND winner_entry_id = p_entry_id;
+
+  -- 4. Mark entry as rejected and unassign group
   UPDATE public.tournament_entries
-  SET status = 'rejected'
+  SET status = 'rejected',
+      group_id = NULL
   WHERE id = p_entry_id AND tournament_id = p_tournament_id
   RETURNING * INTO v_entry;
 
+  -- 5. Audit log
   INSERT INTO public.tournament_audit_logs (tournament_id, actor_id, action, before, after)
   VALUES (
     p_tournament_id, 
     v_caller, 
     'entry_rejected', 
     jsonb_build_object('status', v_entry.status), 
-    jsonb_build_object('status', 'rejected', 'reason', p_reason, 'entry', to_jsonb(v_entry))
+    jsonb_build_object('status', 'rejected', 'reason', p_reason, 'entry', to_jsonb(v_entry), 'drawn_matches_deleted', true)
   );
 
   RETURN to_jsonb(v_entry);

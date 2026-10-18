@@ -118,11 +118,16 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
   }
 
   Future<void> _rejectEntry(TournamentModel tournament, TournamentEntry entry) async {
+    final isApproved = entry.status == EntryStatus.approved;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Decline Application?'),
-        content: Text('Are you sure you want to decline "${entry.displayName}" from joining this tournament?'),
+        title: Text(isApproved ? 'Remove Team?' : 'Decline Application?'),
+        content: Text(
+          isApproved
+              ? 'Are you sure you want to remove "${entry.displayName}" from this tournament? Any matches drawn with this team will also be deleted.'
+              : 'Are you sure you want to decline "${entry.displayName}" from joining this tournament?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
@@ -131,7 +136,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.loss),
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Decline'),
+            child: Text(isApproved ? 'Remove' : 'Decline'),
           ),
         ],
       ),
@@ -147,10 +152,17 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
         entryId: entry.id,
       );
       ref.invalidate(tournamentEntriesProvider(tournament.id));
+      ref.invalidate(tournamentFixturesProvider(tournament.id));
+      ref.invalidate(tournamentStandingsProvider(tournament.id));
+      ref.invalidate(tournamentDetailProvider(tournament.id));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Declined "${entry.displayName}" application'),
+            content: Text(
+              isApproved
+                  ? 'Removed "${entry.displayName}" and deleted drawn matches'
+                  : 'Declined "${entry.displayName}" application',
+            ),
             backgroundColor: AppColors.loss,
           ),
         );
