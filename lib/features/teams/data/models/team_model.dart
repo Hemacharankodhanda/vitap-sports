@@ -40,19 +40,20 @@ class TeamModel {
     final membersData = json['team_members'] as List<dynamic>?;
 
     return TeamModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      sportId: json['sport_id'] as String,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unnamed Team',
+      sportId: json['sport_id']?.toString() ?? '',
       sportName: sport?['name'] as String?,
       logoUrl: json['logo_url'] as String?,
       description: json['description'] as String?,
-      captainId: json['captain_id'] as String,
+      captainId: json['captain_id']?.toString() ?? '',
       captainName: captain?['name'] as String?,
       createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
+          ? DateTime.tryParse(json['created_at'].toString())
           : null,
       members: membersData
-              ?.map((e) => TeamMember.fromJson(e as Map<String, dynamic>))
+              ?.whereType<Map<String, dynamic>>()
+              .map(TeamMember.fromJson)
               .toList() ??
           [],
       wins: (json['wins'] as num?)?.toInt() ?? 0,
@@ -94,14 +95,14 @@ class TeamMember {
   factory TeamMember.fromJson(Map<String, dynamic> json) {
     final user = json['users'] as Map<String, dynamic>?;
     return TeamMember(
-      userId: json['user_id'] as String,
-      teamId: json['team_id'] as String,
+      userId: json['user_id']?.toString() ?? '',
+      teamId: json['team_id']?.toString() ?? '',
       userName: user?['name'] as String?,
       avatarUrl: user?['avatar_url'] as String?,
-      role: json['role'] as String? ?? 'member',
-      position: json['position'] as String?,
+      role: json['role']?.toString() ?? 'member',
+      position: json['position']?.toString(),
       joinedAt: json['joined_at'] != null
-          ? DateTime.parse(json['joined_at'] as String)
+          ? DateTime.tryParse(json['joined_at'].toString())
           : null,
     );
   }

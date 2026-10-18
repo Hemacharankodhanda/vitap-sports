@@ -165,6 +165,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: ':id',
+                    parentNavigatorKey: _rootNavigatorKey,
                     builder: (_, state) => TeamDetailScreen(
                       teamId: state.pathParameters['id']!,
                     ),

@@ -203,4 +203,59 @@ void main() {
     expect(find.text('Approve'), findsOneWidget);
     expect(find.text('Decline'), findsOneWidget);
   });
+
+  testWidgets('TournamentDetailScreen displays approved teams with Remove button and warns about drawn matches', (tester) async {
+    final tournament = TournamentModel(
+      id: 't-test-remove',
+      name: 'Removal Championship',
+      sport: 'cricket',
+      format: TournamentFormat.knockout,
+      status: TournamentStatus.registrationOpen,
+      scope: TournamentScope.open,
+    );
+
+    final entries = [
+      const TournamentEntry(
+        id: 'entry-approved-1',
+        tournamentId: 't-test-remove',
+        kind: EntryKind.team,
+        teamId: 'team-vikram',
+        displayName: 'Vikram Strikers',
+        status: EntryStatus.approved,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      buildTestWidget(
+        tournamentId: 't-test-remove',
+        overrides: [
+          tournamentDetailProvider('t-test-remove').overrideWith((ref) => Future.value(tournament)),
+          tournamentEntriesProvider('t-test-remove').overrideWith((ref) => Stream.value(entries)),
+          tournamentFixturesProvider('t-test-remove').overrideWith((ref) => Stream.value([])),
+          tournamentGroupsProvider('t-test-remove').overrideWith((ref) => Future.value([])),
+          isTournamentAdminProvider('t-test-remove').overrideWith((ref) => Future.value(true)),
+          currentUserProvider.overrideWith((ref) => null),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Switch to Teams tab
+    await tester.tap(find.text('Teams'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vikram Strikers'), findsOneWidget);
+    expect(find.text('APPROVED'), findsOneWidget);
+    expect(find.text('Team Info'), findsOneWidget);
+    expect(find.text('Remove'), findsOneWidget);
+
+    // Tap Remove
+    await tester.tap(find.text('Remove'));
+    await tester.pumpAndSettle();
+
+    // Verify dialog warning about deleting drawn matches
+    expect(find.text('Remove Team?'), findsOneWidget);
+    expect(find.text('Are you sure you want to remove "Vikram Strikers" from this tournament? Any matches drawn with this team will also be deleted.'), findsOneWidget);
+  });
 }
