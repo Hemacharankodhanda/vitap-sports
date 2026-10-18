@@ -29,12 +29,35 @@ class TeamService {
   }
 
   Future<TeamModel?> getTeam(String teamId) async {
-    final data = await _client
-        .from('teams')
-        .select(_teamSelect)
-        .eq('id', teamId)
-        .maybeSingle();
-    return data != null ? TeamModel.fromJson(data) : null;
+    try {
+      final data = await _client
+          .from('teams')
+          .select(_teamSelect)
+          .eq('id', teamId)
+          .maybeSingle();
+      if (data != null) return TeamModel.fromJson(data);
+    } catch (_) {
+      // Fallback without captain constraint alias if fkey differs in schema
+      try {
+        final fallback = await _client
+            .from('teams')
+            .select('*, sports(*), team_members(*, users(*))')
+            .eq('id', teamId)
+            .maybeSingle();
+        if (fallback != null) return TeamModel.fromJson(fallback);
+      } catch (_) {
+        // Last-resort simple select
+        try {
+          final basic = await _client
+              .from('teams')
+              .select()
+              .eq('id', teamId)
+              .maybeSingle();
+          if (basic != null) return TeamModel.fromJson(basic);
+        } catch (_) {}
+      }
+    }
+    return null;
   }
 
   Future<void> deleteTeam(String teamId) async {

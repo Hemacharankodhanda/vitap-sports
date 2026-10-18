@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
@@ -1024,46 +1025,28 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
         // Filter row when organiser or multiple statuses exist
         if (isAdmin || pendingEntries.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  ChoiceChip(
-                    label: Text('All (${entries.length})'),
-                    selected: _teamsFilter == 'all',
-                    onSelected: (_) => setState(() => _teamsFilter = 'all'),
+                  _buildTeamFilterChip(
+                    label: 'All',
+                    filterKey: 'all',
+                    count: entries.length,
                   ),
                   const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Pending'),
-                        if (pendingEntries.isNotEmpty) ...[
-                          const SizedBox(width: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade800,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              '${pendingEntries.length}',
-                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    selected: _teamsFilter == 'pending',
-                    onSelected: (_) => setState(() => _teamsFilter = 'pending'),
+                  _buildTeamFilterChip(
+                    label: 'Approved',
+                    filterKey: 'approved',
+                    count: approvedEntries.length,
                   ),
                   const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: Text('Approved (${approvedEntries.length})'),
-                    selected: _teamsFilter == 'approved',
-                    onSelected: (_) => setState(() => _teamsFilter = 'approved'),
+                  _buildTeamFilterChip(
+                    label: 'Pending',
+                    filterKey: 'pending',
+                    count: pendingEntries.length,
+                    isPending: true,
                   ),
                 ],
               ),
@@ -1125,7 +1108,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                               Expanded(
                                 child: InkWell(
                                   onTap: entry.teamId != null
-                                      ? () => context.push('/teams/${entry.teamId}')
+                                      ? () => _openTeamInfo(entry)
                                       : null,
                                   borderRadius: BorderRadius.circular(4),
                                   child: Column(
@@ -1162,7 +1145,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                                     visualDensity: VisualDensity.compact,
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   ),
-                                  onPressed: () => context.push('/teams/${entry.teamId}')
+                                  onPressed: () => _openTeamInfo(entry),
                                 ),
                               const Spacer(),
                               if (isAdmin && entry.status == EntryStatus.pending) ...[
@@ -1265,6 +1248,413 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
           letterSpacing: 0.4,
         ),
       ),
+    );
+  }
+
+  void _openTeamInfo(TournamentEntry entry) {
+    if (entry.teamId == null || entry.teamId!.isEmpty) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _TeamInfoBottomSheet(teamId: entry.teamId!, teamName: entry.displayName),
+    );
+  }
+
+  Widget _buildTeamFilterChip({
+    required String label,
+    required String filterKey,
+    required int count,
+    bool isPending = false,
+  }) {
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isSelected = _teamsFilter == filterKey;
+
+    final bg = isSelected
+        ? colors.accent
+        : colors.surfaceVariant;
+
+    final fg = isSelected
+        ? Colors.white
+        : colors.textPrimary;
+
+    return InkWell(
+      onTap: () => setState(() => _teamsFilter = filterKey),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? colors.accent
+                : colors.border,
+            width: isSelected ? 1.4 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.accent.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: fg,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : (isPending
+                        ? (isDark ? Colors.amber.shade900.withValues(alpha: 0.45) : Colors.amber.shade100)
+                        : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.06))),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  color: isSelected
+                      ? Colors.white
+                      : (isPending
+                          ? (isDark ? Colors.amber.shade200 : Colors.amber.shade900)
+                          : colors.textSecondary),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamInfoBottomSheet extends ConsumerWidget {
+  const _TeamInfoBottomSheet({
+    required this.teamId,
+    required this.teamName,
+  });
+
+  final String teamId;
+  final String teamName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final teamAsync = ref.watch(teamDetailProvider(teamId));
+    final colors = context.appColors;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.82,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 12, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Team Information',
+                    style: AppTypography.title.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: teamAsync.when(
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+              error: (e, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 36, color: AppColors.loss),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Could not load team details: ${e.toString().replaceAll('Exception: ', '')}',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(teamDetailProvider(teamId)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              data: (team) {
+                if (team == null) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.group_off_outlined, size: 40, color: Colors.grey),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Team "$teamName" details not found',
+                            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'This team may have been deleted or is not yet configured.',
+                            style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  children: [
+                    // Team Hero info
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppAvatar(
+                          imageUrl: team.logoUrl,
+                          name: team.name,
+                          size: AppAvatarSize.large,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                team.name,
+                                style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  if (team.sportName != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: colors.accent.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        team.sportName!.toUpperCase(),
+                                        style: TextStyle(
+                                          color: colors.accent,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  if (team.captainName != null)
+                                    Expanded(
+                                      child: Text(
+                                        'Captain: ${team.captainName}',
+                                        style: AppTypography.caption.copyWith(
+                                          color: colors.textSecondary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (team.description != null && team.description!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        team.description!,
+                        style: AppTypography.body.copyWith(color: colors.textSecondary),
+                      ),
+                    ],
+
+                    const SizedBox(height: 18),
+
+                    // Quick Stats Row
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _statCol('Played', '${team.totalMatches}', colors),
+                          _statCol('Won', '${team.wins}', colors, valueColor: AppColors.win),
+                          _statCol('Lost', '${team.losses}', colors, valueColor: AppColors.loss),
+                          _statCol('Draws', '${team.draws}', colors),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Roster Header
+                    Row(
+                      children: [
+                        Text(
+                          'Team Squad (${team.members.length})',
+                          style: AppTypography.headline.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          icon: const Icon(Icons.open_in_new, size: 14),
+                          label: const Text('Full Page'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            context.push('/teams/${team.id}');
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    if (team.members.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'No squad members registered yet.',
+                          style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                        ),
+                      )
+                    else
+                      ...team.members.map((m) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              AppAvatar(
+                                imageUrl: m.avatarUrl,
+                                name: m.userName ?? 'Player',
+                                size: AppAvatarSize.small,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  m.userName ?? 'Unknown Player',
+                                  style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                              if (m.isCaptain)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'CAPTAIN',
+                                    style: TextStyle(
+                                      color: Colors.amber,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                )
+                              else if (m.position != null && m.position!.isNotEmpty)
+                                Text(
+                                  m.position!,
+                                  style: AppTypography.caption.copyWith(color: colors.textSecondary),
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _statCol(String label, String value, AppColorsExtension colors, {Color? valueColor}) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: valueColor ?? colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
