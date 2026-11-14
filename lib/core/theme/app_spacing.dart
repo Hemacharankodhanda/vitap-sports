@@ -49,6 +49,9 @@ class AppSpacing {
   static const double cardRadius = radiusCard;
   static const double inputRadius = radiusInput;
   static const double chipRadius = radiusChip;
+  static const double radiusSheetTop = radiusSheet;
+  static const double radiusFull = 999.0;
+  static const double sheetPadding = 24.0;
 
   // Sizing & Heights
   static const double buttonHeightPrimary = 48.0;

@@ -319,4 +319,7 @@ extension AppThemeColors on BuildContext {
       (Theme.of(this).brightness == Brightness.dark
           ? AppColorsExtension.dark
           : AppColorsExtension.light);
+
+  /// Convenient alias for appColors.
+  AppColorsExtension get colors => appColors;
 }

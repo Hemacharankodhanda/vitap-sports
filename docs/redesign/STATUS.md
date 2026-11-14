@@ -212,3 +212,19 @@
   - `flutter test`: 164/164 tests passing (100% green, including 2 new matches screen tests and 22 existing match/scorecard tests).
   - `flutter analyze`: 75 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.6: Match Creation & Scorer Setup (`create_match_screen.dart`, `sport_setup_widget.dart`).
+
+---
+
+### Iteration 9 — Phase 4: Slice 4.6: Match Creation & Scorer Setup
+- **Goal:** Restyle `CreateMatchScreen` and `SportSetupWidget` with Apple design aesthetic (`FrostedAppBar`, `AppChip` sport/format pickers, `AppBreakpoints.maxReadingWidth` constraint, borderless `AppCard` pre-match configuration, Apple-style singles/doubles player selectors, `AppSwitch` football overtime toggles, sheet drag handles, `radiusSheetTop` 28dp, and 200% text scale survivability) without touching Supabase insert mutations, match scheduling data, or toss/lineup configuration models.
+- **Files Modified / Created:**
+  - `lib/core/theme/app_colors.dart` (Added `colors` alias to `BuildContext.appColors`)
+  - `lib/core/theme/app_spacing.dart` (Added backward-compatible aliases: `radiusSheetTop`, `radiusFull`, `sheetPadding`)
+  - `lib/features/matches/screens/create_match_screen.dart` (Restyled with `FrostedAppBar`, max reading width constraint, responsive padding, Apple input decorations, squad management sheet with drag handle, and clean pill buttons)
+  - `lib/features/scoring/presentation/widgets/sport_setup_widget.dart` (Restyled with borderless surface card, Apple player selector tiles, doubles pair cards with win/loss status pills, AppSwitch toggles for football, and squad picker modal sheets)
+  - `test/matches/matches_screens_test.dart` (Added widget tests for CreateMatchScreen dark mode rendering, FrostedAppBar, sport chips, and 200% text scale survivability)
+  - `docs/redesign/PARITY.md` (Updated `/matches/create` status to Restyled)
+- **Verification:**
+  - `flutter test`: 166/166 tests passing (100% green, including badminton match flow and create match widget tests).
+  - `flutter analyze`: 78 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.7: Live Scorer (`scorecard_edit_screen.dart`, `scorer_action_grid.dart`, `live_score_header.dart`, `action_dialogs.dart`).
