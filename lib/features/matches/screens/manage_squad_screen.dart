@@ -4,10 +4,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../teams/providers/team_providers.dart';
 import '../providers/match_providers.dart';
@@ -111,8 +114,13 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
 
     _initializeSelection(match.participants);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
+
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor:
+          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      appBar: FrostedAppBar(
         title: Text(
           isBadminton && isDoubles
               ? '${team.name} Squad (${_selectedUserIds.length}/2)'
@@ -126,7 +134,10 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
         ],
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: EdgeInsets.symmetric(
+          horizontal: padding,
+          vertical: AppSpacing.md,
+        ),
         itemCount: team.members.length,
         itemBuilder: (context, index) {
           final member = team.members[index];
@@ -165,7 +176,7 @@ class _ManageSquadScreenState extends ConsumerState<ManageSquadScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: EdgeInsets.all(padding),
           child: AppButton(
             label: isBadminton && isDoubles
                 ? 'Save Squad (${_selectedUserIds.length}/2 players)'

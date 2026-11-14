@@ -6,13 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -38,11 +41,12 @@ class MatchDetailScreen extends ConsumerWidget {
     final initialMatchAsync = ref.watch(matchDetailProvider(matchId));
     final liveStreamAsync = ref.watch(liveMatchStreamProvider(matchId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Match Details'),
         actions: [
           IconButton(
@@ -73,8 +77,8 @@ class MatchDetailScreen extends ConsumerWidget {
               .toList();
 
           return ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenMargin,
+            padding: EdgeInsets.symmetric(
+              horizontal: padding,
             ),
             children: [
               const SizedBox(height: AppSpacing.md),
@@ -439,25 +443,21 @@ class MatchDetailScreen extends ConsumerWidget {
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1917) : const Color(0xFFFFFBEB),
+        color: isDark ? AppColors.winContainerDark : AppColors.winContainerLight,
         borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(
-          color: const Color(0xFFF59E0B),
-          width: 1.5,
-        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFEF3C7),
+            decoration: BoxDecoration(
+              color: (isDark ? AppColors.winDark : AppColors.winLight).withAlpha(30),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.emoji_events_rounded,
               size: 28,
-              color: Color(0xFFD97706),
+              color: isDark ? AppColors.winDark : AppColors.winLight,
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -470,7 +470,7 @@ class MatchDetailScreen extends ConsumerWidget {
                   style: AppTypography.headline.copyWith(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: isDark ? const Color(0xFFFDE68A) : const Color(0xFF92400E),
+                    color: isDark ? AppColors.winDark : AppColors.winLight,
                   ),
                 ),
                 if (subtitleText != null) ...[
@@ -478,7 +478,7 @@ class MatchDetailScreen extends ConsumerWidget {
                   Text(
                     subtitleText,
                     style: AppTypography.caption.copyWith(
-                      color: isDark ? AppColors.darkTextSecondary : const Color(0xFFB45309),
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -492,22 +492,12 @@ class MatchDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _deleteMatch(BuildContext context, WidgetRef ref, String matchId) async {
-    final confirm = await showDialog<bool>(
+    final confirm = await AppDialog.showConfirmation(
       context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('Delete Match'),
-        content: const Text('Are you sure you want to delete this match? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(c, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(c, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+      title: 'Delete Match',
+      message: 'Are you sure you want to delete this match? This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
     );
     if (confirm == true) {
       try {

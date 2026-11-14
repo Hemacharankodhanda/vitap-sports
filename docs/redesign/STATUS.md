@@ -197,3 +197,18 @@
   - `flutter test`: 162/162 tests passing (100% green, including 5 new team widget tests).
   - `flutter analyze`: 75 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.5: Matches & Challenges Screens (`matches_list_screen.dart`, `match_detail_screen.dart`, `manage_squad_screen.dart`).
+
+---
+
+### Iteration 8 — Phase 4: Slice 4.5: Matches & Challenges Screens
+- **Goal:** Restyle `MatchesListScreen`, `MatchDetailScreen`, and `ManageSquadScreen` with Apple design aesthetic (`FrostedAppBar`, `AppSegmented<String>` 3-way view toggle for Upcoming/Live/Completed, clean surface cards, prominent live score banner, soft `winContainer` winner card with `Icons.emoji_events_rounded` preserved for parity, `AppDialog.showConfirmation` with `isDestructive: true` for deleting match, pinned bottom action in manage squad, 200% text scale survivability) with zero breaking changes to match streaming or scoring navigation.
+- **Files Modified / Created:**
+  - `lib/features/matches/screens/matches_list_screen.dart` (Restyled with `FrostedAppBar`, `AppSegmented<String>` view toggle, responsive margin, and clean list spacing)
+  - `lib/features/matches/screens/match_detail_screen.dart` (Restyled with `FrostedAppBar`, responsive margin, soft `winContainer` winner banner, and `AppDialog.showConfirmation` for match deletion)
+  - `lib/features/matches/screens/manage_squad_screen.dart` (Restyled with `FrostedAppBar`, surface cards for player check tiles, responsive margin, and pinned `AppButton` bottom bar)
+  - `test/matches/matches_screens_test.dart` (New: widget tests for MatchesListScreen segmented toggle, upcoming match card display, and 200% text scale survivability)
+  - `docs/redesign/PARITY.md` (Updated `/matches`, `/matches/:id`, and `/matches/:id/squad/:teamId/:side` status to Restyled)
+- **Verification:**
+  - `flutter test`: 164/164 tests passing (100% green, including 2 new matches screen tests and 22 existing match/scorecard tests).
+  - `flutter analyze`: 75 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.6: Match Creation & Scorer Setup (`create_match_screen.dart`, `sport_setup_widget.dart`).
