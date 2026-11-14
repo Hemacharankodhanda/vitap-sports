@@ -4,7 +4,6 @@
 /// with quick tap targets adhering to Apple HIG.
 library;
 
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -346,9 +345,11 @@ class ActionDialogs {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                isWide ? 'Wide Penalty:' : 'No Ball Penalty:',
-                                style: AppTypography.body,
+                              Expanded(
+                                child: Text(
+                                  isWide ? 'Wide Penalty:' : 'No Ball Penalty:',
+                                  style: AppTypography.body,
+                                ),
                               ),
                               Text(
                                 '1 run',
@@ -363,9 +364,11 @@ class ActionDialogs {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                isWide ? 'Extra Runs (Byes/Overthrows):' : 'Runs off Bat / Extras:',
-                                style: AppTypography.body,
+                              Expanded(
+                                child: Text(
+                                  isWide ? 'Extra Runs (Byes/Overthrows):' : 'Runs off Bat / Extras:',
+                                  style: AppTypography.body,
+                                ),
                               ),
                               Text(
                                 '+$selectedExtraRuns ${selectedExtraRuns == 1 ? "run" : "runs"}',
@@ -386,10 +389,12 @@ class ActionDialogs {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Total Runs on this Delivery:',
-                                style: AppTypography.headline.copyWith(
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Text(
+                                  'Total Runs on this Delivery:',
+                                  style: AppTypography.headline.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               Text(

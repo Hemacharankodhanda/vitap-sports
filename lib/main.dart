@@ -31,11 +31,18 @@ Future<void> main() async {
   print(' Initializing SharedPreferences...');
   final prefs = await SharedPreferences.getInstance();
 
+  // Pre-load saved ThemeMode to eliminate cold-start theme flash
+  final themeModeStr = prefs.getString('app_theme_mode');
+  ThemeMode initialThemeMode = ThemeMode.system;
+  if (themeModeStr == 'light') initialThemeMode = ThemeMode.light;
+  if (themeModeStr == 'dark') initialThemeMode = ThemeMode.dark;
+
   print(' Calling runApp...');
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        initialThemeModeProvider.overrideWithValue(initialThemeMode),
       ],
       child: const VitapSportsApp(),
     ),

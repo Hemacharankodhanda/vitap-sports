@@ -77,11 +77,11 @@ class MatchDetailScreen extends ConsumerWidget {
               horizontal: AppSpacing.screenMargin,
             ),
             children: [
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.md),
 
               // Status badge
               Center(child: StatusBadge(status: _parseStatus(match.status))),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.md),
 
               // Sport + Venue + Time
               AppCard(
