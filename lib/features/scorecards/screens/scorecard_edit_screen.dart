@@ -1,8 +1,8 @@
 /// VIT-AP Sports — Live Scorecard Edit Screen (Scorer Shell).
 ///
 /// Single shell screen driven by pure Dart scoring engines (Football, Badminton, Cricket).
-/// Features large tap targets (>= 44pt), haptic feedback, optimistic local apply,
-/// offline retry queue, and always-visible Undo.
+/// Features large tap targets (>= 48dp, scorer keys 64-80dp), haptic feedback,
+/// optimistic local apply, offline retry queue, and always-visible Undo.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,11 +10,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../scoring/presentation/widgets/action_dialogs.dart';
 import '../../scoring/presentation/widgets/live_score_header.dart';
 import '../../matches/providers/match_providers.dart';
@@ -34,23 +36,27 @@ class ScorecardEditScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(liveScorerNotifierProvider(matchId));
     final notifier = ref.read(liveScorerNotifierProvider(matchId).notifier);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final horizontalPadding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               state.sport.isEmpty ? 'Live Scorer' : '${state.sport.toUpperCase()} Scorer',
-              style: AppTypography.headline.copyWith(fontSize: 16),
+              style: AppTypography.headline.copyWith(
+                fontWeight: FontWeight.w700,
+                color: context.colors.textPrimary,
+              ),
             ),
             if (state.homeName.isNotEmpty && state.awayName.isNotEmpty)
               Text(
                 '${state.homeName} vs ${state.awayName}',
                 style: AppTypography.caption.copyWith(
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
           ],
@@ -93,7 +99,13 @@ class ScorecardEditScreen extends ConsumerWidget {
                   await notifier.takeOverScoring();
                 }
               },
-              child: const Text('Take Over'),
+              child: Text(
+                'Take Over',
+                style: AppTypography.callout.copyWith(
+                  color: context.colors.primaryFill,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ],
@@ -102,8 +114,13 @@ class ScorecardEditScreen extends ConsumerWidget {
         child: state.isLoading
             ? const Center(child: CircularProgressIndicator())
             : !state.isAuthorized
-                ? _buildUnauthorizedView(context, isDark, notifier, state)
-                : _buildScorerBody(context, state, notifier, ref),
+                ? _buildUnauthorizedView(context, notifier, state)
+                : Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+                      child: _buildScorerBody(context, state, notifier, ref, horizontalPadding),
+                    ),
+                  ),
       ),
       bottomNavigationBar: state.isAuthorized && state.isMatchLive
           ? _buildBottomBar(context, state, notifier, ref)
@@ -113,14 +130,14 @@ class ScorecardEditScreen extends ConsumerWidget {
 
   Widget _buildUnauthorizedView(
     BuildContext context,
-    bool isDark,
     LiveScorerNotifier notifier,
     ScorerState state,
   ) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        padding: const EdgeInsets.all(AppSpacing.screenMarginCompact),
         child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -128,19 +145,22 @@ class ScorecardEditScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               Text(
                 'Scoring Restricted',
-                style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.textPrimary,
+                ),
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Only the match creator, participating team captains, or designated scorers can record live events.',
-                style: AppTypography.body,
+                style: AppTypography.body.copyWith(color: context.colors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               if (state.syncError != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   state.syncError!,
-                  style: AppTypography.caption.copyWith(color: AppColors.error),
+                  style: AppTypography.caption.copyWith(color: AppColors.loss),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -180,36 +200,42 @@ class ScorecardEditScreen extends ConsumerWidget {
     ScorerState state,
     LiveScorerNotifier notifier,
     WidgetRef ref,
+    double horizontalPadding,
   ) {
     return ListView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenMargin,
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
         vertical: AppSpacing.lg,
       ),
       children: [
         // Offline / Sync Banner
         if (state.syncError != null) ...[
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            padding: const EdgeInsets.all(AppSpacing.md),
             margin: const EdgeInsets.only(bottom: AppSpacing.md),
             decoration: BoxDecoration(
-              color: AppColors.warning.withAlpha(25),
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: AppColors.warning.withAlpha(80)),
+              color: context.colors.warningContainer,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
             child: Row(
               children: [
-                const Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 18),
+                Icon(Icons.info_outline_rounded, color: context.colors.warning, size: 18),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     state.syncError!,
-                    style: AppTypography.caption.copyWith(color: AppColors.warning),
+                    style: AppTypography.caption.copyWith(color: context.colors.warning),
                   ),
                 ),
                 TextButton(
                   onPressed: () => notifier.retryPendingQueue(),
-                  child: const Text('Retry'),
+                  child: Text(
+                    'Retry',
+                    style: AppTypography.callout.copyWith(
+                      color: context.colors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -247,19 +273,22 @@ class ScorecardEditScreen extends ConsumerWidget {
         ] else if (state.status == 'completed') ...[
           // 4. Completed Match State
           AppCard(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.all(AppSpacing.cardPadding),
             child: Column(
               children: [
-                Icon(Icons.emoji_events_outlined, size: 48, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.emoji_events_outlined, size: 48, color: context.colors.primaryFill),
                 const SizedBox(height: AppSpacing.md),
                 Text(
                   'Match Completed',
-                  style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.title.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   'All results, team win/loss records, and player statistics have been finalized atomically.',
-                  style: AppTypography.body,
+                  style: AppTypography.body.copyWith(color: context.colors.textSecondary),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -276,74 +305,74 @@ class ScorecardEditScreen extends ConsumerWidget {
     LiveScorerNotifier notifier,
     WidgetRef ref,
   ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.screenMargin,
-        vertical: AppSpacing.md,
+    return FrostedBar(
+      showTopDivider: true,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppBreakpoints.screenPadding(context),
+        vertical: AppSpacing.sm,
       ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(20),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Always-Visible Undo Button
-          Expanded(
-            flex: 1,
-            child: AppButton(
-              label: 'Undo',
-              icon: Icons.undo_rounded,
-              variant: AppButtonVariant.secondary,
-              onPressed: state.events.isEmpty
-                  ? null
-                  : () {
-                      HapticFeedback.mediumImpact();
-                      notifier.undo();
+      child: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1.0,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+            child: Row(
+              children: [
+                // Always-Visible Undo Button
+                Expanded(
+                  flex: 1,
+                  child: AppButton(
+                    label: 'Undo',
+                    icon: Icons.undo_rounded,
+                    variant: AppButtonVariant.secondary,
+                    onPressed: state.events.isEmpty
+                        ? null
+                        : () {
+                            HapticFeedback.mediumImpact();
+                            notifier.undo();
+                          },
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+
+                // Finish Match Button (Destructive Confirmation)
+                Expanded(
+                  flex: 2,
+                  child: AppButton(
+                    label: 'Finish Match',
+                    icon: Icons.check_circle_outline_rounded,
+                    variant: AppButtonVariant.destructive,
+                    onPressed: () async {
+                      HapticFeedback.heavyImpact();
+                      final confirm = await ActionDialogs.confirmDestructive(
+                        context: context,
+                        title: 'Complete Match?',
+                        message:
+                            'Are you sure you want to finish this match? Results will be permanently written to team standings and player statistics.',
+                        confirmLabel: 'Finish Match',
+                      );
+
+                      if (confirm) {
+                        await notifier.finishMatch();
+                        ref.invalidate(matchDetailProvider(matchId));
+                        ref.invalidate(matchesListProvider);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Match finished successfully'),
+                            ),
+                          );
+                          context.pop();
+                        }
+                      }
                     },
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
-
-          // Finish Match Button (Destructive Confirmation)
-          Expanded(
-            flex: 2,
-            child: AppButton(
-              label: 'Finish Match',
-              icon: Icons.check_circle_outline_rounded,
-              variant: AppButtonVariant.destructive,
-              onPressed: () async {
-                HapticFeedback.heavyImpact();
-                final confirm = await ActionDialogs.confirmDestructive(
-                  context: context,
-                  title: 'Complete Match?',
-                  message:
-                      'Are you sure you want to finish this match? Results will be permanently written to team standings and player statistics.',
-                  confirmLabel: 'Finish Match',
-                );
-
-                if (confirm) {
-                  await notifier.finishMatch();
-                  ref.invalidate(matchDetailProvider(matchId));
-                  ref.invalidate(matchesListProvider);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Match finished successfully'),
-                      ),
-                    );
-                    context.pop();
-                  }
-                }
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

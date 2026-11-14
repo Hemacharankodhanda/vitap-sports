@@ -1,4 +1,6 @@
 /// VIT-AP Sports — Navigation Shell and Theme Settings Tests.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +14,7 @@ import 'package:vitap_sports/core/widgets/app_segmented.dart';
 import 'package:vitap_sports/features/settings/screens/theme_settings_screen.dart';
 
 class MockNavigationShell extends StatefulWidget implements StatefulNavigationShell {
-  MockNavigationShell({
+  const MockNavigationShell({
     super.key,
     required this.currentIndex,
     required this.onDestinationSelected,

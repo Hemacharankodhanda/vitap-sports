@@ -11,6 +11,9 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_chip.dart';
+import '../../../../core/widgets/app_dialog.dart';
+import '../../../../core/widgets/app_switch.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/player_option.dart';
 import '../../engines/cricket/cricket_state.dart';
 
@@ -49,8 +52,10 @@ class ActionDialogs {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
@@ -61,9 +66,9 @@ class ActionDialogs {
 
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
@@ -71,10 +76,33 @@ class ActionDialogs {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Wicket Details', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Wicket Details',
+                      style: AppTypography.headline.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.md),
 
-                    Text('Dismissal Type', style: AppTypography.body),
+                    Text(
+                      'Dismissal Type',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     Wrap(
                       spacing: AppSpacing.sm,
@@ -90,7 +118,13 @@ class ActionDialogs {
                     const SizedBox(height: AppSpacing.md),
 
                     if (dismissalType == 'run_out') ...[
-                      Text('Dismissed Batter', style: AppTypography.body),
+                      Text(
+                        'Dismissed Batter',
+                        style: AppTypography.callout.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.xs),
                       Builder(builder: (context) {
                         final sName = battingPlayers.where((p) => p.id == strikerId || p.name == strikerId).firstOrNull?.name ?? strikerId;
@@ -112,7 +146,11 @@ class ActionDialogs {
                         );
                       }),
                       const SizedBox(height: AppSpacing.sm),
-                      Text('Runs Completed on Ball', style: AppTypography.caption),
+                      Text(
+                        'Runs Completed on Ball',
+                        style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [0, 1, 2].map((r) {
                           return Padding(
@@ -129,16 +167,30 @@ class ActionDialogs {
                     ],
 
                     if (dismissalType == 'caught') ...[
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('Batters crossed before catch?', style: AppTypography.body),
-                        value: battersCrossed,
-                        onChanged: (val) => setState(() => battersCrossed = val),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Batters crossed before catch?',
+                            style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                          ),
+                          AppSwitch(
+                            value: battersCrossed,
+                            onChanged: (val) => setState(() => battersCrossed = val),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: AppSpacing.md),
                     ],
 
                     if (dismissalType == 'caught' || dismissalType == 'stumped' || dismissalType == 'run_out') ...[
-                      Text('Fielder', style: AppTypography.body),
+                      Text(
+                        'Fielder',
+                        style: AppTypography.callout.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.xs),
                       if (bowlingPlayers.isNotEmpty) ...[
                         Wrap(
@@ -154,17 +206,21 @@ class ActionDialogs {
                         ),
                         const SizedBox(height: AppSpacing.xs),
                       ],
-                      TextField(
+                      AppTextField(
                         controller: fielderController,
-                        decoration: const InputDecoration(
-                          labelText: 'Fielder Name (Optional)',
-                          isDense: true,
-                        ),
+                        label: 'Fielder Name (Optional)',
+                        hint: 'e.g. Ravindra Jadeja',
                       ),
                       const SizedBox(height: AppSpacing.md),
                     ],
 
-                    Text('Next Batter', style: AppTypography.body),
+                    Text(
+                      'Next Batter',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     if (availableNextBatters.isNotEmpty) ...[
                       Wrap(
@@ -180,47 +236,45 @@ class ActionDialogs {
                       ),
                       const SizedBox(height: AppSpacing.xs),
                     ],
-                    TextField(
+                    AppTextField(
                       controller: newBatterController,
-                      decoration: const InputDecoration(
-                        labelText: 'Next Batter Name',
-                        isDense: true,
-                      ),
+                      label: 'Next Batter Name',
+                      hint: 'e.g. Rohit Sharma',
                     ),
                     const SizedBox(height: AppSpacing.lg),
 
-                      AppButton(
-                        label: 'Confirm Wicket',
-                        variant: AppButtonVariant.destructive,
-                        onPressed: () {
-                          // Find IDs or use custom names
-                          String? finalNewBatterId = newBatterController.text.trim().isEmpty ? null : newBatterController.text.trim();
-                          String? finalFielderId = fielderController.text.trim().isEmpty ? null : fielderController.text.trim();
-                          
-                          // If they match a squad player exactly, use their ID
-                          if (finalNewBatterId != null) {
-                            final matchP = availableNextBatters.where((p) => p.name == finalNewBatterId).firstOrNull;
-                            if (matchP != null) finalNewBatterId = matchP.id;
-                          }
-                          if (finalFielderId != null) {
-                            final matchF = bowlingPlayers.where((p) => p.name == finalFielderId).firstOrNull;
-                            if (matchF != null) finalFielderId = matchF.id;
-                          }
+                    AppButton(
+                      label: 'Confirm Wicket',
+                      variant: AppButtonVariant.destructive,
+                      onPressed: () {
+                        // Find IDs or use custom names
+                        String? finalNewBatterId = newBatterController.text.trim().isEmpty ? null : newBatterController.text.trim();
+                        String? finalFielderId = fielderController.text.trim().isEmpty ? null : fielderController.text.trim();
+                        
+                        // If they match a squad player exactly, use their ID
+                        if (finalNewBatterId != null) {
+                          final matchP = availableNextBatters.where((p) => p.name == finalNewBatterId).firstOrNull;
+                          if (matchP != null) finalNewBatterId = matchP.id;
+                        }
+                        if (finalFielderId != null) {
+                          final matchF = bowlingPlayers.where((p) => p.name == finalFielderId).firstOrNull;
+                          if (matchF != null) finalFielderId = matchF.id;
+                        }
 
-                          Navigator.pop(ctx, {
-                            'is_wicket': true,
-                            'kind': 'normal',
-                            'dismissal_type': dismissalType,
-                            'out_batter_id': dismissedBatterId,
-                            'dismissed_batter_id': dismissedBatterId,
-                            'new_batter_id': finalNewBatterId,
-                            'fielder_id': finalFielderId,
-                            'runs': runOutRuns,
-                            'runs_completed': runOutRuns,
-                            'batters_crossed': battersCrossed,
-                          });
-                        },
-                      ),
+                        Navigator.pop(ctx, {
+                          'is_wicket': true,
+                          'kind': 'normal',
+                          'dismissal_type': dismissalType,
+                          'out_batter_id': dismissedBatterId,
+                          'dismissed_batter_id': dismissedBatterId,
+                          'new_batter_id': finalNewBatterId,
+                          'fielder_id': finalFielderId,
+                          'runs': runOutRuns,
+                          'runs_completed': runOutRuns,
+                          'batters_crossed': battersCrossed,
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -248,13 +302,12 @@ class ActionDialogs {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
-        final borderStrong = isDark ? AppColors.borderStrongDark : AppColors.borderStrongLight;
-
         return StatefulBuilder(
           builder: (context, setState) {
             const int basePenalty = 1;
@@ -262,8 +315,8 @@ class ActionDialogs {
 
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
                 top: AppSpacing.md,
                 bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
               ),
@@ -272,15 +325,15 @@ class ActionDialogs {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Drag Handle (32 x 4 in borderStrong)
+                    // Drag Handle
                     Center(
                       child: Container(
-                        width: 32,
-                        height: 4,
+                        width: 36,
+                        height: 5,
                         margin: const EdgeInsets.only(bottom: AppSpacing.md),
                         decoration: BoxDecoration(
-                          color: borderStrong,
-                          borderRadius: BorderRadius.circular(2),
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
                         ),
                       ),
                     ),
@@ -288,25 +341,26 @@ class ActionDialogs {
                     // Title
                     Text(
                       isWide ? 'Wide Delivery (Wd)' : 'No Ball Delivery (Nb)',
-                      style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                      style: AppTypography.headline.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       isWide
                           ? '1 penalty run is awarded. Select additional runs produced (byes or overthrows):'
                           : '1 penalty run is awarded + Free Hit. Select runs produced off bat or extras:',
-                      style: AppTypography.caption.copyWith(
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
+                      style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
                     ),
                     const SizedBox(height: AppSpacing.md),
 
                     // Extra Runs Chip Selection
                     Text(
                       isWide ? 'Additional Extra Runs' : 'Runs off Bat / Extras',
-                      style: AppTypography.caption.copyWith(
+                      style: AppTypography.callout.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -331,13 +385,14 @@ class ActionDialogs {
 
                     // Realtime Calculation Breakdown Card
                     Container(
-                      padding: const EdgeInsets.all(AppSpacing.md),
+                      padding: const EdgeInsets.all(AppSpacing.cardPadding),
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.darkSurfaceVariant
-                            : AppColors.lightSurfaceVariant,
-                        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                        border: Border.all(color: borderStrong),
+                        color: context.colors.surface,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
+                        border: Border.all(
+                          color: context.colors.divider,
+                          width: 0.5,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -348,13 +403,14 @@ class ActionDialogs {
                               Expanded(
                                 child: Text(
                                   isWide ? 'Wide Penalty:' : 'No Ball Penalty:',
-                                  style: AppTypography.body,
+                                  style: AppTypography.body.copyWith(color: context.colors.textPrimary),
                                 ),
                               ),
                               Text(
                                 '1 run',
                                 style: AppTypography.body.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: context.colors.textPrimary,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               ),
@@ -367,13 +423,14 @@ class ActionDialogs {
                               Expanded(
                                 child: Text(
                                   isWide ? 'Extra Runs (Byes/Overthrows):' : 'Runs off Bat / Extras:',
-                                  style: AppTypography.body,
+                                  style: AppTypography.body.copyWith(color: context.colors.textPrimary),
                                 ),
                               ),
                               Text(
                                 '+$selectedExtraRuns ${selectedExtraRuns == 1 ? "run" : "runs"}',
                                 style: AppTypography.body.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: context.colors.textPrimary,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               ),
@@ -383,7 +440,8 @@ class ActionDialogs {
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: Divider(
                               height: 1,
-                              color: borderStrong,
+                              thickness: 0.5,
+                              color: context.colors.divider,
                             ),
                           ),
                           Row(
@@ -393,15 +451,16 @@ class ActionDialogs {
                                 child: Text(
                                   'Total Runs on this Delivery:',
                                   style: AppTypography.headline.copyWith(
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.colors.textPrimary,
                                   ),
                                 ),
                               ),
                               Text(
                                 '$totalRunsOnBall ${totalRunsOnBall == 1 ? "run" : "runs"}',
                                 style: AppTypography.headline.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.colors.primaryFill,
                                   fontFeatures: const [FontFeature.tabularFigures()],
                                 ),
                               ),
@@ -411,9 +470,7 @@ class ActionDialogs {
                             const SizedBox(height: 6),
                             Text(
                               '$selectedExtraRuns runs credited to $strikerName',
-                              style: AppTypography.caption.copyWith(
-                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                              ),
+                              style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
                             ),
                           ],
                         ],
@@ -468,17 +525,19 @@ class ActionDialogs {
     return showModalBottomSheet<Map<String, String>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
@@ -486,10 +545,33 @@ class ActionDialogs {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Select Batters - $teamName', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'Select Batters - $teamName',
+                      style: AppTypography.headline.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.md),
 
-                    Text('Striker', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Striker',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     if (availableBatters.isNotEmpty) ...[
                       Wrap(
@@ -509,7 +591,13 @@ class ActionDialogs {
                       const SizedBox(height: AppSpacing.sm),
                     ],
 
-                    Text('Non-Striker', style: AppTypography.body.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Non-Striker',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     if (availableBatters.isNotEmpty) ...[
                       Wrap(
@@ -567,17 +655,19 @@ class ActionDialogs {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
@@ -585,18 +675,34 @@ class ActionDialogs {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
                     Row(
                       children: [
-                        Icon(Icons.sports_baseball_rounded, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
+                        Icon(Icons.sports_baseball_rounded, color: context.colors.textPrimary, size: AppSpacing.iconNav),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Select Next Bowler',
-                                  style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                              Text(
+                                'Select Next Bowler',
+                                style: AppTypography.headline.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
                               if (bowlingTeamName != null)
-                                Text('Bowling Team: $bowlingTeamName', style: AppTypography.caption),
+                                Text('Bowling Team: $bowlingTeamName', style: AppTypography.caption.copyWith(color: context.colors.textSecondary)),
                             ],
                           ),
                         ),
@@ -605,7 +711,13 @@ class ActionDialogs {
                     const SizedBox(height: AppSpacing.md),
 
                     if (bowlingPlayers.isNotEmpty) ...[
-                      Text('Bowling Squad', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        'Bowling Squad',
+                        style: AppTypography.callout.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
                       const SizedBox(height: AppSpacing.xs),
                       Wrap(
                         spacing: AppSpacing.sm,
@@ -622,17 +734,10 @@ class ActionDialogs {
 
                           return Opacity(
                             opacity: isRestricted ? 0.45 : 1.0,
-                            child: ActionChip(
-                              avatar: isRestricted
-                                  ? const Icon(Icons.block_rounded, size: 14, color: AppColors.error)
-                                  : (isSelected ? const Icon(Icons.check, size: 14, color: Colors.white) : null),
-                              label: Text(labelText),
-                              backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : null,
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : null,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                              onPressed: isRestricted
+                            child: AppChip(
+                              label: labelText,
+                              isSelected: isSelected,
+                              onTap: isRestricted
                                   ? () {
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
@@ -655,21 +760,36 @@ class ActionDialogs {
                     ],
 
                     if (!isCustomEntry)
-                      TextButton.icon(
-                        icon: const Icon(Icons.person_add_rounded, size: 18),
-                        label: const Text('+ Enter Other / Custom Bowler Name'),
-                        onPressed: () {
-                          setState(() {
-                            isCustomEntry = true;
-                            selectedBowler = null;
-                          });
-                        },
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: Icon(Icons.person_add_rounded, size: 18, color: context.colors.primaryFill),
+                          label: Text(
+                            '+ Enter Other / Custom Bowler Name',
+                            style: AppTypography.callout.copyWith(
+                              color: context.colors.primaryFill,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              isCustomEntry = true;
+                              selectedBowler = null;
+                            });
+                          },
+                        ),
                       )
                     else ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Custom Bowler Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Custom Bowler Name',
+                            style: AppTypography.callout.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
                           if (bowlingPlayers.isNotEmpty)
                             TextButton(
                               onPressed: () {
@@ -678,19 +798,21 @@ class ActionDialogs {
                                   selectedBowler = null;
                                 });
                               },
-                              child: const Text('← Pick from Squad'),
+                              child: Text(
+                                '← Pick from Squad',
+                                style: AppTypography.caption.copyWith(
+                                  color: context.colors.primaryFill,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      TextField(
+                      AppTextField(
                         controller: customController,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Custom Bowler Name',
-                          hintText: 'e.g. Jasprit Bumrah',
-                          isDense: true,
-                        ),
+                        label: 'Custom Bowler Name',
+                        hint: 'e.g. Jasprit Bumrah',
                         onChanged: (val) {
                           setState(() => selectedBowler = val.trim());
                         },
@@ -739,82 +861,117 @@ class ActionDialogs {
     return showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Record Goal', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: AppSpacing.md),
-
-                  Text('Scoring Team', style: AppTypography.body),
-                  const SizedBox(height: AppSpacing.xs),
-                  Row(
-                    children: [
-                      AppChip(
-                        label: homeTeamName,
-                        isSelected: selectedTeam == homeTeamId,
-                        onTap: () => setState(() => selectedTeam = homeTeamId),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      AppChip(
-                        label: awayTeamName,
-                        isSelected: selectedTeam == awayTeamId,
-                        onTap: () => setState(() => selectedTeam = awayTeamId),
+                    ),
+                    Text(
+                      'Record Goal',
+                      style: AppTypography.headline.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
 
-                  Text('Kind of Goal', style: AppTypography.body),
-                  const SizedBox(height: AppSpacing.xs),
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    children: ['open_play', 'penalty', 'free_kick', 'header'].map((k) {
-                      return AppChip(
-                        label: k.replaceAll('_', ' ').toUpperCase(),
-                        isSelected: goalKind == k,
-                        onTap: () => setState(() => goalKind = k),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Scoring Team',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Row(
+                      children: [
+                        AppChip(
+                          label: homeTeamName,
+                          isSelected: selectedTeam == homeTeamId,
+                          onTap: () => setState(() => selectedTeam = homeTeamId),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        AppChip(
+                          label: awayTeamName,
+                          isSelected: selectedTeam == awayTeamId,
+                          onTap: () => setState(() => selectedTeam = awayTeamId),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
 
-                  TextField(
-                    controller: scorerController,
-                    decoration: const InputDecoration(labelText: 'Scorer Name/No.', isDense: true),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  TextField(
-                    controller: assistController,
-                    decoration: const InputDecoration(labelText: 'Assist Name/No. (Optional)', isDense: true),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      'Kind of Goal',
+                      style: AppTypography.callout.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Wrap(
+                      spacing: AppSpacing.sm,
+                      children: ['open_play', 'penalty', 'free_kick', 'header'].map((k) {
+                        return AppChip(
+                          label: k.replaceAll('_', ' ').toUpperCase(),
+                          isSelected: goalKind == k,
+                          onTap: () => setState(() => goalKind = k),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
 
-                  AppButton(
-                    label: 'Confirm Goal',
-                    onPressed: () {
-                      Navigator.pop(ctx, {
-                        'team': selectedTeam,
-                        'scorer': scorerController.text.trim().isEmpty ? 'Player' : scorerController.text.trim(),
-                        'assist': assistController.text.trim().isEmpty ? null : assistController.text.trim(),
-                        'kind': goalKind,
-                      });
-                    },
-                  ),
-                ],
+                    AppTextField(
+                      controller: scorerController,
+                      label: 'Scorer Name/No.',
+                      hint: 'e.g. Sunil Chhetri',
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    AppTextField(
+                      controller: assistController,
+                      label: 'Assist Name/No. (Optional)',
+                      hint: 'e.g. Sahal Abdul Samad',
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    AppButton(
+                      label: 'Confirm Goal',
+                      onPressed: () {
+                        Navigator.pop(ctx, {
+                          'team': selectedTeam,
+                          'scorer': scorerController.text.trim().isEmpty ? 'Player' : scorerController.text.trim(),
+                          'assist': assistController.text.trim().isEmpty ? null : assistController.text.trim(),
+                          'kind': goalKind,
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -830,28 +987,12 @@ class ActionDialogs {
     required String message,
     String confirmLabel = 'Confirm',
   }) async {
-    final result = await showDialog<bool>(
+    final result = await AppDialog.showConfirmation(
       context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(title, style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
-          content: Text(message, style: AppTypography.body),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: Text(confirmLabel),
-            ),
-          ],
-        );
-      },
+      title: title,
+      message: message,
+      confirmLabel: confirmLabel,
+      isDestructive: true,
     );
     return result ?? false;
   }

@@ -25,11 +25,10 @@ class LiveScoreHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sport = state.sport.toLowerCase();
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -41,62 +40,63 @@ class LiveScoreHeader extends StatelessWidget {
                 child: Text(
                   '${state.homeName} vs ${state.awayName}',
                   style: AppTypography.headline.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              _buildStatusBadge(isDark),
+              _buildStatusBadge(context),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
 
           // Sport-specific Scoreboard View
           if (sport == 'cricket' && state.scoringState is CricketState)
-            _buildCricketScore(context, state.scoringState as CricketState, isDark)
+            _buildCricketScore(context, state.scoringState as CricketState)
           else if (sport == 'badminton' && state.scoringState is BadmintonState)
-            _buildBadmintonScore(context, state.scoringState as BadmintonState, isDark)
+            _buildBadmintonScore(context, state.scoringState as BadmintonState)
           else if (sport == 'football' && state.scoringState is FootballState)
-            _buildFootballScore(context, state.scoringState as FootballState, isDark)
+            _buildFootballScore(context, state.scoringState as FootballState)
           else
-            _buildFallbackScore(isDark),
+            _buildFallbackScore(context),
         ],
       ),
     );
   }
 
-  Widget _buildStatusBadge(bool isDark) {
+  Widget _buildStatusBadge(BuildContext context) {
     final status = state.status.toUpperCase();
     Color bg;
     Color fg;
 
     switch (state.status) {
       case 'live':
-        bg = AppColors.error.withAlpha(30);
-        fg = AppColors.error;
+        bg = AppColors.liveContainerLight;
+        fg = AppColors.liveLight;
         break;
       case 'completed':
-        bg = AppColors.success.withAlpha(30);
-        fg = AppColors.success;
+        bg = context.colors.winContainer;
+        fg = context.colors.win;
         break;
       case 'paused':
-        bg = AppColors.warning.withAlpha(30);
-        fg = AppColors.warning;
+        bg = context.colors.warningContainer;
+        fg = context.colors.warning;
         break;
       default:
-        bg = isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
-        fg = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+        bg = context.colors.fillSecondary;
+        fg = context.colors.textSecondary;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
+        vertical: 3,
       ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppSpacing.xs),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -116,8 +116,9 @@ class LiveScoreHeader extends StatelessWidget {
             status,
             style: AppTypography.caption.copyWith(
               color: fg,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               fontSize: 10,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -125,9 +126,9 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildCricketScore(BuildContext context, CricketState cricket, bool isDark) {
+  Widget _buildCricketScore(BuildContext context, CricketState cricket) {
     final currentInnings = cricket.activeInnings;
-    if (currentInnings == null) return _buildFallbackScore(isDark);
+    if (currentInnings == null) return _buildFallbackScore(context);
 
     final battingTeam = currentInnings.battingTeamId == state.homeId
         ? state.homeName
@@ -137,7 +138,7 @@ class LiveScoreHeader extends StatelessWidget {
     final nonStriker = currentInnings.battingStats[currentInnings.nonStrikerId];
     final bowler = currentInnings.bowlingStats[currentInnings.currentBowlerId];
 
-    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final secondaryText = context.colors.textSecondary;
 
     String playerName(String? id) {
       if (id == null || id.isEmpty) return 'Player';
@@ -193,11 +194,15 @@ class LiveScoreHeader extends StatelessWidget {
               children: [
                 Text(
                   '$battingTeam (Inn ${cricket.currentInningsIndex + 1})',
-                  style: AppTypography.caption.copyWith(color: secondaryText),
+                  style: AppTypography.callout.copyWith(color: secondaryText),
                 ),
                 Text(
                   '${currentInnings.totalRuns}/${currentInnings.totalWickets}',
-                  style: AppTypography.scoreDisplay.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.displayXL.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),
@@ -206,11 +211,18 @@ class LiveScoreHeader extends StatelessWidget {
               children: [
                 Text(
                   '${currentInnings.overs.toStringAsFixed(1)} ov',
-                  style: AppTypography.headline.copyWith(color: secondaryText),
+                  style: AppTypography.title.copyWith(
+                    color: secondaryText,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
                 Text(
                   'CRR: ${currentInnings.runRate.toStringAsFixed(2)}',
-                  style: AppTypography.caption.copyWith(color: secondaryText),
+                  style: AppTypography.caption.copyWith(
+                    color: secondaryText,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),
@@ -226,8 +238,8 @@ class LiveScoreHeader extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(AppSpacing.xs),
+              color: context.colors.fillSecondary,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
             child: Text(
               cricket.resultMarginText != null
@@ -235,23 +247,35 @@ class LiveScoreHeader extends StatelessWidget {
                   : 'Target: ${cricket.target}',
               style: AppTypography.caption.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Theme.of(context).colorScheme.primary,
+                color: context.colors.textPrimary,
               ),
             ),
           ),
         ],
 
-        const Divider(height: AppSpacing.xl),
+        Divider(color: context.colors.divider, height: AppSpacing.xl, thickness: 0.5),
 
         // Active Batters
         Row(
           children: [
             Expanded(
-              child: Text(
-                '🏏 ${playerName(currentInnings.strikerId)}* '
-                '${striker != null ? "${striker.runs} (${striker.ballsFaced})" : ""}',
-                style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Icon(Icons.sports_cricket_rounded, size: 14, color: context.colors.textPrimary),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${playerName(currentInnings.strikerId)}* '
+                      '${striker != null ? "${striker.runs} (${striker.ballsFaced})" : ""}',
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: context.colors.textPrimary,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
@@ -259,7 +283,10 @@ class LiveScoreHeader extends StatelessWidget {
               child: Text(
                 '${playerName(currentInnings.nonStrikerId)} '
                 '${nonStriker != null ? "${nonStriker.runs} (${nonStriker.ballsFaced})" : ""}',
-                style: AppTypography.body.copyWith(color: secondaryText),
+                style: AppTypography.body.copyWith(
+                  color: secondaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -268,29 +295,41 @@ class LiveScoreHeader extends StatelessWidget {
         const SizedBox(height: AppSpacing.xs),
 
         // Active Bowler
-        Text(
-          '⚾ ${playerName(currentInnings.currentBowlerId)}: '
-          '${bowler != null ? "${bowler.wickets}/${bowler.runsConceded} (${bowler.oversDecimal.toStringAsFixed(1)} ov)" : "Not selected"}',
-          style: AppTypography.caption.copyWith(color: secondaryText),
+        Row(
+          children: [
+            Icon(Icons.sports_baseball_outlined, size: 14, color: secondaryText),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                '${playerName(currentInnings.currentBowlerId)}: '
+                '${bowler != null ? "${bowler.wickets}/${bowler.runsConceded} (${bowler.oversDecimal.toStringAsFixed(1)} ov)" : "Not selected"}',
+                style: AppTypography.caption.copyWith(
+                  color: secondaryText,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
 
         // Free Hit Banner
         if (currentInnings.isFreeHit) ...[
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.sm),
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xxs,
+              vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.error.withAlpha(30),
-              borderRadius: BorderRadius.circular(AppSpacing.xs),
+              color: AppColors.loss.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
             child: Text(
               'FREE HIT NEXT BALL (Run out only)',
               style: AppTypography.caption.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.bold,
+                color: AppColors.loss,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -306,28 +345,29 @@ class LiveScoreHeader extends StatelessWidget {
               final isBoundary = b == '4' || b == '6' || b == 'Nb+4' || b == 'Nb+6' || b == 'Wd+4';
               final isExtra = b.startsWith('Wd') || b.startsWith('Nb') || b.startsWith('B') || b.startsWith('Lb');
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isWicket
-                      ? AppColors.error
+                      ? AppColors.loss
                       : isBoundary
-                          ? Theme.of(context).colorScheme.primary
-                          : (isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant),
-                  borderRadius: BorderRadius.circular(10),
+                          ? context.colors.primaryFill
+                          : context.colors.fillSecondary,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                   border: isExtra
                       ? Border.all(
-                          color: isDark ? AppColors.borderStrongDark : AppColors.borderStrongLight,
-                          width: 1,
+                          color: context.colors.divider,
+                          width: 0.5,
                         )
                       : null,
                 ),
                 child: Text(
                   b,
                   style: AppTypography.caption.copyWith(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                     color: (isWicket || isBoundary)
-                        ? Colors.white
-                        : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+                        ? context.colors.onPrimary
+                        : context.colors.textPrimary,
                   ),
                 ),
               );
@@ -338,9 +378,9 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildBadmintonScore(BuildContext context, BadmintonState badminton, bool isDark) {
+  Widget _buildBadmintonScore(BuildContext context, BadmintonState badminton) {
     final currentGame = badminton.currentGame;
-    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final secondaryText = context.colors.textSecondary;
 
     final servingScore = badminton.servingTeamId == state.homeId
         ? currentGame.homePoints
@@ -356,33 +396,50 @@ class LiveScoreHeader extends StatelessWidget {
           children: [
             Column(
               children: [
-                Text(state.homeName, style: AppTypography.body.copyWith(color: secondaryText)),
+                Text(state.homeName, style: AppTypography.callout.copyWith(color: secondaryText)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '${currentGame.homePoints}',
-                  style: AppTypography.scoreDisplay.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.displayXL.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
                 Text(
                   'Games: ${badminton.homeGamesWon}',
-                  style: AppTypography.caption.copyWith(color: secondaryText),
+                  style: AppTypography.caption.copyWith(
+                    color: secondaryText,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),
             Text(
               'G${badminton.currentGameIndex + 1}',
-              style: AppTypography.headline.copyWith(color: Theme.of(context).colorScheme.primary),
+              style: AppTypography.title.copyWith(
+                color: context.colors.primaryFill,
+                fontWeight: FontWeight.w700,
+              ),
             ),
             Column(
               children: [
-                Text(state.awayName, style: AppTypography.body.copyWith(color: secondaryText)),
+                Text(state.awayName, style: AppTypography.callout.copyWith(color: secondaryText)),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   '${currentGame.awayPoints}',
-                  style: AppTypography.scoreDisplay.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.displayXL.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
                 Text(
                   'Games: ${badminton.awayGamesWon}',
-                  style: AppTypography.caption.copyWith(color: secondaryText),
+                  style: AppTypography.caption.copyWith(
+                    color: secondaryText,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ],
             ),
@@ -394,23 +451,29 @@ class LiveScoreHeader extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           Text(
             'Games: ${badminton.games.map((g) => "${g.homePoints}-${g.awayPoints}").join(", ")}',
-            style: AppTypography.caption.copyWith(color: secondaryText),
+            style: AppTypography.caption.copyWith(
+              color: secondaryText,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
             textAlign: TextAlign.center,
           ),
         ],
 
-        const Divider(height: AppSpacing.lg),
+        Divider(color: context.colors.divider, height: AppSpacing.lg, thickness: 0.5),
 
         // Serving Info
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.sports_tennis_rounded, size: AppSpacing.iconInline),
+            Icon(Icons.sports_tennis_rounded, size: AppSpacing.iconInline, color: context.colors.textPrimary),
             const SizedBox(width: AppSpacing.xs),
             Text(
               'Server: ${badminton.currentServerId == state.homeId ? state.homeName : state.awayName} '
               '($courtSide court)',
-              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+              style: AppTypography.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: context.colors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -424,16 +487,23 @@ class LiveScoreHeader extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.warning.withAlpha(30),
-              borderRadius: BorderRadius.circular(AppSpacing.xs),
+              color: context.colors.warningContainer,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
-            child: Text(
-              '🔔 ${badminton.intervalPrompt!}',
-              style: AppTypography.caption.copyWith(
-                color: AppColors.warning,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.notifications_active_outlined, size: 14, color: context.colors.warning),
+                const SizedBox(width: 4),
+                Text(
+                  badminton.intervalPrompt!,
+                  style: AppTypography.caption.copyWith(
+                    color: context.colors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ],
@@ -441,8 +511,8 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildFootballScore(BuildContext context, FootballState football, bool isDark) {
-    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+  Widget _buildFootballScore(BuildContext context, FootballState football) {
+    final secondaryText = context.colors.textSecondary;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -456,13 +526,17 @@ class LiveScoreHeader extends StatelessWidget {
                 children: [
                   Text(
                     state.homeName,
-                    style: AppTypography.body.copyWith(color: secondaryText),
+                    style: AppTypography.callout.copyWith(color: secondaryText),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${football.homeScore}',
-                    style: AppTypography.scoreDisplay.copyWith(fontWeight: FontWeight.bold),
+                    style: AppTypography.displayXL.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ],
               ),
@@ -471,8 +545,8 @@ class LiveScoreHeader extends StatelessWidget {
               children: [
                 Text(
                   _formatFootballPeriod(football.currentPeriod),
-                  style: AppTypography.body.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
+                  style: AppTypography.callout.copyWith(
+                    color: context.colors.primaryFill,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -487,13 +561,17 @@ class LiveScoreHeader extends StatelessWidget {
                 children: [
                   Text(
                     state.awayName,
-                    style: AppTypography.body.copyWith(color: secondaryText),
+                    style: AppTypography.callout.copyWith(color: secondaryText),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     '${football.awayScore}',
-                    style: AppTypography.scoreDisplay.copyWith(fontWeight: FontWeight.bold),
+                    style: AppTypography.displayXL.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ],
               ),
@@ -510,15 +588,16 @@ class LiveScoreHeader extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withAlpha(20),
-              borderRadius: BorderRadius.circular(AppSpacing.xs),
+              color: context.colors.fillSecondary,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
             child: Text(
               'Pens: ${football.shootoutHomeScore} - ${football.shootoutAwayScore}'
               '${football.shootoutCompleted ? " (Finished)" : ""}',
               style: AppTypography.caption.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+                color: context.colors.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
               textAlign: TextAlign.center,
             ),
@@ -532,9 +611,19 @@ class LiveScoreHeader extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: AppSpacing.sm,
             children: football.goals.map((g) {
-              return Text(
-                '⚽ ${g.scorerId} ${g.minute}\'${g.isOwnGoal ? " (OG)" : ""}',
-                style: AppTypography.caption.copyWith(color: secondaryText),
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sports_soccer_rounded, size: 14, color: secondaryText),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${g.scorerId} ${g.minute}\'${g.isOwnGoal ? " (OG)" : ""}',
+                    style: AppTypography.caption.copyWith(
+                      color: secondaryText,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               );
             }).toList(),
           ),
@@ -543,12 +632,12 @@ class LiveScoreHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildFallbackScore(bool isDark) {
+  Widget _buildFallbackScore(BuildContext context) {
     return Center(
       child: Text(
         'Match Setup Pending',
         style: AppTypography.body.copyWith(
-          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+          color: context.colors.textSecondary,
         ),
       ),
     );

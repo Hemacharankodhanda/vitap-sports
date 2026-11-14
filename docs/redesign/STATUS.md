@@ -228,3 +228,20 @@
   - `flutter test`: 166/166 tests passing (100% green, including badminton match flow and create match widget tests).
   - `flutter analyze`: 78 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.7: Live Scorer (`scorecard_edit_screen.dart`, `scorer_action_grid.dart`, `live_score_header.dart`, `action_dialogs.dart`).
+
+---
+
+### Iteration 10 — Phase 4: Slice 4.7: Live Scorer
+- **Goal:** Restyle live scorer shell (`ScorecardEditScreen`), action key grid (`ScorerActionGrid`), live scoreboard (`LiveScoreHeader`), and scoring sheets/modals (`ActionDialogs`) with Apple design aesthetic (large touch targets >= 48dp, scorer keys 64-80dp, tabular figures on all scores/overs/run-rates, frosted bottom bar with pinned Undo and destructive Finish Match, modal bottom sheets with drag handles and radius 28dp top, `AppDialog.showConfirmation` with `isDestructive: true`, zero emojis) with 100% preservation of optimistic updates, offline queue, and Dart scoring engines.
+- **Files Modified:**
+  - `lib/features/scorecards/screens/scorecard_edit_screen.dart` (Restyled with `FrostedBar` bottom bar, `heightFactor: 1.0` centering, max reading width constraint, responsive padding, and `AppDialog.showConfirmation` destructive flow)
+  - `lib/features/scoring/presentation/widgets/scorer_action_grid.dart` (Restyled scorer keys with >= 48dp / >= 64dp touch targets, `AppColors.loss.withValues(alpha: 0.16)` destructive keys, tabular figures, and subtle haptic feedback)
+  - `lib/features/scoring/presentation/widgets/live_score_header.dart` (Replaced all emojis with semantic Cupertino/Material icons, tabular figures on all numbers, clean status badges, and borderless surface card)
+  - `lib/features/scoring/presentation/widgets/action_dialogs.dart` (Restyled bottom sheets with top drag handle, `radiusSheetTop` 28dp, `AppTextField`, `AppChip`, and `AppDialog.showConfirmation` for destructive actions)
+  - `test/scoring/scorer_screen_test.dart` (Cleaned test code and verified live scorer widget tests)
+  - `test/matches/badminton_completed_scorecard_test.dart`, `test/matches/match_detail_winner_test.dart`, `test/navigation/shell_navigation_test.dart` (Cleaned warnings and dangling doc comments)
+  - `docs/redesign/PARITY.md` (Updated `/matches/:id/score` status to Restyled)
+- **Verification:**
+  - `flutter test`: 166/166 tests passing (100% green, including 42 scoring tests).
+  - `flutter analyze`: 70 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.8: Live Viewer & Match Analysis (`scorecard_view_screen.dart`, `match_analysis_screen.dart`, `professional_scorecard.dart`).

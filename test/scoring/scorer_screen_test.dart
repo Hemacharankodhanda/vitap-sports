@@ -8,7 +8,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:vitap_sports/features/scorecards/screens/scorecard_edit_screen.dart';
 import 'package:vitap_sports/features/scoring/data/live_scorer_service.dart';
 import 'package:vitap_sports/features/scoring/domain/match_event.dart';
-import 'package:vitap_sports/features/scoring/presentation/widgets/live_score_header.dart';
 import 'package:vitap_sports/features/scoring/providers/live_scorer_providers.dart';
 
 class FakeRealtimeChannel extends Fake implements RealtimeChannel {
