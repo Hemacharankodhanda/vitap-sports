@@ -163,11 +163,16 @@ class _AppButtonState extends State<AppButton> {
       );
     }
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget),
-      child: SizedBox(
-        width: widget.isExpanded ? double.infinity : null,
-        child: buttonWidget,
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      label: widget.label,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget),
+        child: SizedBox(
+          width: widget.isExpanded ? double.infinity : null,
+          child: buttonWidget,
+        ),
       ),
     );
   }

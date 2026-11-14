@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_motion.dart';
@@ -44,24 +45,28 @@ class AppSegmented<T> extends StatelessWidget {
     // Thumb background: pure white with subtle elevation on light; #636366 elevated on dark
     final thumbColor = isDark ? const Color(0xFF636366) : Colors.white;
 
-    return Container(
-      height: height,
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: colors.fillSecondary,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusSegmented),
-      ),
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: colors.fillSecondary,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSegmented),
+        ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final totalWidth = constraints.maxWidth;
           final segmentWidth = totalWidth / count;
           final activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
+          final animDuration = AppMotion.duration(context, AppMotion.stateChangeDuration);
+
           return Stack(
             children: [
               // Sliding Animated Thumb
               AnimatedPositioned(
-                duration: AppMotion.stateChangeDuration,
+                duration: animDuration,
                 curve: AppMotion.curve,
                 left: activeIndex * segmentWidth,
                 top: 0,
@@ -88,16 +93,23 @@ class AppSegmented<T> extends StatelessWidget {
                 children: [
                   for (var i = 0; i < count; i++) ...[
                     Expanded(
-                      child: InkWell(
-                        onTap: () => onSelected(options[i]),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSegmented),
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      child: Semantics(
+                        button: true,
+                        selected: i == activeIndex,
+                        label: labelBuilder(options[i]),
+                        child: InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onSelected(options[i]);
+                          },
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusSegmented),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (iconBuilder != null) ...[
                                   iconBuilder!(options[i]),
@@ -124,13 +136,15 @@ class AppSegmented<T> extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ],
+                  ),
+                ],
                 ],
               ),
             ],
           );
         },
       ),
-    );
+    ),
+  );
   }
 }

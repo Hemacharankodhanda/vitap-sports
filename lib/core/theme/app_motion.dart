@@ -27,4 +27,10 @@ class AppMotion {
   static bool shouldReduceMotion(BuildContext context) {
     return MediaQuery.maybeOf(context)?.disableAnimations ?? false;
   }
+
+  /// Collapses animation duration to Duration.zero when reduce-motion is enabled
+  static Duration duration(BuildContext context, Duration standard) {
+    if (shouldReduceMotion(context)) return Duration.zero;
+    return standard;
+  }
 }

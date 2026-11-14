@@ -297,3 +297,20 @@
   - `flutter test`: 168/168 tests passing (100% green, including 49 tournament unit/widget/routing tests).
   - `flutter analyze`: 51 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 5: Responsive, Accessibility & Motion Pass (Multi-breakpoint layouts, 200% text scale verification, reduce-motion auditing).
+
+---
+
+### Iteration 14 — Phase 5: Responsive, Accessibility & Motion Pass
+- **Goal:** Audit and enhance responsive layouts, accessibility touch targets, semantics, and reduced motion across all core components and navigation structures.
+- **Files Modified / Created:**
+  - `lib/core/theme/app_motion.dart` (Added `AppMotion.duration(context, standard)` which collapses duration to `Duration.zero` when `disableAnimations` is true)
+  - `lib/core/widgets/app_button.dart` (Wrapped with explicit `Semantics` [button trait, enabled state, label] and verified minHeight >= 48dp)
+  - `lib/core/widgets/app_chip.dart` (Wrapped with `Semantics` [button trait, selected state, label], cleaned unused import, verified >= 48x48dp touch target)
+  - `lib/core/widgets/app_card.dart` (Added `Semantics(button: true)` when `onTap != null`)
+  - `lib/core/widgets/app_segmented.dart` (Wrapped options in `Semantics`, added `HapticFeedback.selectionClick()`, added `Material` transparency wrapper, animated position uses reduced-motion duration)
+  - `lib/core/widgets/adaptive_scaffold.dart` (Added `Semantics` to `_BottomNavItem` and `_RailNavItem`)
+  - `test/accessibility/responsive_accessibility_motion_test.dart` (New: automated test suite verifying compact 360x640 bottom bar vs tablet 768x1024 rail vs wide 1280x800 rail, 48x48 touch targets, semantics traits, 200% text scale survivability, and reduced motion duration collapse)
+- **Verification:**
+  - `flutter test`: 176/176 tests passing (100% green, including 8 new responsive/accessibility/motion tests).
+  - `flutter analyze`: 50 issues (all pre-existing baseline lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 6: Performance Pass & Phase 7: Final Audit, Deliverables & Report.

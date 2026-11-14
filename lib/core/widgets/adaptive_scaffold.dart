@@ -149,32 +149,37 @@ class _BottomNavItem extends StatelessWidget {
     final colors = context.appColors;
     final color = isSelected ? colors.textPrimary : colors.textSecondary;
 
-    return InkWell(
-      onTap: onTap,
-      splashColor: Colors.transparent,
-      highlightColor: colors.textPrimary.withAlpha(10),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isSelected ? destination.selectedIcon : destination.icon,
-            size: AppSpacing.iconNav,
-            color: color,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            destination.label,
-            style: TextStyle(
-              fontFamily: AppTypography.caption.fontFamily,
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: destination.label,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: Colors.transparent,
+        highlightColor: colors.textPrimary.withAlpha(10),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? destination.selectedIcon : destination.icon,
+              size: AppSpacing.iconNav,
               color: color,
-              letterSpacing: -0.1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            const SizedBox(height: 3),
+            Text(
+              destination.label,
+              style: TextStyle(
+                fontFamily: AppTypography.caption.fontFamily,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: color,
+                letterSpacing: -0.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -197,35 +202,40 @@ class _RailNavItem extends StatelessWidget {
     final colors = context.appColors;
     final color = isSelected ? colors.textPrimary : colors.textSecondary;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      splashColor: Colors.transparent,
-      highlightColor: colors.textPrimary.withAlpha(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? destination.selectedIcon : destination.icon,
-              size: AppSpacing.iconNav,
-              color: color,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              destination.label,
-              style: TextStyle(
-                fontFamily: AppTypography.caption.fontFamily,
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: destination.label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: Colors.transparent,
+        highlightColor: colors.textPrimary.withAlpha(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? destination.selectedIcon : destination.icon,
+                size: AppSpacing.iconNav,
                 color: color,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                destination.label,
+                style: TextStyle(
+                  fontFamily: AppTypography.caption.fontFamily,
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

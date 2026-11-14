@@ -56,15 +56,18 @@ class AppCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      content = Material(
-        color: Colors.transparent,
-        borderRadius: radius,
-        child: InkWell(
-          onTap: onTap,
+      content = Semantics(
+        button: true,
+        child: Material(
+          color: Colors.transparent,
           borderRadius: radius,
-          splashColor: Colors.transparent,
-          highlightColor: colors.textPrimary.withAlpha(10),
-          child: content,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: radius,
+            splashColor: Colors.transparent,
+            highlightColor: colors.textPrimary.withAlpha(10),
+            child: content,
+          ),
         ),
       );
     }
