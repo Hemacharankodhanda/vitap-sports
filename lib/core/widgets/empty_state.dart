@@ -1,9 +1,11 @@
-/// VIT-AP Sports — EmptyState widget.
+/// VIT-AP Sports — EmptyState widget (Apple Design System).
 ///
 /// Component specification:
-/// Centred column (max width 280): optional 40 px outline icon in textSecondary,
-/// Headline title, one to two lines of Body text in textSecondary,
-/// at most one button (tonal or outlined).
+/// Centred column (max width 300):
+/// - Clean outline icon in textSecondary (no emojis anywhere).
+/// - Headline title in textPrimary.
+/// - One to two lines of Body text in textSecondary.
+/// - At most one pill action button.
 library;
 
 import 'package:flutter/material.dart';
@@ -37,9 +39,12 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
+        constraints: const BoxConstraints(maxWidth: 300),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenMargin,
+            vertical: AppSpacing.xxl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -47,7 +52,7 @@ class EmptyState extends StatelessWidget {
               if (icon != null) ...[
                 Icon(
                   icon,
-                  size: 40,
+                  size: 44,
                   color: colors.textSecondary,
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -60,7 +65,7 @@ class EmptyState extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              if (subtitle != null && subtitle!.isNotEmpty) ...[
+              if (subtitle != null) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   subtitle!,
@@ -68,8 +73,6 @@ class EmptyState extends StatelessWidget {
                     color: colors.textSecondary,
                   ),
                   textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
               if (action != null) ...[

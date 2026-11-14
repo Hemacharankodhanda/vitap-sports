@@ -1,9 +1,9 @@
-/// VIT-AP Sports — AppCard and AppGroupedCard widgets.
+/// VIT-AP Sports — AppCard and AppGroupedCard widgets (Apple Design System).
 ///
 /// Component specification:
-/// - Standard card: surface, 1 px border, radius 12, padding 16, elevation 0.
-/// - The whole card is tappable with pressed overlay (no bouncy motion or entrance animation).
-/// - Grouped list card: holds rows separated by inset hairlines (16 indent, or 72 with avatar).
+/// - Standard card: surface fill, radius 24, padding 20, borderless, elevation 0.
+/// - Tappable cards receive smooth highlight on press with no bounce or ripple bursts.
+/// - Grouped list card: holds rows separated by inset hairline dividers (hairline 0.5-1px).
 library;
 
 import 'package:flutter/material.dart';
@@ -34,19 +34,20 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final cardColor = color ?? colors.surface;
+    final radius = BorderRadius.circular(AppSpacing.radiusCard);
 
-    Widget card = Container(
+    Widget content = Container(
       margin: margin,
       decoration: BoxDecoration(
-        color: color ?? colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: borderColor ?? colors.border,
-          width: 1,
-        ),
+        color: cardColor,
+        borderRadius: radius,
+        border: borderColor != null
+            ? Border.all(color: borderColor!, width: 1)
+            : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
         child: Padding(
           padding: padding ?? const EdgeInsets.all(AppSpacing.cardPadding),
           child: child,
@@ -55,20 +56,24 @@ class AppCard extends StatelessWidget {
     );
 
     if (onTap != null) {
-      card = InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        splashColor: colors.accent.withAlpha(15),
-        highlightColor: colors.textPrimary.withAlpha(12),
-        child: card,
+      content = Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          splashColor: Colors.transparent,
+          highlightColor: colors.textPrimary.withAlpha(10),
+          child: content,
+        ),
       );
     }
 
-    return card;
+    return content;
   }
 }
 
-/// A card holding rows separated by inset hairlines per component specification.
+/// A card holding rows separated by inset hairlines per Apple grouped list specification.
 class AppGroupedCard extends StatelessWidget {
   const AppGroupedCard({
     super.key,
@@ -84,17 +89,17 @@ class AppGroupedCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final indent = hasAvatars ? 72.0 : 16.0;
+    final radius = BorderRadius.circular(AppSpacing.radiusCard);
+    final indent = hasAvatars ? 72.0 : 20.0;
 
     return Container(
       margin: margin,
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: radius,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -104,9 +109,9 @@ class AppGroupedCard extends StatelessWidget {
               if (i < children.length - 1)
                 Divider(
                   height: 1,
-                  thickness: 1,
+                  thickness: 0.5,
                   indent: indent,
-                  color: colors.border,
+                  color: colors.divider,
                 ),
             ],
           ],

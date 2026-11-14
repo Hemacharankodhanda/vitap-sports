@@ -39,6 +39,7 @@ class AppColors {
 
   // Common Overlays
   static const Color scrim = Color(0x66000000); // 40% black
+  static const double scrimOpacity = 0.40;
   static const Color focusRing = Color(0xFF1D1D1F);
   static const Color darkFocusRing = Color(0xFFF5F5F7);
 
@@ -164,6 +165,7 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
 
   Color get negative => loss;
   Color get negativeContainer => lossContainer;
+  Color get divider => border;
 
   static const light = AppColorsExtension(
     background: AppColors.lightBackground,

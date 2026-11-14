@@ -1,10 +1,12 @@
-/// VIT-AP Sports — AppTextField widget.
+/// VIT-AP Sports — AppTextField widget (Apple Design System).
 ///
 /// Component specification:
-/// - Stacked label: label above field (Callout / w500, textSecondary), 8 px gap.
-/// - Field: height 48, radius 8, 1 px borderStrong, surface fill, 12 px horizontal padding.
-/// - Focus: 2 px accent border. Error: 1 px negative border plus error text.
-/// - Search variant: height 48, radius 12, filled with 6% textPrimary, no border, 20 px leading icon.
+/// - Surface fill (#F5F5F7 / #1C1C1E), radius 14, height 52.
+/// - Borderless at rest, 1.5 px textPrimary border on focus.
+/// - 1 px loss border plus error text on validation failure.
+/// - Stacked label above field (Callout w500, textSecondary), 8 px gap.
+/// - Helper/error text below (Footnote).
+/// - Search variant: height 48, radius 14, 6% fillSecondary / surface fill, leading search icon.
 /// - Tabular figures on numeric inputs.
 library;
 
@@ -44,7 +46,7 @@ class AppTextField extends StatelessWidget {
     this.onClear,
   });
 
-  /// Factory constructor for search field per spec: radius 12, 6% fill, no border
+  /// Factory constructor for search field: height 48, radius 14, leading search icon
   const AppTextField.search({
     super.key,
     this.controller,
@@ -102,9 +104,13 @@ class AppTextField extends StatelessWidget {
         keyboardType == TextInputType.phone;
 
     final textStyle = AppTypography.body.copyWith(
-      color: enabled ? colors.textPrimary : colors.textPrimary.withAlpha((AppColors.overlayDisabledContent * 255).round()),
+      color: enabled
+          ? colors.textPrimary
+          : colors.textPrimary.withAlpha((AppColors.overlayDisabledContent * 255).round()),
       fontFeatures: isNumber ? const [FontFeature.tabularFigures()] : null,
     );
+
+    final inputRadius = BorderRadius.circular(AppSpacing.radiusInput);
 
     if (isSearch) {
       return SizedBox(
@@ -122,19 +128,19 @@ class AppTextField extends StatelessWidget {
             hintText: hint,
             hintStyle: AppTypography.body.copyWith(color: colors.textSecondary),
             filled: true,
-            fillColor: colors.textPrimary.withAlpha(15), // 6% tint
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            fillColor: colors.surface,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: inputRadius,
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: inputRadius,
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: colors.accent, width: 2),
+              borderRadius: inputRadius,
+              borderSide: BorderSide(color: colors.textPrimary, width: 1.5),
             ),
             prefixIcon: const Icon(Icons.search_rounded, size: 20),
             prefixIconColor: colors.textSecondary,
@@ -186,37 +192,35 @@ class AppTextField extends StatelessWidget {
             hintStyle: AppTypography.body.copyWith(color: colors.textSecondary),
             errorText: errorText,
             helperText: helperText,
-            prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 20) : null,
-            prefixIconColor: colors.textSecondary,
-            suffixIcon: suffixIcon,
-            counterText: '',
+            helperStyle: AppTypography.footnote.copyWith(color: colors.textSecondary),
+            errorStyle: AppTypography.footnote.copyWith(color: colors.loss),
             filled: true,
-            fillColor: enabled
-                ? colors.surface
-                : colors.surfaceVariant.withAlpha((AppColors.overlayDisabledContainer * 255).round()),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            fillColor: colors.surface,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderStrong, width: 1),
+              borderRadius: inputRadius,
+              borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.borderStrong, width: 1),
+              borderRadius: inputRadius,
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.accent, width: 2),
+              borderRadius: inputRadius,
+              borderSide: BorderSide(color: colors.textPrimary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.loss, width: 1),
+              borderRadius: inputRadius,
+              borderSide: BorderSide(color: colors.loss, width: 1.0),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: colors.loss, width: 2),
+              borderRadius: inputRadius,
+              borderSide: BorderSide(color: colors.loss, width: 1.5),
             ),
-            errorStyle: AppTypography.caption.copyWith(color: colors.loss),
-            helperStyle: AppTypography.caption.copyWith(color: colors.textSecondary),
+            prefixIcon: prefixIcon != null
+                ? Icon(prefixIcon, size: 20, color: colors.textSecondary)
+                : null,
+            suffixIcon: suffixIcon,
           ),
         ),
       ],

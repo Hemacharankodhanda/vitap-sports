@@ -86,3 +86,30 @@
   - `flutter test`: 142/142 tests passing (100% green, including 4 new contrast & persistence tests).
   - `flutter analyze`: 77 issues (all pre-existing lints; zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 2: Design-System Widgets Restyling & New Controls (`AppButton`, `AppCard`, `AppTextField`, `AppChip`, `StatusLabel`, `AppAvatar`, `StatTile`, `FormStrip`, `EmptyState`, `ErrorView`, `AppDialog`, `AppBottomSheet`, `AppSegmented`, `AppSwitch`, `FrostedBar`, `AdaptiveScaffold`).
+
+---
+
+### Iteration 2 — Phase 2: Design-System Widgets Restyling & New Controls
+- **Goal:** Restyle all existing core widgets to the Apple design system spec (pill buttons, borderless surface cards with radius 24, stacked input fields with radius 14, pill chips, clean 24dp status badges with live pulsing dot, circular/squircle avatars, tabular stats, clean empty/error states without emojis, radius 24 dialogs, radius 28 sheets, floating snack capsules) and introduce `AppSegmented`, `AppSwitch`, `FrostedBar`, and `AdaptiveScaffold`.
+- **Files Modified / Created:**
+  - `lib/core/widgets/app_button.dart` (Restyled to Apple StadiumBorder pill, press animation with Cubic curve, primaryFill / onPrimary, fillSecondary, destructive tint, HapticFeedback)
+  - `lib/core/widgets/app_card.dart` (Radius 24, surface fill, borderless by default, elevation 0, hairline inset dividers for grouped cards)
+  - `lib/core/widgets/app_text_field.dart` (Radius 14, height 52, surface fill, borderless at rest, 1.5px focus border, 1px loss border, stacked Callout w500 label, Footnote helper/error)
+  - `lib/core/widgets/app_chip.dart` (Pill shape, unselected fillSecondary + textPrimary, selected primaryFill + onPrimary, container-tinted ResultChip with tabular figures)
+  - `lib/core/widgets/status_badge.dart` (Height 24 pill, Caption w600, liveContainer with 6px pulsing dot, fillSecondary upcoming, surface completed, warningContainer paused)
+  - `lib/core/widgets/app_avatar.dart` (Circle for players, radius 12 squircle for teams, fillSecondary neutral initials fallback, 150ms fade-in)
+  - `lib/core/widgets/stat_tile.dart` (Tabular figures on all numbers, large display value with Caption label below, single card grid with hairline dividers, NaN to '-')
+  - `lib/core/widgets/empty_state.dart` (Centered column without emojis, outline icon in textSecondary, Headline title, Body subtitle, pill action)
+  - `lib/core/widgets/error_view.dart` (Centered blocking error & inline lossContainer banner without emojis, pill retry button)
+  - `lib/core/widgets/app_dialog.dart` (Radius 24, surfaceElevated background, 40% scrim, stacked pill buttons, destructive confirmation support)
+  - `lib/core/widgets/app_bottom_sheet.dart` (Top radius 28, surfaceElevated background, 36x5 drag handle, 40% scrim, pinned bottom action)
+  - `lib/core/widgets/app_snack.dart` (Floating capsule pill shape, soft shadow, primaryFill background with onPrimary text)
+  - `lib/core/widgets/app_segmented.dart` (New: pill track in fillSecondary, animated sliding thumb with 250ms curve, 2 to 4 options)
+  - `lib/core/widgets/app_switch.dart` (New: custom Apple switch with primaryFill active track and fillSecondary inactive track; AppSwitchRow for settings)
+  - `lib/core/widgets/frosted_bar.dart` (New: 80% opacity background with backdrop blur sigma 20, hairline dividers, wrapped in RepaintBoundary)
+  - `lib/core/widgets/adaptive_scaffold.dart` (New: responsive navigation scaffold: compact bottom frosted bar with 24px icons + labels always visible; medium/expanded navigation rail on left)
+  - `test/core/components_spec_test.dart` (Expanded with 6 new tests covering AppSegmented, AppSwitch, FrostedBar, AdaptiveScaffold, AppDialog, AppBottomSheet, and AppSnack)
+- **Verification:**
+  - `flutter test`: 147/147 tests passing (100% green).
+  - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 3: Navigation Shell & Appearance Settings (`ShellScreen` adaptive navigation, `ThemeSettingsScreen` with `AppSegmented` System/Light/Dark mode switch).

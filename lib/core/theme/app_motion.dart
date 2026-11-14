@@ -13,12 +13,15 @@ class AppMotion {
 
   /// Quick feedback for tap/press states (120 ms)
   static const Duration press = Duration(milliseconds: 120);
+  static const Duration pressDuration = press;
 
   /// Fluid transitions for state changes, theme crossfades, segmented controls (250 ms)
   static const Duration stateChange = Duration(milliseconds: 250);
+  static const Duration stateChangeDuration = stateChange;
 
   /// Navigation, modal sheets, and page transitions (350 ms)
   static const Duration pageOrSheet = Duration(milliseconds: 350);
+  static const Duration pageOrSheetDuration = pageOrSheet;
 
   /// Checks if reduce-motion is enabled in system settings
   static bool shouldReduceMotion(BuildContext context) {
