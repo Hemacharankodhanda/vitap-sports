@@ -493,11 +493,11 @@ class _PlayerLeaderboardTable extends StatelessWidget {
   Color _rankColor(int rank) {
     switch (rank) {
       case 1:
-        return const Color(0xFFD97706); // Gold / Amber
+        return colors.gold;
       case 2:
-        return const Color(0xFF64748B); // Silver / Slate
+        return colors.silver;
       case 3:
-        return const Color(0xFFB45309); // Bronze
+        return colors.bronze;
       default:
         return colors.textSecondary;
     }
@@ -855,11 +855,11 @@ class _TeamLeaderboardTable extends StatelessWidget {
   Color _rankColor(int rank) {
     switch (rank) {
       case 1:
-        return const Color(0xFFD97706);
+        return colors.gold;
       case 2:
-        return const Color(0xFF64748B);
+        return colors.silver;
       case 3:
-        return const Color(0xFFB45309);
+        return colors.bronze;
       default:
         return colors.textSecondary;
     }

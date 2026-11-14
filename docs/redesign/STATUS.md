@@ -314,3 +314,24 @@
   - `flutter test`: 176/176 tests passing (100% green, including 8 new responsive/accessibility/motion tests).
   - `flutter analyze`: 50 issues (all pre-existing baseline lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 6: Performance Pass & Phase 7: Final Audit, Deliverables & Report.
+
+---
+
+### Iteration 15 — Phase 6: Performance Pass & Phase 7: Final Audit & Deliverables
+- **Goal:** Execute performance optimizations (RepaintBoundary on frosted bars, memCache capped on network avatars, const subtrees), sweep codebase for zero raw colors/emojis, run full test and contrast suites, and author final deliverables (`DESIGN_SPEC.md`, `REPORT.md`, `CONTRAST_REPORT.md`).
+- **Files Modified / Created:**
+  - `lib/core/widgets/app_avatar.dart` (Capped `memCacheWidth` and `memCacheHeight` to `(size.dimension * dpr).round()`, added Semantics on tap)
+  - `lib/core/widgets/frosted_bar.dart` (Cleaned unused foundation import; verified RepaintBoundary wrapper around backdrop filters)
+  - `lib/features/leaderboard/screens/leaderboard_screen.dart` (Replaced inline gold/silver/bronze colors with `colors.gold`, `colors.silver`, `colors.bronze`)
+  - `lib/core/theme/app_colors.dart` (Added `gold`, `silver`, `bronze` medal getters to `AppColorsExtension`)
+  - `lib/features/matches/screens/create_match_screen.dart` & `lib/features/scoring/presentation/widgets/sport_setup_widget.dart` (Replaced `✓` and `⚠` symbols with clean text)
+  - `lib/main.dart` (Replaced `print` with `debugPrint` and removed emojis, fixing 6 lints)
+  - `lib/features/matches/widgets/match_card.dart` (Cleaned cricket bat emoji in doc comment)
+  - `docs/redesign/CONTRAST_REPORT.md` (New: comprehensive WCAG 2.1 contrast ratio verification table)
+  - `docs/redesign/DESIGN_SPEC.md` (New: design system tokens, typography, radii, motion curves, component specs)
+  - `docs/redesign/REPORT.md` (New: complete executive summary, architectural decisions, commit history, parity checklist)
+- **Verification:**
+  - `flutter test`: 176/176 tests passing (100% green).
+  - `flutter analyze`: 43 issues (all pre-existing baseline lints; 0 errors, 0 new warnings).
+  - Codebase sweep: 0 raw colors in features, 0 raw emojis anywhere in `lib/`.
+- **Status:** **COMPLETE** — All exit criteria and non-negotiables met. Redesign ready for merge/review.

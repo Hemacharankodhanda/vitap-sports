@@ -166,6 +166,9 @@ class AppColorsExtension extends ThemeExtension<AppColorsExtension> {
   Color get negative => loss;
   Color get negativeContainer => lossContainer;
   Color get divider => border;
+  Color get gold => AppColors.gold;
+  Color get silver => AppColors.silver;
+  Color get bronze => AppColors.bronze;
 
   static const light = AppColorsExtension(
     background: AppColors.lightBackground,

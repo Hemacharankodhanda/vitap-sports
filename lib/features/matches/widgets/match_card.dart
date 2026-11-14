@@ -12,7 +12,7 @@ import '../data/models/match_model.dart';
 ///
 /// Presents sports fixtures (Cricket, Football, Badminton) in an iconic,
 /// stacked two-row team layout matching Google's sports search cards:
-/// - Real-time batting indicators (🏏)
+/// - Real-time batting indicators (sports_cricket icon)
 /// - Tabular runs, wickets, and overs: e.g. 165/4 (20.0)
 /// - Live chase equations: e.g. "Titans need 24 runs in 9 balls (RRR 16.0)"
 /// - Result margins with winner highlighting

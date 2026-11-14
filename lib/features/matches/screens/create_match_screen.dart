@@ -733,10 +733,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _homeSelectedUserIds.length == 2
-                                        ? '✓ 2 players selected for doubles'
+                                        ? '2 players selected for doubles'
                                         : (_homeSelectedUserIds.length > 2
-                                            ? '⚠ ${_homeSelectedUserIds.length} players selected (must be exactly 2)'
-                                            : '⚠ ${_homeSelectedUserIds.length}/2 players selected (please select 2)'),
+                                            ? '${_homeSelectedUserIds.length} players selected (must be exactly 2)'
+                                            : '${_homeSelectedUserIds.length}/2 players selected (please select 2)'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
@@ -801,10 +801,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     _awaySelectedUserIds.length == 2
-                                        ? '✓ 2 players selected for doubles'
+                                        ? '2 players selected for doubles'
                                         : (_awaySelectedUserIds.length > 2
-                                            ? '⚠ ${_awaySelectedUserIds.length} players selected (must be exactly 2)'
-                                            : '⚠ ${_awaySelectedUserIds.length}/2 players selected (please select 2)'),
+                                            ? '${_awaySelectedUserIds.length} players selected (must be exactly 2)'
+                                            : '${_awaySelectedUserIds.length}/2 players selected (please select 2)'),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,

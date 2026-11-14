@@ -905,10 +905,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             children: [
               Text(
                 isReady
-                    ? '✓ 2 players selected'
+                    ? '2 players selected'
                     : (selectedPlayerIds.length > 2
-                        ? '⚠ ${selectedPlayerIds.length} players (must be 2)'
-                        : '⚠ ${selectedPlayerIds.length}/2 players selected'),
+                        ? '${selectedPlayerIds.length} players (must be 2)'
+                        : '${selectedPlayerIds.length}/2 players selected'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

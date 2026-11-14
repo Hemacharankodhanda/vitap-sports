@@ -68,12 +68,16 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheDim = (size.dimension * dpr).round();
     Widget avatar;
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       avatar = CachedNetworkImage(
         imageUrl: imageUrl!,
         fadeInDuration: const Duration(milliseconds: 150),
+        memCacheWidth: cacheDim,
+        memCacheHeight: cacheDim,
         imageBuilder: (_, imageProvider) => Container(
           width: size.dimension,
           height: size.dimension,
@@ -92,14 +96,18 @@ class AppAvatar extends StatelessWidget {
     }
 
     if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: isTeam
-            ? BorderRadius.circular(AppSpacing.radiusAvatarTeam)
-            : BorderRadius.circular(size.dimension / 2),
-        splashColor: Colors.transparent,
-        highlightColor: colors.textPrimary.withAlpha(15),
-        child: avatar,
+      return Semantics(
+        button: true,
+        label: name != null ? '$name avatar' : 'Avatar',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: isTeam
+              ? BorderRadius.circular(AppSpacing.radiusAvatarTeam)
+              : BorderRadius.circular(size.dimension / 2),
+          splashColor: Colors.transparent,
+          highlightColor: colors.textPrimary.withAlpha(15),
+          child: avatar,
+        ),
       );
     }
 

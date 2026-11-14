@@ -16,19 +16,19 @@ import 'core/theme/app_theme_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  print('✅ Flutter Binding Initialized');
+  debugPrint('Flutter Binding Initialized');
 
   try {
     await Supabase.initialize(
       url: SupabaseConstants.url,
       anonKey: SupabaseConstants.anonKey,
     );
-    print('✅ Supabase Initialized');
+    debugPrint('Supabase Initialized');
   } catch (e) {
-    print('❌ Supabase Init Error: $e');
+    debugPrint('Supabase Init Error: $e');
   }
 
-  print(' Initializing SharedPreferences...');
+  debugPrint('Initializing SharedPreferences...');
   final prefs = await SharedPreferences.getInstance();
 
   // Pre-load saved ThemeMode to eliminate cold-start theme flash
@@ -37,7 +37,7 @@ Future<void> main() async {
   if (themeModeStr == 'light') initialThemeMode = ThemeMode.light;
   if (themeModeStr == 'dark') initialThemeMode = ThemeMode.dark;
 
-  print(' Calling runApp...');
+  debugPrint('Calling runApp...');
   runApp(
     ProviderScope(
       overrides: [
@@ -47,7 +47,7 @@ Future<void> main() async {
       child: const VitapSportsApp(),
     ),
   );
-  print('✅ runApp called');
+  debugPrint('runApp called');
 }
 
 class VitapSportsApp extends ConsumerWidget {
