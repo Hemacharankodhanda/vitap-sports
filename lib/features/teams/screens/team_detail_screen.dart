@@ -5,13 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_dialog.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -27,12 +30,13 @@ class TeamDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final teamAsync = ref.watch(teamDetailProvider(teamId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
     final currentUserId = ref.watch(currentUserIdProvider);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Team'),
         actions: [
           IconButton(
@@ -57,8 +61,8 @@ class TeamDetailScreen extends ConsumerWidget {
           final isMember = team.members.any((m) => m.userId == currentUserId);
 
           return ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenMargin,
+            padding: EdgeInsets.symmetric(
+              horizontal: padding,
             ),
             children: [
               const SizedBox(height: AppSpacing.xl),
@@ -71,13 +75,19 @@ class TeamDetailScreen extends ConsumerWidget {
                       imageUrl: team.logoUrl,
                       name: team.name,
                       size: AppAvatarSize.xlarge,
+                      isTeam: true,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    Text(team.name, style: AppTypography.title),
+                    Text(
+                      team.name,
+                      style: AppTypography.title.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       team.sportName ?? 'Unknown Sport',
-                      style: AppTypography.body.copyWith(
+                      style: AppTypography.callout.copyWith(
                         color: isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.lightTextSecondary,
@@ -88,7 +98,7 @@ class TeamDetailScreen extends ConsumerWidget {
                       const SizedBox(height: AppSpacing.sm),
                       Text(
                         team.description!,
-                        style: AppTypography.caption.copyWith(
+                        style: AppTypography.body.copyWith(
                           color: isDark
                               ? AppColors.darkTextSecondary
                               : AppColors.lightTextSecondary,
@@ -137,25 +147,15 @@ class TeamDetailScreen extends ConsumerWidget {
               else if (isCaptain)
                 AppButton(
                   label: 'Delete Team',
-                  variant: AppButtonVariant.secondary,
+                  variant: AppButtonVariant.destructive,
                   icon: Icons.delete_outline_rounded,
                   onPressed: () async {
-                    final confirm = await showDialog<bool>(
+                    final confirm = await AppDialog.showConfirmation(
                       context: context,
-                      builder: (c) => AlertDialog(
-                        title: const Text('Delete Team'),
-                        content: const Text('Are you sure you want to delete this team? This will also remove all players. This cannot be undone.'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(c, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(c, true),
-                            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
+                      title: 'Delete Team',
+                      message: 'Are you sure you want to delete this team? This will also remove all players. This cannot be undone.',
+                      confirmLabel: 'Delete',
+                      isDestructive: true,
                     );
                     if (confirm == true) {
                       try {

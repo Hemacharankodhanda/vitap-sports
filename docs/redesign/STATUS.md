@@ -179,3 +179,21 @@
   - `flutter test`: 157/157 tests passing (100% green, including 3 new profile screen widget tests and 9 existing profile/stats tests).
   - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.4: Teams Screens (`teams_list_screen.dart`, `create_team_screen.dart`, `recruitment_screen.dart`, `team_detail_screen.dart`).
+
+---
+
+### Iteration 7 — Phase 4: Slice 4.4: Teams Screens
+- **Goal:** Restyle `TeamsListScreen`, `CreateTeamScreen`, `RecruitmentScreen`, and `TeamDetailScreen` with Apple design aesthetic (`FrostedAppBar`, squircle team avatars `radius 12`, borderless `AppCard` team items, tabular figures on W-L records, destructive confirmation via `AppDialog.showConfirmation`, zero emojis) while preserving 100% of team state queries, captain permissions, and recruitment actions.
+- **Files Modified / Created:**
+  - `lib/features/teams/screens/teams_list_screen.dart` (Restyled with `FrostedAppBar`, responsive margin, cleaned unused imports)
+  - `lib/features/teams/widgets/team_card.dart` (Restyled with squircle team avatar `isTeam: true`, tabular figures for `${team.wins}W - ${team.losses}L`, clean typography)
+  - `lib/features/teams/screens/create_team_screen.dart` (Restyled with `FrostedAppBar`, cleaned unused `image_utils` import, responsive margin)
+  - `lib/features/teams/screens/recruitment_screen.dart` (Restyled with `FrostedAppBar` and clean `EmptyState`)
+  - `lib/features/teams/screens/team_detail_screen.dart` (Restyled with `FrostedAppBar`, squircle logo `isTeam: true`, responsive padding, and `AppDialog.showConfirmation` with `isDestructive: true`)
+  - `lib/features/teams/widgets/member_tile.dart` (Restyled with warning-tinted captain pill and loss-tinted remove button)
+  - `test/teams/teams_screens_test.dart` (New: widget tests for teams list rendering, squircle avatars, 200% text scale survivability, create form, recruitment empty state, and team detail)
+  - `docs/redesign/PARITY.md` (Updated `/teams`, `/teams/create`, `/teams/recruitment`, and `/teams/:id` status to Restyled)
+- **Verification:**
+  - `flutter test`: 162/162 tests passing (100% green, including 5 new team widget tests).
+  - `flutter analyze`: 75 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.5: Matches & Challenges Screens (`matches_list_screen.dart`, `match_detail_screen.dart`, `manage_squad_screen.dart`).

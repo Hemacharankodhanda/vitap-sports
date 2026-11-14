@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
-import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/sport_filter_bar.dart';
 import '../providers/team_providers.dart';
@@ -27,12 +27,13 @@ class _TeamsListScreenState extends ConsumerState<TeamsListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
     final teamsAsync = ref.watch(teamsListProvider);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Teams'),
         actions: [
           IconButton(
@@ -77,9 +78,9 @@ class _TeamsListScreenState extends ConsumerState<TeamsListScreen> {
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenMargin,
-                    vertical: AppSpacing.sm,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: padding,
+                    vertical: AppSpacing.md,
                   ),
                   itemCount: teams.length,
                   separatorBuilder: (_, __) =>

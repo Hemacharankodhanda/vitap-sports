@@ -27,6 +27,7 @@ class TeamCard extends StatelessWidget {
             imageUrl: team.logoUrl,
             name: team.name,
             size: AppAvatarSize.medium,
+            isTeam: true,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -35,7 +36,9 @@ class TeamCard extends StatelessWidget {
               children: [
                 Text(
                   team.name,
-                  style: AppTypography.headline,
+                  style: AppTypography.headline.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -52,17 +55,15 @@ class TeamCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${team.wins}W - ${team.losses}L',
-                style: AppTypography.caption.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
+          Text(
+            '${team.wins}W - ${team.losses}L',
+            style: AppTypography.callout.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.lightTextPrimary,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ],
       ),

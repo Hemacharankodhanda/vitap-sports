@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/frosted_bar.dart';
 
 class RecruitmentScreen extends StatelessWidget {
   const RecruitmentScreen({super.key});
@@ -15,7 +16,7 @@ class RecruitmentScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(title: const Text('Recruitment')),
+      appBar: const FrostedAppBar(title: Text('Recruitment')),
       body: const EmptyState(
         icon: Icons.person_search_rounded,
         title: 'No open positions',
