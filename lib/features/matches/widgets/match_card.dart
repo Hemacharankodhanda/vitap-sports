@@ -685,7 +685,11 @@ class MatchCard extends StatelessWidget {
                 ),
                 if (isBatting) ...[
                   const SizedBox(width: 6),
-                  const Text('🏏', style: TextStyle(fontSize: 13)),
+                  Icon(
+                    Icons.sports_cricket_rounded,
+                    size: 14,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
                 ],
                 if (_isCompleted && isWinner) ...[
                   const SizedBox(width: 6),

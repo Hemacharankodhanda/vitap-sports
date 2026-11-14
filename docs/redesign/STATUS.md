@@ -142,3 +142,20 @@
   - `flutter test`: 154/154 tests passing (100% green, including 3 new auth widget tests).
   - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.2: Feed / Home Screen (`feed_screen.dart`, `free_agents_screen.dart`).
+
+---
+
+### Iteration 5 — Phase 4: Slice 4.2: Feed / Home Screen
+- **Goal:** Restyle `FeedScreen` and `FreeAgentsScreen` with Apple design direction (monochrome palette, soft rounded surfaces, `FrostedAppBar`, `SportFilterBar` with `AppChip` pills, live match section with pulsing dot badge, borderless Quick Action cards, `EmptyState` without emojis, bat emoji replaced with sports icon) while preserving exact live match streaming, challenges, and navigation behaviors.
+- **Files Modified / Created:**
+  - `lib/features/feed/screens/feed_screen.dart` (Restyled with `FrostedAppBar`, `SportFilterBar`, live matches section with live badge + MatchCards, clean Quick Action cards with borderless surface cards & radius 24, and Activity Feed `EmptyState` without emojis)
+  - `lib/features/free_agents/screens/free_agents_screen.dart` (Restyled with `FrostedAppBar`, `AppChip` horizontal filter bar, hairline divider, and `EmptyState`)
+  - `lib/core/widgets/sport_filter_bar.dart` (Restyled to use `AppChip` pill chips)
+  - `lib/features/matches/widgets/match_card.dart` (Replaced bat emoji with `Icons.sports_cricket_rounded`)
+  - `test/auth/auth_screens_test.dart` (Cleaned up unused import and doc comment)
+  - `test/feed/feed_live_matches_test.dart` (Cleaned up library doc comment)
+  - `docs/redesign/PARITY.md` (Updated `/home` and `/home/free-agents` status to Restyled)
+- **Verification:**
+  - `flutter test`: 154/154 tests passing (100% green, including feed live matches tests).
+  - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.3: Profile Screens (`profile_screen.dart`, `edit_profile_screen.dart`, `public_profile_screen.dart`).

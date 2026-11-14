@@ -1,11 +1,11 @@
-/// VIT-AP Sports — Auth Screens Widget Tests.
+library auth_screens_test;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vitap_sports/core/theme/app_theme.dart';
 import 'package:vitap_sports/core/widgets/app_button.dart';
-import 'package:vitap_sports/core/widgets/app_chip.dart';
 import 'package:vitap_sports/core/widgets/app_segmented.dart';
 import 'package:vitap_sports/features/auth/screens/login_screen.dart';
 import 'package:vitap_sports/features/auth/screens/onboarding_screen.dart';
