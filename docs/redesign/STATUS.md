@@ -159,3 +159,23 @@
   - `flutter test`: 154/154 tests passing (100% green, including feed live matches tests).
   - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.3: Profile Screens (`profile_screen.dart`, `edit_profile_screen.dart`, `public_profile_screen.dart`).
+
+---
+
+### Iteration 6 — Phase 4: Slice 4.3: Profile Screens
+- **Goal:** Restyle `ProfileScreen`, `PublicProfileScreen`, and `EditProfileScreen` with Apple design direction (`FrostedAppBar`, borderless `AppCard` profile summaries, `StatsRow` with tabular figures, `PlayerCareerStatsCard` with monochrome surface cards, `BadgeGrid` with Apple squircle cards, zero emojis, 200% text scale survivability) without changing Supabase user queries or storage upload flows.
+- **Files Modified / Created:**
+  - `lib/features/profile/screens/profile_screen.dart` (Restyled with `FrostedAppBar`, responsive margin, Large Title/Title typography, clean avatar hero)
+  - `lib/features/profile/screens/public_profile_screen.dart` (Restyled with `FrostedAppBar`, responsive margin, clean avatar hero)
+  - `lib/features/profile/screens/edit_profile_screen.dart` (Restyled with `FrostedAppBar`, monochrome camera badge, responsive margin)
+  - `lib/features/profile/widgets/stats_row.dart` (Restyled with tabular figures on stat values, hairline divider, and `AppCard` container)
+  - `lib/features/profile/widgets/player_career_stats_card.dart` (Restyled with monochrome surface containers, tabular figures, warning-tinted MVP pill, and sports icons)
+  - `lib/features/profile/widgets/badge_grid.dart` (Restyled with `radiusCardInner` 16dp surfaces, monochrome badge icons, and clean typography)
+  - `lib/features/matches/widgets/match_card.dart` (Added ValueKey `cricket_batting_indicator` to cricket batting icon)
+  - `test/matches/google_cricket_match_card_test.dart` (Updated batting indicator assertions to use `find.byKey(ValueKey('cricket_batting_indicator'))`)
+  - `test/profile/profile_screens_test.dart` (New: widget tests for ProfileScreen details/stats/chips, 200% text scale survivability, and EditProfileScreen pre-filled inputs)
+  - `docs/redesign/PARITY.md` (Updated `/profile`, `/profile/edit`, and `/leaderboard/player/:id` status to Restyled)
+- **Verification:**
+  - `flutter test`: 157/157 tests passing (100% green, including 3 new profile screen widget tests and 9 existing profile/stats tests).
+  - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.4: Teams Screens (`teams_list_screen.dart`, `create_team_screen.dart`, `recruitment_screen.dart`, `team_detail_screen.dart`).

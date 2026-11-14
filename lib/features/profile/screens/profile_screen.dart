@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -31,11 +33,12 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(currentProfileProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Profile'),
         actions: [
           IconButton(
@@ -69,8 +72,8 @@ class ProfileScreen extends ConsumerWidget {
           }
 
           return ListView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenMargin,
+            padding: EdgeInsets.symmetric(
+              horizontal: padding,
             ),
             children: [
               const SizedBox(height: AppSpacing.xl),
@@ -88,6 +91,7 @@ class ProfileScreen extends ConsumerWidget {
                     Text(
                       profile.name,
                       style: AppTypography.title.copyWith(
+                        fontWeight: FontWeight.w700,
                         color: isDark
                             ? AppColors.darkTextPrimary
                             : AppColors.lightTextPrimary,
@@ -100,7 +104,7 @@ class ProfileScreen extends ConsumerWidget {
                         if (profile.year != null) profile.year,
                         if (profile.hostelBlock != null) profile.hostelBlock,
                       ].join(' • '),
-                      style: AppTypography.body.copyWith(
+                      style: AppTypography.callout.copyWith(
                         color: isDark
                             ? AppColors.darkTextSecondary
                             : AppColors.lightTextSecondary,

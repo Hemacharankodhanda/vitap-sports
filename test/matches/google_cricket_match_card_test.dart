@@ -56,7 +56,7 @@ void main() {
       expect(find.text('Titans'), findsOneWidget);
 
       // Batting indicator on active team
-      expect(find.text('🏏'), findsOneWidget);
+      expect(find.byKey(const ValueKey('cricket_batting_indicator')), findsOneWidget);
 
       // Score and overs for batting team
       expect(find.textContaining('54/1'), findsOneWidget);
@@ -210,7 +210,7 @@ void main() {
       expect(find.text('Strikers'), findsOneWidget);
       expect(find.text('North Ground'), findsOneWidget);
       // No live batting indicator
-      expect(find.text('🏏'), findsNothing);
+      expect(find.byKey(const ValueKey('cricket_batting_indicator')), findsNothing);
     });
   });
 }

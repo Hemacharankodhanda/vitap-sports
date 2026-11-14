@@ -48,14 +48,21 @@ class BadgeGrid extends ConsumerWidget {
       itemCount: _badges.length,
       itemBuilder: (_, index) {
         final badge = _badges[index];
+        final primaryColor = isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.lightTextPrimary;
+        final inactiveColor = isDark
+            ? AppColors.darkTextTertiary
+            : AppColors.lightTextTertiary;
+
         return Container(
           decoration: BoxDecoration(
             color: badge.earned
-                ? Theme.of(context).colorScheme.primary.withAlpha(20)
+                ? (isDark ? AppColors.darkFillSecondary : AppColors.lightFillSecondary)
                 : (isDark
-                    ? AppColors.darkSurfaceVariant
-                    : AppColors.lightSurfaceVariant),
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                    ? AppColors.darkSurface
+                    : AppColors.lightSurface),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
           ),
           padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
@@ -64,21 +71,13 @@ class BadgeGrid extends ConsumerWidget {
               Icon(
                 badge.icon,
                 size: AppSpacing.iconLarge,
-                color: badge.earned
-                    ? Theme.of(context).colorScheme.primary
-                    : (isDark
-                        ? AppColors.darkTextTertiary
-                        : AppColors.lightTextTertiary),
+                color: badge.earned ? primaryColor : inactiveColor,
               ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 badge.name,
                 style: AppTypography.caption.copyWith(
-                  color: badge.earned
-                      ? Theme.of(context).colorScheme.primary
-                      : (isDark
-                          ? AppColors.darkTextTertiary
-                          : AppColors.lightTextTertiary),
+                  color: badge.earned ? primaryColor : inactiveColor,
                   fontWeight:
                       badge.earned ? FontWeight.w600 : FontWeight.w400,
                 ),
