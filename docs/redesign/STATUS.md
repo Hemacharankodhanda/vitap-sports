@@ -113,3 +113,16 @@
   - `flutter test`: 147/147 tests passing (100% green).
   - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 3: Navigation Shell & Appearance Settings (`ShellScreen` adaptive navigation, `ThemeSettingsScreen` with `AppSegmented` System/Light/Dark mode switch).
+
+---
+
+### Iteration 3 — Phase 3: Navigation Shell & Appearance Settings
+- **Goal:** Replace `ShellScreen` bottom bar with `AdaptiveScaffold` (compact frosted bottom bar with always-visible labels and no indicator pill; medium/expanded navigation rail), restyle `ThemeSettingsScreen` with `AppSegmented` control and Apple grouped cards, and add automated navigation/settings widget tests.
+- **Files Modified / Created:**
+  - `lib/core/router/shell_screen.dart` (Updated to use `AdaptiveScaffold` with 5 persistent destinations: Home, Teams, Matches, Board, Profile)
+  - `lib/features/settings/screens/theme_settings_screen.dart` (Restyled with `FrostedAppBar`, `AppSegmented<ThemeMode>` control, Apple grouped preview card, and circular accent color selectors)
+  - `test/navigation/shell_navigation_test.dart` (New: widget tests verifying tab switching, adaptive navigation rail on wide screens, and theme mode switching)
+- **Verification:**
+  - `flutter test`: 151/151 tests passing (100% green, including 3 new shell navigation and theme settings tests).
+  - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Screen-by-Screen Migration — Slice 4.1: Authentication Screens (`login_screen.dart`, `onboarding_screen.dart`).
