@@ -261,3 +261,19 @@
   - `flutter test`: 166/166 tests passing (100% green).
   - `flutter analyze`: 56 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.9: Leaderboards (`leaderboard_screen.dart`).
+
+---
+
+### Iteration 12 — Phase 4: Slice 4.9: Leaderboards
+- **Goal:** Restyle `LeaderboardScreen` with Apple design aesthetic (`FrostedAppBar`, `AppSegmented<String>` sport selector [Cricket, Football, Badminton], `AppSegmented<String>` Cricket category selector [Batting, Bowling, Fielding], responsive max reading width constraint, borderless radius 24 surface cards, hairline 0.5px dividers, `FittedBox` scale-down safety for tabular numbers, tabular figures on all ranks and metrics, squircle team avatars with `isTeam: true`, 200% text scale survivability) without touching Supabase RPC queries, sorting models, or player/team routing.
+- **Files Modified:**
+  - `lib/features/leaderboard/screens/leaderboard_screen.dart` (Restyled with `FrostedAppBar`, `AppSegmented<String>` controls, borderless radius 24 tables with inset hairline dividers, tabular figures, squircle team avatars)
+  - `lib/features/leaderboard/providers/leaderboard_providers.dart` (Cleaned unused `user_model.dart` import)
+  - `lib/core/widgets/section_header.dart` (Wrapped title in `Expanded` to prevent flex overflow at 200% text scale, cleaned unused import)
+  - `lib/core/widgets/app_segmented.dart` (Improved `Flexible` width measurement at high text scales by removing unnecessary `MainAxisSize.min`)
+  - `test/leaderboard/leaderboard_screen_test.dart` (Added widget tests for dark mode rendering, squircle team avatars, and 200% text scale survivability)
+  - `docs/redesign/PARITY.md` (Updated `/leaderboard` status to Restyled)
+- **Verification:**
+  - `flutter test`: 168/168 tests passing (100% green, including 6 leaderboard widget tests).
+  - `flutter analyze`: 53 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.10: Tournaments (`tournament_list_screen.dart`, `tournament_detail_screen.dart`, `create_tournament_sheet.dart`, `generate_draw_dialog.dart`, knockout bracket view, standings table).

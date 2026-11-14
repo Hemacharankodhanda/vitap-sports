@@ -4,8 +4,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:vitap_sports/core/theme/app_theme.dart';
 import 'package:vitap_sports/features/leaderboard/providers/leaderboard_providers.dart';
 import 'package:vitap_sports/features/leaderboard/screens/leaderboard_screen.dart';
+import 'package:vitap_sports/features/teams/data/models/team_model.dart';
 
 void main() {
   group('LeaderboardScreen Widget Tests', () {
@@ -235,6 +237,90 @@ void main() {
       expect(find.text('50.0'), findsOneWidget);
       expect(find.text('Shikhar Dhawan'), findsOneWidget);
       expect(find.text('30.0'), findsOneWidget);
+    });
+
+    testWidgets('renders leaderboard screen cleanly in dark mode with squircle team avatars', (tester) async {
+      final teams = <TeamModel>[
+        TeamModel(
+          id: 't1',
+          name: 'Lightning Strikers',
+          sportId: 'cricket',
+          captainId: 'c1',
+          wins: 12,
+          losses: 3,
+          draws: 1,
+          createdAt: DateTime.now(),
+        ),
+      ];
+
+      final container = ProviderContainer(
+        overrides: [
+          leaderboardSportProvider.overrideWith((ref) => 'Cricket'),
+          cricketCategoryProvider.overrideWith((ref) => 'Batting'),
+          topPlayersProvider.overrideWith((ref) async => []),
+          topTeamsProvider.overrideWith((ref) async => teams),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AppTheme.dark(),
+            home: const LeaderboardScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Lightning Strikers'), 200);
+      expect(find.text('Lightning Strikers'), findsOneWidget);
+      expect(find.text('16'), findsOneWidget); // total matches = 12 + 3 + 1
+      expect(find.text('12'), findsOneWidget); // wins
+      expect(find.text('75%'), findsOneWidget); // win% = 12/16 = 75%
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('survives 200% text scale without overflow', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      final container = ProviderContainer(
+        overrides: [
+          leaderboardSportProvider.overrideWith((ref) => 'Cricket'),
+          cricketCategoryProvider.overrideWith((ref) => 'Batting'),
+          topPlayersProvider.overrideWith((ref) async => [
+            {
+              'id': 'p1',
+              'name': 'Rohit Sharma',
+              'runs': 450,
+              'avg': '56.3',
+              'fours': 38,
+              'sixes': 15,
+              'sr': '140.2',
+            },
+          ]),
+          topTeamsProvider.overrideWith((ref) async => []),
+        ],
+      );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            home: MediaQuery(
+              data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+              child: const LeaderboardScreen(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rohit Sharma'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

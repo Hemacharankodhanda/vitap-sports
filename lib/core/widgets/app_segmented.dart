@@ -94,30 +94,32 @@ class AppSegmented<T> extends StatelessWidget {
                         splashColor: Colors.transparent,
                         highlightColor: Colors.transparent,
                         child: Center(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (iconBuilder != null) ...[
-                                iconBuilder!(options[i]),
-                                const SizedBox(width: AppSpacing.xs),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  labelBuilder(options[i]),
-                                  style: AppTypography.callout.copyWith(
-                                    fontWeight: i == activeIndex
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: i == activeIndex
-                                        ? (isDark ? Colors.white : colors.textPrimary)
-                                        : colors.textSecondary,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (iconBuilder != null) ...[
+                                  iconBuilder!(options[i]),
+                                  const SizedBox(width: AppSpacing.xs),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    labelBuilder(options[i]),
+                                    style: AppTypography.callout.copyWith(
+                                      fontWeight: i == activeIndex
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                      color: i == activeIndex
+                                          ? (isDark ? Colors.white : colors.textPrimary)
+                                          : colors.textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

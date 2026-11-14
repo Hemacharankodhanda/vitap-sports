@@ -6,7 +6,6 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
@@ -32,10 +31,12 @@ class SectionHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            title,
-            style: AppTypography.headline.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+          Expanded(
+            child: Text(
+              title,
+              style: AppTypography.headline.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
           if (actionLabel != null && onAction != null)
