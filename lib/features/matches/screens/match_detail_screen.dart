@@ -1,7 +1,6 @@
 /// VIT-AP Sports — Match detail screen.
 library;
 
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -278,7 +277,6 @@ class MatchDetailScreen extends ConsumerWidget {
                   // Only show live scorer / start match if NOT completed
                   if (isAuthorizedToScore && match.status != 'completed') {
                     final isScheduled = match.status == 'scheduled' || (match.status != 'live');
-                    final isLive = match.status == 'live';
                     final buttonLabel = isScheduled ? 'Start Match' : 'Live Scorer';
                     final buttonIcon = isScheduled
                         ? Icons.play_arrow_rounded
@@ -355,9 +353,6 @@ class MatchDetailScreen extends ConsumerWidget {
     final homeName = homeTeam.isNotEmpty
         ? (homeTeam.first.teamName ?? homeTeam.first.userName ?? match.resolvedHomeTeamName ?? 'Team 1')
         : (match.resolvedHomeTeamName ?? 'Team 1');
-    final awayName = awayTeam.isNotEmpty
-        ? (awayTeam.first.teamName ?? awayTeam.first.userName ?? match.resolvedAwayTeamName ?? 'Team 2')
-        : (match.resolvedAwayTeamName ?? 'Team 2');
 
     if (match.isDraw) {
       return Container(

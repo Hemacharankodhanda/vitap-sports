@@ -7,7 +7,6 @@
 /// - No emojis in interface chrome.
 library;
 
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -83,14 +82,14 @@ class ProfessionalScorecard extends StatelessWidget {
     required String title,
     required String subtitle,
   }) {
-    final colors = context.appColors;
+    final colors = context.colors;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.divider, width: 0.5),
       ),
       child: Center(
         child: Column(
@@ -100,7 +99,7 @@ class ProfessionalScorecard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: colors.surfaceVariant,
+                color: colors.fillSecondary,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, size: 24, color: colors.textSecondary),
@@ -108,7 +107,10 @@ class ProfessionalScorecard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               title,
-              style: AppTypography.title.copyWith(color: colors.textPrimary),
+              style: AppTypography.title.copyWith(
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -186,9 +188,9 @@ class _CricketScorecardState extends State<_CricketScorecard> {
         idLower == 'striker 1' ||
         idLower == 'non-striker 2' ||
         idLower == 'opening bowler') {
-      final isCricket = widget.state is CricketState && (widget.state as CricketState).innings.isNotEmpty;
+      final isCricket = widget.state.innings.isNotEmpty;
       final battingTeamId = isCricket
-          ? (widget.state as CricketState).innings[_selectedInningsIndex.clamp(0, (widget.state as CricketState).innings.length - 1)].battingTeamId
+          ? widget.state.innings[_selectedInningsIndex.clamp(0, widget.state.innings.length - 1)].battingTeamId
           : widget.match.homeTeamId;
       final isHomeBatting = battingTeamId == widget.match.homeTeamId || battingTeamId == 'home';
       final battingTeamName = isHomeBatting ? (widget.match.homeTeamName ?? 'Team 1') : (widget.match.awayTeamName ?? 'Team 2');
@@ -285,16 +287,16 @@ class _CricketScorecardState extends State<_CricketScorecard> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
+    final colors = context.colors;
     final state = widget.state;
 
     if (state.innings.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: colors.border, width: 1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Center(
           child: Column(
@@ -304,13 +306,19 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colors.surfaceVariant,
+                  color: colors.fillSecondary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.sports_cricket_rounded, size: 24, color: colors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('Innings in progress', style: AppTypography.title.copyWith(color: colors.textPrimary)),
+              Text(
+                'Innings in progress',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Deliveries and batter records will update here in real time.',
@@ -356,10 +364,13 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                   _selectedInningsIndex = (_selectedInningsIndex == 0) ? 1 : 0;
                 });
               },
-              icon: Icon(Icons.swap_horiz_rounded, size: 18, color: colors.accent),
+              icon: Icon(Icons.swap_horiz_rounded, size: 18, color: colors.link),
               label: Text(
                 'View ${_getTeamName(state.innings[(_selectedInningsIndex == 0) ? 1 : 0].battingTeamId)} innings',
-                style: AppTypography.callout.copyWith(color: colors.accent),
+                style: AppTypography.callout.copyWith(
+                  color: colors.link,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -372,9 +383,8 @@ class _CricketScorecardState extends State<_CricketScorecard> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xs),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        color: colors.fillSecondary,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
       ),
       child: Row(
         children: List.generate(state.innings.length, (idx) {
@@ -385,7 +395,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
           return Expanded(
             child: InkWell(
               onTap: () => setState(() => _selectedInningsIndex = idx),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner - 2),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
@@ -394,9 +404,17 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                   horizontal: AppSpacing.sm,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? colors.surface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                  border: isSelected ? Border.all(color: colors.border, width: 1) : null,
+                  color: isSelected ? colors.surfaceElevated : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner - 2),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Column(
                   children: [
@@ -404,13 +422,12 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Small team marker
                         Container(
                           width: 6,
                           height: 6,
                           margin: const EdgeInsets.only(right: 6),
                           decoration: BoxDecoration(
-                            color: isSelected ? colors.accent : colors.textTertiary,
+                            color: isSelected ? colors.primaryFill : colors.textTertiary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -433,6 +450,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                       style: AppTypography.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         color: isSelected ? colors.textPrimary : colors.textSecondary,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
@@ -453,8 +471,8 @@ class _CricketScorecardState extends State<_CricketScorecard> {
       padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.divider, width: 0.5),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -471,7 +489,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                       height: 8,
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: colors.accent,
+                        color: colors.primaryFill,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -479,7 +497,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                       child: Text(
                         '$teamName Innings',
                         style: AppTypography.headline.copyWith(
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: colors.textPrimary,
                         ),
                         maxLines: 1,
@@ -493,6 +511,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                   'CRR $crr rpo',
                   style: AppTypography.caption.copyWith(
                     color: colors.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
@@ -510,12 +529,16 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                     '${inning.totalRuns}',
                     style: AppTypography.largeTitle.copyWith(
                       color: colors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   Text(
                     '/${inning.totalWickets}',
                     style: AppTypography.title.copyWith(
                       color: colors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                 ],
@@ -524,6 +547,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                 '${inning.overs.toStringAsFixed(1)} ov',
                 style: AppTypography.caption.copyWith(
                   color: colors.textSecondary,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
@@ -536,11 +560,11 @@ class _CricketScorecardState extends State<_CricketScorecard> {
   Widget _buildBattingCard(CricketInningsState inning, AppColorsExtension colors) {
     if (inning.battingStats.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: colors.border, width: 1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Center(
           child: Text(
@@ -554,8 +578,8 @@ class _CricketScorecardState extends State<_CricketScorecard> {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.divider, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -564,9 +588,9 @@ class _CricketScorecardState extends State<_CricketScorecard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius - 1)),
-              border: Border(bottom: BorderSide(color: colors.border, width: 1)),
+              color: colors.fillSecondary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusCard - 0.5)),
+              border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
             ),
             child: Row(
               children: [
@@ -599,7 +623,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+                border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
               ),
               child: Row(
                 children: [
@@ -653,7 +677,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
               color: colors.surface,
-              border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+              border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -669,6 +693,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                   '${inning.totalExtras} (b ${inning.byes}, lb ${inning.legByes}, w ${inning.wides}, nb ${inning.noBalls})',
                   style: AppTypography.caption.copyWith(
                     color: colors.textSecondary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
@@ -679,8 +704,8 @@ class _CricketScorecardState extends State<_CricketScorecard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.cardRadius - 1)),
+              color: colors.fillSecondary,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppSpacing.radiusCard - 0.5)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -688,15 +713,16 @@ class _CricketScorecardState extends State<_CricketScorecard> {
                 Text(
                   'Total',
                   style: AppTypography.headline.copyWith(
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: colors.textPrimary,
                   ),
                 ),
                 Text(
                   '${inning.totalRuns}/${inning.totalWickets} (${inning.overs.toStringAsFixed(1)} ov, CRR: ${inning.runRate.toStringAsFixed(2)})',
                   style: AppTypography.headline.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colors.accent,
+                    fontWeight: FontWeight.w700,
+                    color: colors.primaryFill,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
@@ -710,11 +736,11 @@ class _CricketScorecardState extends State<_CricketScorecard> {
   Widget _buildBowlingCard(CricketInningsState inning, AppColorsExtension colors) {
     if (inning.bowlingStats.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: colors.border, width: 1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Center(
           child: Text(
@@ -728,8 +754,8 @@ class _CricketScorecardState extends State<_CricketScorecard> {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.divider, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -738,9 +764,9 @@ class _CricketScorecardState extends State<_CricketScorecard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius - 1)),
-              border: Border(bottom: BorderSide(color: colors.border, width: 1)),
+              color: colors.fillSecondary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusCard - 0.5)),
+              border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
             ),
             child: Row(
               children: [
@@ -771,7 +797,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+                border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
               ),
               child: Row(
                 children: [
@@ -813,7 +839,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
         style: AppTypography.caption.copyWith(
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
-          color: isHighlight ? colors.accent : colors.textSecondary,
+          color: isHighlight ? colors.primaryFill : colors.textSecondary,
         ),
         textAlign: TextAlign.right,
       ),
@@ -829,7 +855,7 @@ class _CricketScorecardState extends State<_CricketScorecard> {
   }) {
     Color textColor = colors.textPrimary;
     if (isHighlight) {
-      textColor = isBoundary ? colors.win : colors.accent;
+      textColor = isBoundary ? colors.win : colors.primaryFill;
     }
 
     return SizedBox(
@@ -910,16 +936,16 @@ class _FootballScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
+    final colors = context.colors;
     final stats = state.playerStats;
 
     if (stats.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: colors.border, width: 1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Center(
           child: Column(
@@ -929,13 +955,19 @@ class _FootballScorecard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colors.surfaceVariant,
+                  color: colors.fillSecondary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.sports_soccer_rounded, size: 24, color: colors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('Football match stats', style: AppTypography.title.copyWith(color: colors.textPrimary)),
+              Text(
+                'Football match stats',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Goalscorers, assists, and disciplinary cards will appear here as recorded.',
@@ -951,8 +983,8 @@ class _FootballScorecard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        border: Border.all(color: colors.divider, width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -961,9 +993,9 @@ class _FootballScorecard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius - 1)),
-              border: Border(bottom: BorderSide(color: colors.border, width: 1)),
+              color: colors.fillSecondary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusCard - 0.5)),
+              border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
             ),
             child: Row(
               children: [
@@ -996,7 +1028,7 @@ class _FootballScorecard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: colors.border, width: 0.5),
+                  bottom: BorderSide(color: colors.divider, width: 0.5),
                 ),
               ),
               child: Row(
@@ -1116,17 +1148,17 @@ class _BadmintonScorecard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
+    final colors = context.colors;
     final homeName = _getTeamName(state.homeId);
     final awayName = _getTeamName(state.awayId);
 
     if (state.games.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.cardPadding),
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          border: Border.all(color: colors.border, width: 1),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+          border: Border.all(color: colors.divider, width: 0.5),
         ),
         child: Center(
           child: Column(
@@ -1136,13 +1168,19 @@ class _BadmintonScorecard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: colors.surfaceVariant,
+                  color: colors.fillSecondary,
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.sports_tennis_rounded, size: 24, color: colors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.md),
-              Text('Badminton match stats', style: AppTypography.title.copyWith(color: colors.textPrimary)),
+              Text(
+                'Badminton match stats',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 'Game scores and rally points will appear here as recorded.',
@@ -1162,8 +1200,8 @@ class _BadmintonScorecard extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.cardPadding),
           decoration: BoxDecoration(
             color: colors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            border: Border.all(color: colors.border, width: 1),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+            border: Border.all(color: colors.divider, width: 0.5),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1179,7 +1217,7 @@ class _BadmintonScorecard extends StatelessWidget {
                           height: 6,
                           margin: const EdgeInsets.only(right: 6),
                           decoration: BoxDecoration(
-                            color: colors.accent,
+                            color: colors.primaryFill,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1201,6 +1239,8 @@ class _BadmintonScorecard extends StatelessWidget {
                       '${state.homeGamesWon}',
                       style: AppTypography.titleLarge.copyWith(
                         color: state.homeGamesWon > state.awayGamesWon ? colors.win : colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     Text(
@@ -1261,6 +1301,8 @@ class _BadmintonScorecard extends StatelessWidget {
                       '${state.awayGamesWon}',
                       style: AppTypography.titleLarge.copyWith(
                         color: state.awayGamesWon > state.homeGamesWon ? colors.win : colors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                     Text(
@@ -1294,17 +1336,16 @@ class _BadmintonScorecard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.cardPadding, vertical: AppSpacing.sm),
             decoration: BoxDecoration(
               color: colors.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: colors.border, width: 1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
+              border: Border.all(color: colors.divider, width: 0.5),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: colors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: colors.border, width: 0.5),
+                    color: colors.fillSecondary,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner - 4),
                   ),
                   child: Text(
                     'Game ${idx + 1}',
@@ -1367,8 +1408,8 @@ class _BadmintonScorecard extends StatelessWidget {
             padding: const EdgeInsets.all(AppSpacing.cardPadding),
             decoration: BoxDecoration(
               color: colors.surface,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-              border: Border.all(color: colors.border, width: 1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+              border: Border.all(color: colors.divider, width: 0.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1379,7 +1420,7 @@ class _BadmintonScorecard extends StatelessWidget {
                     Text(
                       'Player Statistics',
                       style: AppTypography.caption.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: colors.textSecondary,
                         letterSpacing: 0.5,
                       ),
@@ -1394,7 +1435,7 @@ class _BadmintonScorecard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Divider(height: AppSpacing.md),
+                Divider(color: colors.divider, height: AppSpacing.md, thickness: 0.5),
                 ...state.playerStats.entries.map((entry) {
                   final pName = _resolvePlayerName(entry.key);
                   final pw = entry.value['points_won'] ?? entry.value['points'] ?? 0;

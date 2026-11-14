@@ -245,3 +245,19 @@
   - `flutter test`: 166/166 tests passing (100% green, including 42 scoring tests).
   - `flutter analyze`: 70 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.8: Live Viewer & Match Analysis (`scorecard_view_screen.dart`, `match_analysis_screen.dart`, `professional_scorecard.dart`).
+
+---
+
+### Iteration 11 — Phase 4: Slice 4.8: Live Viewer & Match Analysis
+- **Goal:** Restyle `ScorecardViewScreen`, `MatchAnalysisScreen`, and `ProfessionalScorecard` widgets (Cricket, Football, Badminton) with Apple design aesthetic (`FrostedAppBar`, `AppSegmented<int>` view toggle between Scorecard and Player Performance, `ConstrainedBox(maxWidth: AppBreakpoints.maxReadingWidth)`, `context.colors`, hairline 0.5px dividers, radius 24 cards, tabular figures for all scores and statistics, zero emojis, circular player avatars, squircle team badges) with zero breaking changes to realtime listeners, innings tabs, or analysis data streams.
+- **Files Modified:**
+  - `lib/features/scorecards/screens/scorecard_view_screen.dart` (Restyled with `FrostedAppBar`, responsive max reading width constraint, tabular figures on live scores, clean timeline tiles, and live status badge)
+  - `lib/features/matches/screens/match_analysis_screen.dart` (Restyled with `FrostedAppBar`, `AppSegmented<int>` toggle, responsive max reading width constraint, `AppCard`, `AppAvatar`, tabular figures on player performance)
+  - `lib/features/matches/widgets/professional_scorecard.dart` (Modernized Cricket, Football, and Badminton tabular scorecards with `context.colors`, 0.5px hairline dividers, radius 24 cards, and tabular figures)
+  - `lib/features/matches/screens/match_detail_screen.dart` (Cleaned unused `dart:ui` import, unused variables)
+  - `lib/features/matches/widgets/match_card.dart` (Cleaned unused `dart:ui` import)
+  - `docs/redesign/PARITY.md` (Updated `/matches/:id/scorecard` and `/matches/:id/analysis` status to Restyled)
+- **Verification:**
+  - `flutter test`: 166/166 tests passing (100% green).
+  - `flutter analyze`: 56 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.9: Leaderboards (`leaderboard_screen.dart`).

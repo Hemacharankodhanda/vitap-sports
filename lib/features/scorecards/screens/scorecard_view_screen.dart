@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -16,6 +17,7 @@ import '../../../core/widgets/animated_score.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../matches/providers/match_providers.dart';
 import '../../matches/widgets/professional_scorecard.dart';
@@ -66,19 +68,24 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     final matchStreamAsync = ref.watch(liveMatchStreamProvider(widget.matchId));
     final eventsAsync = ref.watch(liveEventsNotifierProvider(widget.matchId));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final horizontalPadding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      backgroundColor: context.colors.background,
+      appBar: FrostedAppBar(
         title: Text(
           matchDetailAsync.valueOrNull?.status == 'completed'
               ? 'Match Scorecard'
               : 'Live Match Scorecard',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w700,
+            color: context.colors.textPrimary,
+          ),
         ),
         actions: [
           if (matchDetailAsync.valueOrNull?.status != 'completed')
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: AppSpacing.iconNav),
+              icon: Icon(Icons.edit_outlined, size: AppSpacing.iconNav, color: context.colors.textPrimary),
               tooltip: 'Scorer Screen',
               onPressed: () => context.go('/matches/${widget.matchId}/scorecard/edit'),
             ),
@@ -170,87 +177,95 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
           final matchStatus = rawStreamMatch?['status'] as String? ?? matchDetail.status;
           final playerNames = ref.watch(matchPlayerNamesProvider(widget.matchId)).valueOrNull ?? const <String, String>{};
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(liveEventsNotifierProvider(widget.matchId).notifier).refresh();
-            },
-            child: ListView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenMargin,
-                vertical: AppSpacing.lg,
-              ),
-              children: [
-                // 1. Live Animated Score Header
-                _buildAnimatedHeader(
-                  context: context,
-                  sport: sport,
-                  derivedState: derivedState,
-                  rawStreamMatch: rawStreamMatch,
-                  matchDetail: matchDetail,
-                  homeName: homeName,
-                  awayName: awayName,
-                  status: matchStatus,
-                  isDark: isDark,
-                  playerNames: playerNames,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-
-                // 2. Full Professional Scorecard (Batting, Bowling, Sets, Goals)
-                ProfessionalScorecard(
-                  match: matchDetail,
-                  scoringState: derivedState,
-                  playerNames: playerNames,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-
-                // 3. Timeline Section Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  await ref.read(liveEventsNotifierProvider(widget.matchId).notifier).refresh();
+                },
+                child: ListView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: AppSpacing.lg,
+                  ),
                   children: [
-                    Text(
-                      'Live Timeline',
-                      style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                    // 1. Live Animated Score Header
+                    _buildAnimatedHeader(
+                      context: context,
+                      sport: sport,
+                      derivedState: derivedState,
+                      rawStreamMatch: rawStreamMatch,
+                      matchDetail: matchDetail,
+                      homeName: homeName,
+                      awayName: awayName,
+                      status: matchStatus,
+                      isDark: isDark,
+                      playerNames: playerNames,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xxs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withAlpha(25),
-                        borderRadius: BorderRadius.circular(AppSpacing.xs),
-                      ),
-                      child: Text(
-                        '${events.length} Events',
-                        style: AppTypography.caption.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // 2. Full Professional Scorecard (Batting, Bowling, Sets, Goals)
+                    ProfessionalScorecard(
+                      match: matchDetail,
+                      scoringState: derivedState,
+                      playerNames: playerNames,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // 3. Timeline Section Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Live Timeline',
+                          style: AppTypography.headline.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
                         ),
-                      ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.sm,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: context.colors.fillSecondary,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                          ),
+                          child: Text(
+                            '${events.length} Events',
+                            style: AppTypography.caption.copyWith(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: AppSpacing.md),
+
+                    // 4. Chronological Event Feed (newest first)
+                    if (events.isEmpty)
+                      const EmptyState(
+                        icon: Icons.timeline_outlined,
+                        title: 'No Events Yet',
+                        subtitle: 'Scoring actions will appear here in real time.',
+                      )
+                    else
+                      ...events.reversed.map((event) => _buildTimelineTile(
+                            context: context,
+                            event: event,
+                            homeId: homeId,
+                            homeName: homeName,
+                            awayName: awayName,
+                            sport: sport,
+                            isDark: isDark,
+                            playerNames: playerNames,
+                          )),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-
-                // 4. Chronological Event Feed (newest first)
-                if (events.isEmpty)
-                  const EmptyState(
-                    icon: Icons.timeline_outlined,
-                    title: 'No Events Yet',
-                    subtitle: 'Scoring actions will appear here in real time.',
-                  )
-                else
-                  ...events.reversed.map((event) => _buildTimelineTile(
-                        context: context,
-                        event: event,
-                        homeId: homeId,
-                        homeName: homeName,
-                        awayName: awayName,
-                        sport: sport,
-                        isDark: isDark,
-                        playerNames: playerNames,
-                      )),
-              ],
+              ),
             ),
           );
         },
@@ -261,23 +276,31 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
   Widget _buildErrorView(BuildContext context, String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.screenMargin),
+        padding: const EdgeInsets.all(AppSpacing.screenMarginCompact),
         child: AppCard(
+          padding: const EdgeInsets.all(AppSpacing.cardPadding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.error),
+              const Icon(Icons.cloud_off_rounded, size: 48, color: AppColors.loss),
               const SizedBox(height: AppSpacing.md),
-              Text('Connection Error', style: AppTypography.title),
+              Text(
+                'Connection Error',
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.textPrimary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 error,
-                style: AppTypography.body,
+                style: AppTypography.body.copyWith(color: context.colors.textSecondary),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AppSpacing.lg),
               AppButton(
                 label: 'Retry Connection',
+                variant: AppButtonVariant.primary,
                 onPressed: () {
                   ref.read(liveEventsNotifierProvider(widget.matchId).notifier).refresh();
                 },
@@ -301,7 +324,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     required bool isDark,
     required Map<String, String> playerNames,
   }) {
-    final secondaryText = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+    final secondaryText = context.colors.textSecondary;
 
     String resolvePlayer(String? id) {
       if (id == null || id.isEmpty) return 'Player';
@@ -329,9 +352,9 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
           idLower == 'striker 1' ||
           idLower == 'non-striker 2' ||
           idLower == 'opening bowler') {
-        final isCricket = derivedState is CricketState && (derivedState as CricketState).innings.isNotEmpty;
+        final isCricket = derivedState is CricketState && derivedState.innings.isNotEmpty;
         final battingTeamId = isCricket
-            ? (derivedState as CricketState).innings.first.battingTeamId
+            ? derivedState.innings.first.battingTeamId
             : matchDetail.homeTeamId;
         final isHomeBatting = battingTeamId == matchDetail.homeTeamId || battingTeamId == 'home';
         final battingTeamName = isHomeBatting ? homeName : awayName;
@@ -379,7 +402,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     }
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -390,11 +413,15 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               Expanded(
                 child: Text(
                   '$homeName vs $awayName',
-                  style: AppTypography.headline.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.headline.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              _buildLiveBadge(status),
+              const SizedBox(width: AppSpacing.sm),
+              _buildLiveBadge(context, status),
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -406,7 +433,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               children: [
                 Column(
                   children: [
-                    Text(homeName, style: AppTypography.body.copyWith(color: secondaryText)),
+                    Text(homeName, style: AppTypography.callout.copyWith(color: secondaryText)),
                     const SizedBox(height: AppSpacing.xs),
                     AnimatedScore(value: derivedState.homeScore),
                   ],
@@ -417,7 +444,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                 ),
                 Column(
                   children: [
-                    Text(awayName, style: AppTypography.body.copyWith(color: secondaryText)),
+                    Text(awayName, style: AppTypography.callout.copyWith(color: secondaryText)),
                     const SizedBox(height: AppSpacing.xs),
                     AnimatedScore(value: derivedState.awayScore),
                   ],
@@ -426,10 +453,21 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
             ),
             if (derivedState.shootoutKicks.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Shootout: ${derivedState.shootoutHomeScore} - ${derivedState.shootoutAwayScore} pens',
-                style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                decoration: BoxDecoration(
+                  color: context.colors.fillSecondary,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
+                ),
+                child: Text(
+                  'Shootout: ${derivedState.shootoutHomeScore} - ${derivedState.shootoutAwayScore} pens',
+                  style: AppTypography.caption.copyWith(
+                    color: context.colors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ] else if (sport == 'badminton' && derivedState is BadmintonState) ...[
@@ -441,7 +479,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                     children: [
                       Text(
                         homeName,
-                        style: AppTypography.body.copyWith(color: secondaryText),
+                        style: AppTypography.callout.copyWith(color: secondaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -459,9 +497,10 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                         style: AppTypography.caption.copyWith(
                           color: status == 'completed' &&
                                   derivedState.homeGamesWon > derivedState.awayGamesWon
-                              ? AppColors.success
-                              : null,
-                          fontWeight: status == 'completed' ? FontWeight.bold : null,
+                              ? context.colors.win
+                              : secondaryText,
+                          fontWeight: status == 'completed' ? FontWeight.w700 : FontWeight.w500,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
@@ -473,13 +512,19 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                     children: [
                       Text(
                         status == 'completed' ? 'FT' : 'G${derivedState.currentGameIndex + 1}',
-                        style: AppTypography.headline
-                            .copyWith(color: Theme.of(context).colorScheme.primary),
+                        style: AppTypography.headline.copyWith(
+                          color: context.colors.primaryFill,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       if (status == 'completed' && derivedState.games.isNotEmpty)
                         Text(
                           derivedState.games.map((g) => '${g.homePoints}-${g.awayPoints}').join(', '),
-                          style: AppTypography.caption.copyWith(color: secondaryText, fontSize: 11),
+                          style: AppTypography.caption.copyWith(
+                            color: secondaryText,
+                            fontSize: 11,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                     ],
                   ),
@@ -489,7 +534,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                     children: [
                       Text(
                         awayName,
-                        style: AppTypography.body.copyWith(color: secondaryText),
+                        style: AppTypography.callout.copyWith(color: secondaryText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -507,9 +552,10 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                         style: AppTypography.caption.copyWith(
                           color: status == 'completed' &&
                                   derivedState.awayGamesWon > derivedState.homeGamesWon
-                              ? AppColors.success
-                              : null,
-                          fontWeight: status == 'completed' ? FontWeight.bold : null,
+                              ? context.colors.win
+                              : secondaryText,
+                          fontWeight: status == 'completed' ? FontWeight.w700 : FontWeight.w500,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
@@ -530,31 +576,45 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                       AnimatedScore(value: derivedState.activeInnings!.totalRuns),
                       Text(
                         '/',
-                        style: AppTypography.scoreDisplay,
+                        style: AppTypography.displayXL.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textPrimary,
+                        ),
                       ),
                       AnimatedScore(value: derivedState.activeInnings!.totalWickets),
                     ],
                   ),
                   Text(
                     '${derivedState.activeInnings!.overs.toStringAsFixed(1)} ov',
-                    style: AppTypography.headline.copyWith(color: secondaryText),
+                    style: AppTypography.title.copyWith(
+                      color: secondaryText,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ],
               ),
               if (derivedState.target != null) ...[
                 const SizedBox(height: AppSpacing.xs),
-                Text(
-                  derivedState.resultMarginText ?? 'Target: ${derivedState.target}',
-                  style: AppTypography.caption.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    color: context.colors.fillSecondary,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
+                  ),
+                  child: Text(
+                    derivedState.resultMarginText ?? 'Target: ${derivedState.target}',
+                    style: AppTypography.caption.copyWith(
+                      color: context.colors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
               // Active Batters & Bowler
               if (derivedState.activeInnings!.strikerId != null ||
                   derivedState.activeInnings!.currentBowlerId != null) ...[
-                const Divider(),
+                Divider(color: context.colors.divider, height: AppSpacing.lg, thickness: 0.5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -563,7 +623,7 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                         '${resolvePlayer(derivedState.activeInnings!.strikerId)}*',
                         style: AppTypography.callout.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: context.colors.textPrimary,
                         ),
                       ),
                     if (derivedState.activeInnings!.nonStrikerId != null)
@@ -582,14 +642,19 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
                 ],
               ],
             ] else
-              const Center(child: Text('Innings setup in progress')),
+              Center(
+                child: Text(
+                  'Innings setup in progress',
+                  style: AppTypography.body.copyWith(color: secondaryText),
+                ),
+              ),
           ] else ...[
             // Generic Fallback
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 AnimatedScore(value: (rawStreamMatch?['home_score'] as int?) ?? matchDetail.homeScore ?? 0),
-                const Text('-'),
+                Text('-', style: AppTypography.title.copyWith(color: secondaryText)),
                 AnimatedScore(value: (rawStreamMatch?['away_score'] as int?) ?? matchDetail.awayScore ?? 0),
               ],
             ),
@@ -599,19 +664,34 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     );
   }
 
-  Widget _buildLiveBadge(String status) {
+  Widget _buildLiveBadge(BuildContext context, String status) {
     final isLive = status.toLowerCase() == 'live';
-    final colors = context.appColors;
+    Color bg;
+    Color fg;
+
+    switch (status.toLowerCase()) {
+      case 'live':
+        bg = AppColors.liveContainerLight;
+        fg = AppColors.liveLight;
+        break;
+      case 'completed':
+        bg = context.colors.winContainer;
+        fg = context.colors.win;
+        break;
+      case 'paused':
+        bg = context.colors.warningContainer;
+        fg = context.colors.warning;
+        break;
+      default:
+        bg = context.colors.fillSecondary;
+        fg = context.colors.textSecondary;
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 3),
       decoration: BoxDecoration(
-        color: isLive ? colors.live.withAlpha(20) : colors.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isLive ? colors.live.withAlpha(60) : colors.border,
-          width: 1,
-        ),
+        color: bg,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -622,17 +702,17 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               height: 6,
               margin: const EdgeInsets.only(right: 6),
               decoration: BoxDecoration(
-                color: colors.live,
+                color: fg,
                 shape: BoxShape.circle,
               ),
             ),
           ],
           Text(
             isLive ? 'LIVE' : (status.toLowerCase() == 'completed' ? 'FT' : status.toUpperCase()),
-            style: AppTypography.overline.copyWith(
-              color: isLive ? colors.live : colors.textSecondary,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
+            style: AppTypography.caption.copyWith(
+              color: fg,
+              fontWeight: FontWeight.w700,
+              fontSize: 10,
               letterSpacing: 0.5,
             ),
           ),
@@ -653,16 +733,16 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
   }) {
     final teamName = event.teamId == homeId ? homeName : awayName;
     final iconData = _getEventIcon(event);
-    final iconColor = _getEventColor(event);
+    final iconColor = _getEventColor(context, event);
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
         border: Border.all(
-          color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+          color: context.colors.divider,
           width: 0.5,
         ),
       ),
@@ -671,10 +751,10 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
           Container(
             padding: const EdgeInsets.all(AppSpacing.xs),
             decoration: BoxDecoration(
-              color: iconColor.withAlpha(25),
+              color: iconColor.withValues(alpha: 0.12),
               shape: BoxShape.circle,
             ),
-            child: Icon(iconData, size: 20, color: iconColor),
+            child: Icon(iconData, size: 18, color: iconColor),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -683,12 +763,15 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
               children: [
                 Text(
                   _formatEventTitle(event, teamName),
-                  style: AppTypography.body.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTypography.callout.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textPrimary,
+                  ),
                 ),
                 Text(
                   _formatEventSubtitle(event, playerNames),
                   style: AppTypography.caption.copyWith(
-                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
               ],
@@ -697,8 +780,9 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
           Text(
             '#${event.seq}',
             style: AppTypography.caption.copyWith(
-              color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+              color: context.colors.textTertiary,
               fontSize: 11,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
@@ -726,20 +810,20 @@ class _ScorecardViewScreenState extends ConsumerState<ScorecardViewScreen>
     }
   }
 
-  Color _getEventColor(MatchEvent event) {
-    if (event.payload['is_wicket'] == true) return AppColors.error;
+  Color _getEventColor(BuildContext context, MatchEvent event) {
+    if (event.payload['is_wicket'] == true) return AppColors.loss;
     switch (event.type) {
       case 'goal':
       case 'rally_won':
-        return AppColors.success;
+        return context.colors.win;
       case 'own_goal':
       case 'wicket':
       case 'red_card':
-        return AppColors.error;
+        return AppColors.loss;
       case 'yellow_card':
-        return AppColors.warning;
+        return context.colors.warning;
       default:
-        return Theme.of(context).colorScheme.primary;
+        return context.colors.primaryFill;
     }
   }
 
