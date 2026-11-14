@@ -117,18 +117,17 @@ class TournamentCard extends StatelessWidget {
               const Spacer(),
               if (tournament.isOfficial)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.accentSurface,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: AppColors.accent, width: 0.8),
+                    color: colors.fillSecondary,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     'OFFICIAL',
                     style: AppTypography.caption.copyWith(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.accent,
+                      color: colors.textPrimary,
                     ),
                   ),
                 ),
@@ -149,59 +148,59 @@ class TournamentCard extends StatelessWidget {
         );
       case TournamentStatus.registrationOpen:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.win.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(4),
+            color: colors.winContainer,
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             'REGISTRATION OPEN',
             style: AppTypography.caption.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.win,
+              color: colors.win,
             ),
           ),
         );
       case TournamentStatus.completed:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.completedSurface,
-            borderRadius: BorderRadius.circular(4),
+            color: colors.fillSecondary,
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             'COMPLETED',
             style: AppTypography.caption.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.completed,
+              color: colors.textSecondary,
             ),
           ),
         );
       case TournamentStatus.registrationClosed:
       case TournamentStatus.ready:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: AppColors.accentSurface,
-            borderRadius: BorderRadius.circular(4),
+            color: colors.fillSecondary,
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             'UPCOMING',
             style: AppTypography.caption.copyWith(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.accent,
+              color: colors.textPrimary,
             ),
           ),
         );
       default:
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: colors.border.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(4),
+            color: colors.fillSecondary,
+            borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             status.name.toUpperCase(),

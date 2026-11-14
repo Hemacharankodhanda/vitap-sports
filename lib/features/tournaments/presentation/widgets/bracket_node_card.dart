@@ -44,26 +44,17 @@ class BracketNodeCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         width: cardWidth,
         height: cardHeight,
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: colors.surface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isLive ? AppColors.live : colors.border,
-            width: isLive ? 1.5 : 1.0,
-          ),
-          boxShadow: isLive
-              ? [
-                  BoxShadow(
-                    color: AppColors.live.withValues(alpha: 0.2),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
+          borderRadius: BorderRadius.circular(14),
+          border: isLive
+              ? Border.all(color: colors.live, width: 1.0)
+              : Border.all(color: colors.divider, width: 0.5),
         ),
         child: Stack(
           children: [
@@ -80,9 +71,9 @@ class BracketNodeCard extends StatelessWidget {
                   ),
                 ),
                 Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: colors.border,
+                  height: 0.5,
+                  thickness: 0.5,
+                  color: colors.divider,
                 ),
                 // Slot B
                 Expanded(
@@ -98,18 +89,18 @@ class BracketNodeCard extends StatelessWidget {
             ),
             if (isLive)
               Positioned(
-                top: 2,
-                right: 4,
+                top: 4,
+                right: 6,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.live,
-                    borderRadius: BorderRadius.circular(3),
+                    color: colors.liveContainer,
+                    borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
+                  child: Text(
                     'LIVE',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.live,
                       fontSize: 8,
                       fontWeight: FontWeight.w700,
                     ),
@@ -178,8 +169,8 @@ class _SlotRow extends StatelessWidget {
     final colors = context.appColors;
 
     return Container(
-      color: isWinner ? AppColors.accentSurface : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      color: isWinner ? colors.fillSecondary : Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Row(
         children: [
           if (seed != null) ...[
@@ -188,6 +179,7 @@ class _SlotRow extends StatelessWidget {
               style: AppTypography.caption.copyWith(
                 color: colors.textTertiary,
                 fontWeight: FontWeight.w600,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
             const SizedBox(width: 6),
@@ -211,7 +203,8 @@ class _SlotRow extends StatelessWidget {
               score!,
               style: AppTypography.caption.copyWith(
                 fontWeight: isWinner ? FontWeight.w700 : FontWeight.w500,
-                color: isWinner ? AppColors.accent : colors.textSecondary,
+                color: colors.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ],

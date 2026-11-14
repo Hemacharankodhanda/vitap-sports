@@ -277,3 +277,23 @@
   - `flutter test`: 168/168 tests passing (100% green, including 6 leaderboard widget tests).
   - `flutter analyze`: 53 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Slice 4.10: Tournaments (`tournament_list_screen.dart`, `tournament_detail_screen.dart`, `create_tournament_sheet.dart`, `generate_draw_dialog.dart`, knockout bracket view, standings table).
+
+---
+
+### Iteration 13 — Phase 4: Slice 4.10: Tournaments
+- **Goal:** Restyle Tournaments screens and components (`TournamentListScreen`, `TournamentDetailScreen`, `CreateTournamentScreen`, `TournamentCard`, `BracketNodeCard`, `TournamentStandingsTable`, `CreateTournamentSheet`, `RegisterEntrySheet`, `GenerateDrawDialog`) with Apple design aesthetic (`FrostedAppBar`, responsive max reading width constraints, radius 24 borderless surface cards, tabular figures on all seeds/scores/standings, hairline 0.5px dividers, Apple status badges with container tints, sheets with top drag handle and `radiusSheetTop` 28dp, radius 24 dialogs, zero emojis) without touching tournament state machines, draw generation RPCs, or standings calculations.
+- **Files Modified:**
+  - `lib/features/tournaments/presentation/screens/tournament_list_screen.dart` (Restyled with `FrostedAppBar`, Stadium pill `FloatingActionButton.extended`, hairline dividers, responsive max reading width constraint, and `AppChip` filters)
+  - `lib/features/tournaments/presentation/screens/tournament_detail_screen.dart` (Restyled with `FrostedAppBar`, Apple-styled `TabBar` with hairline indicator and tabular pending count badge, responsive reading width, cleaned string interpolation)
+  - `lib/features/tournaments/screens/create_tournament_screen.dart` (Restyled with `FrostedAppBar` and max reading width constraint)
+  - `lib/features/tournaments/presentation/widgets/tournament_card.dart` (Restyled with Apple pill badges with container tints, official pill tag, radius 24 `AppCard`)
+  - `lib/features/tournaments/presentation/widgets/bracket_node_card.dart` (Restyled with borderless radius 14 node, hairline divider, tabular figures, and live pill tag)
+  - `lib/features/tournaments/presentation/widgets/tournament_standings_table.dart` (Restyled with radius 24 `AppCard`, `fillSecondary` header row, hairline dividers, tabular figures, and clean win-tint qualification bar)
+  - `lib/features/tournaments/presentation/widgets/create_tournament_sheet.dart` (Added drag handle, top radius 28dp, `surfaceElevated` background, and fixed deprecated `activeColor` to `activeTrackColor: colors.primaryFill, activeThumbColor: colors.onPrimary`)
+  - `lib/features/tournaments/presentation/widgets/register_entry_sheet.dart` (Added drag handle, top radius 28dp, and `surfaceElevated` background)
+  - `lib/features/tournaments/presentation/widgets/generate_draw_dialog.dart` (Restyled `AlertDialog` with radius 24 `AppSpacing.radiusDialog`, `surfaceElevated` background, and `AppButton` pill buttons)
+  - `docs/redesign/PARITY.md` (Updated `/tournaments`, `/tournaments/create`, and `/tournaments/:id` status to Restyled)
+- **Verification:**
+  - `flutter test`: 168/168 tests passing (100% green, including 49 tournament unit/widget/routing tests).
+  - `flutter analyze`: 51 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 5: Responsive, Accessibility & Motion Pass (Multi-breakpoint layouts, 200% text scale verification, reduce-motion auditing).

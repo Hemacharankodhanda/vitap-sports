@@ -3,6 +3,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../presentation/widgets/create_tournament_sheet.dart';
 
 class CreateTournamentScreen extends StatelessWidget {
@@ -11,10 +13,15 @@ class CreateTournamentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Tournament')),
-      body: const SafeArea(
-        child: SingleChildScrollView(
-          child: CreateTournamentSheet(),
+      appBar: const FrostedAppBar(title: Text('Create Tournament')),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+            child: const SingleChildScrollView(
+              child: CreateTournamentSheet(),
+            ),
+          ),
         ),
       ),
     );
