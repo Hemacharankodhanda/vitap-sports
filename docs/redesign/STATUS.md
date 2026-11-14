@@ -126,3 +126,19 @@
   - `flutter test`: 151/151 tests passing (100% green, including 3 new shell navigation and theme settings tests).
   - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
 - **Next Slice:** Phase 4: Screen-by-Screen Migration — Slice 4.1: Authentication Screens (`login_screen.dart`, `onboarding_screen.dart`).
+
+---
+
+### Iteration 4 — Phase 4: Slice 4.1: Authentication Screens
+- **Goal:** Restyle `LoginScreen` and `OnboardingScreen` with Apple design direction (monochrome palette, soft rounded surfaces, Large Title typography, 200% text scale survivability, `FrostedAppBar`, `AppSegmented` for skill levels, zero emojis) without changing Supabase auth or profile mutation flows.
+- **Files Modified / Created:**
+  - `lib/features/auth/screens/login_screen.dart` (Restyled with large confident typography, clean surface logo card, scrollable constrained layout surviving 200% text scale, pill button, zero emojis)
+  - `lib/features/auth/screens/onboarding_screen.dart` (Restyled with `FrostedAppBar`, stacked `AppTextField` inputs, pill chips for year/hostel, `AppSegmented<String>` for sport skill levels, and primary pill button)
+  - `lib/core/widgets/app_chip.dart` (Removed unconstrained Center wrapper to prevent expansion inside Wrap)
+  - `lib/core/widgets/app_segmented.dart` (Wrapped text in Flexible to prevent horizontal overflow on long segment labels)
+  - `test/auth/auth_screens_test.dart` (New: widget tests for LoginScreen layout, 200% text scale test, and OnboardingScreen fields/chips/segmented selection)
+  - `docs/redesign/PARITY.md` (Updated `/login`, `/onboarding`, and `/profile/theme` status to Restyled)
+- **Verification:**
+  - `flutter test`: 154/154 tests passing (100% green, including 3 new auth widget tests).
+  - `flutter analyze`: 77 issues (all pre-existing lints, zero compilation errors, zero new warnings).
+- **Next Slice:** Phase 4: Slice 4.2: Feed / Home Screen (`feed_screen.dart`, `free_agents_screen.dart`).

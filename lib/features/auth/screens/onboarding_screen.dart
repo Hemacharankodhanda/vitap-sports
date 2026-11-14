@@ -1,7 +1,7 @@
-/// VIT-AP Sports — Onboarding screen.
+/// VIT-AP Sports — Onboarding screen (Apple Design System).
 ///
-/// First-login profile creation: name, branch, year, hostel block,
-/// sports multi-select with skill level per sport.
+/// First-login profile setup: name, branch, year, hostel block,
+/// sports multi-select, and per-sport skill levels using AppSegmented.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,8 +12,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../profile/providers/profile_provider.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -86,15 +89,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
-        title: const Text('Complete Your Profile'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      backgroundColor: colors.background,
+      appBar: FrostedAppBar(
+        title: Text(
+          'Complete Profile',
+          style: AppTypography.title.copyWith(color: colors.textPrimary),
+        ),
       ),
       body: SafeArea(
         child: Form(
@@ -105,27 +108,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               vertical: AppSpacing.lg,
             ),
             children: [
-              // Welcome text
+              // Welcome Header
               Text(
                 'Tell us about yourself',
-                style: AppTypography.title.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
+                style: AppTypography.largeTitle.copyWith(
+                  color: colors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.68,
                 ),
               ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.xs),
               Text(
-                'This helps other players find and connect with you.',
+                'This helps other players on campus find and connect with you.',
                 style: AppTypography.body.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.xxl),
 
-              // ─── Name ─────────────────────────────────
+              // Full Name
               AppTextField(
                 controller: _nameController,
                 label: 'Full Name',
@@ -136,23 +137,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // ─── Branch ───────────────────────────────
+              // Branch
               AppTextField(
                 controller: _branchController,
                 label: 'Branch',
-                hint: 'e.g., CSE, ECE, ME',
+                hint: 'e.g. CSE, ECE, ME',
                 prefixIcon: Icons.school_outlined,
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Branch is required' : null,
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // ─── Year ─────────────────────────────────
+              // Year Selection
               Text(
-                'Year',
-                style: AppTypography.caption.copyWith(
+                'Academic Year',
+                style: AppTypography.callout.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -169,12 +170,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // ─── Hostel Block ─────────────────────────
+              // Hostel Block
               Text(
                 'Hostel Block',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.callout.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -190,14 +191,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         ))
                     .toList(),
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.xxl),
 
-              // ─── Sports ───────────────────────────────
+              // Sports Multi-Select
               Text(
                 'Sports You Play',
-                style: AppTypography.caption.copyWith(
+                style: AppTypography.callout.copyWith(
                   fontWeight: FontWeight.w500,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: colors.textSecondary,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -224,56 +225,59 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ),
               const SizedBox(height: AppSpacing.xl),
 
-              // ─── Skill Levels ─────────────────────────
+              // Skill Levels via AppSegmented per sport
               if (_selectedSports.isNotEmpty) ...[
                 Text(
-                  'Skill Level',
-                  style: AppTypography.caption.copyWith(
+                  'Skill Levels',
+                  style: AppTypography.callout.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: Theme.of(context).colorScheme.onSurface,
+                    color: colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                ..._selectedSports.map((sport) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Text(
-                              sport,
-                              style: AppTypography.body.copyWith(
-                                color: isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.lightTextPrimary,
+                AppCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    children: [
+                      for (var i = 0; i < _selectedSports.length; i++) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _selectedSports.elementAt(i),
+                                style: AppTypography.headline.copyWith(
+                                  color: colors.textPrimary,
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: AppSpacing.sm),
+                              AppSegmented<String>(
+                                options: _skillOptions,
+                                selected: _skillLevels[_selectedSports.elementAt(i)] ?? 'Beginner',
+                                height: 38,
+                                labelBuilder: (lvl) => lvl,
+                                onSelected: (lvl) {
+                                  setState(() {
+                                    _skillLevels[_selectedSports.elementAt(i)] = lvl;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            flex: 3,
-                            child: Row(
-                              children: _skillOptions
-                                  .map((level) => Expanded(
-                                        child: AppChip(
-                                          label: level,
-                                          isSelected:
-                                              _skillLevels[sport] == level,
-                                          onTap: () => setState(() =>
-                                              _skillLevels[sport] = level),
-                                        ),
-                                      ))
-                                  .toList(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )),
+                        ),
+                        if (i < _selectedSports.length - 1)
+                          Divider(height: 1, thickness: 0.5, color: colors.divider),
+                      ],
+                    ],
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.lg),
               ],
 
-              const SizedBox(height: AppSpacing.xxl),
+              const SizedBox(height: AppSpacing.xl),
 
-              // ─── Submit ───────────────────────────────
+              // Complete Profile Button
               AppButton(
                 label: 'Complete Profile',
                 onPressed: _handleSubmit,

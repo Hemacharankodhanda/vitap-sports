@@ -37,42 +37,40 @@ class AppChip extends StatelessWidget {
     final bgColor = isSelected ? colors.primaryFill : colors.fillSecondary;
     final textColor = isSelected ? colors.onPrimary : colors.textPrimary;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget, minWidth: AppSpacing.minTouchTarget),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-          splashColor: Colors.transparent,
-          highlightColor: textColor.withAlpha(20),
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (avatar != null) ...[
-                  avatar!,
-                  const SizedBox(width: AppSpacing.xs),
-                ],
-                if (icon != null) ...[
-                  Icon(icon, size: 16, color: textColor),
-                  const SizedBox(width: AppSpacing.xs),
-                ],
-                Text(
-                  label,
-                  style: AppTypography.callout.copyWith(
-                    color: textColor,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget, minWidth: AppSpacing.minTouchTarget),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+        splashColor: Colors.transparent,
+        highlightColor: textColor.withAlpha(20),
+        child: Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (avatar != null) ...[
+                avatar!,
+                const SizedBox(width: AppSpacing.xs),
               ],
-            ),
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: textColor),
+                const SizedBox(width: AppSpacing.xs),
+              ],
+              Text(
+                label,
+                style: AppTypography.callout.copyWith(
+                  color: textColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       ),

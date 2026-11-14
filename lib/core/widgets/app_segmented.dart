@@ -102,18 +102,20 @@ class AppSegmented<T> extends StatelessWidget {
                                 iconBuilder!(options[i]),
                                 const SizedBox(width: AppSpacing.xs),
                               ],
-                              Text(
-                                labelBuilder(options[i]),
-                                style: AppTypography.callout.copyWith(
-                                  fontWeight: i == activeIndex
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  color: i == activeIndex
-                                      ? (isDark ? Colors.white : colors.textPrimary)
-                                      : colors.textSecondary,
+                              Flexible(
+                                child: Text(
+                                  labelBuilder(options[i]),
+                                  style: AppTypography.callout.copyWith(
+                                    fontWeight: i == activeIndex
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: i == activeIndex
+                                        ? (isDark ? Colors.white : colors.textPrimary)
+                                        : colors.textSecondary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
