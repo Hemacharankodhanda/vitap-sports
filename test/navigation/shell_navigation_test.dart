@@ -88,6 +88,43 @@ void main() {
       expect(activeIndex, 2);
     });
 
+    testWidgets('Swiping horizontally on body or bottom bar changes active tab', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      int activeIndex = 0;
+
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light(const Color(0xFF1D1D1F)),
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            return ShellScreen(
+              navigationShell: MockNavigationShell(
+                currentIndex: activeIndex,
+                onDestinationSelected: (idx) {
+                  setState(() => activeIndex = idx);
+                },
+              ),
+            );
+          },
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(activeIndex, 0);
+
+      // Swipe left on body (horizontal drag left with velocity)
+      await tester.drag(find.text('Shell Branch: 0'), const Offset(-350, 0));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 1);
+
+      // Swipe right on body (horizontal drag right with velocity)
+      await tester.drag(find.text('Shell Branch: 1'), const Offset(350, 0));
+      await tester.pumpAndSettle();
+      expect(activeIndex, 0);
+    });
+
     testWidgets('Switches to Navigation Rail layout on wide screen', (tester) async {
       tester.view.physicalSize = const Size(1024, 768);
       tester.view.devicePixelRatio = 1.0;

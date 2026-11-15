@@ -7,7 +7,6 @@
 /// - Shows '-' for undefined values, never NaN.
 library;
 
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';

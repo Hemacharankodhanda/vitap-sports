@@ -8,9 +8,11 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_breakpoints.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import 'frosted_bar.dart';
@@ -59,7 +61,12 @@ class AdaptiveScaffold extends StatelessWidget {
         backgroundColor: backgroundColor ?? colors.background,
         appBar: appBar,
         floatingActionButton: floatingActionButton,
-        body: body,
+        body: _SwipeTabDetector(
+          currentIndex: currentIndex,
+          maxIndex: destinations.length - 1,
+          onNavigationChanged: onNavigationChanged,
+          child: body,
+        ),
         bottomNavigationBar: _buildBottomNav(context, colors),
       );
     }
@@ -80,6 +87,10 @@ class AdaptiveScaffold extends StatelessWidget {
   }
 
   Widget _buildBottomNav(BuildContext context, AppColorsExtension colors) {
+    final reduceMotion = AppMotion.shouldReduceMotion(context);
+    final animDuration = reduceMotion ? Duration.zero : AppMotion.stateChangeDuration;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return FrostedBar(
       showTopDivider: true,
       height: AppSpacing.bottomNavHeight + MediaQuery.of(context).padding.bottom,
@@ -87,19 +98,69 @@ class AdaptiveScaffold extends StatelessWidget {
         top: false,
         child: SizedBox(
           height: AppSpacing.bottomNavHeight,
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i++) ...[
-                Expanded(
-                  child: _BottomNavItem(
-                    key: destinations[i].key,
-                    destination: destinations[i],
-                    isSelected: i == currentIndex,
-                    onTap: () => onNavigationChanged(i),
-                  ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final totalWidth = constraints.maxWidth;
+              final count = destinations.length;
+              final tabWidth = count > 0 ? totalWidth / count : 0.0;
+              final activeIndex =
+                  (currentIndex >= 0 && currentIndex < count) ? currentIndex : 0;
+              final capsuleWidth = (tabWidth - 12.0).clamp(44.0, 68.0);
+              final capsuleLeft =
+                  (activeIndex * tabWidth) + (tabWidth - capsuleWidth) / 2;
+
+              return _SwipeTabDetector(
+                currentIndex: currentIndex,
+                maxIndex: destinations.length - 1,
+                onNavigationChanged: onNavigationChanged,
+                child: Stack(
+                  children: [
+                    // ─── Smooth Sliding Capsule Highlight ─────
+                    AnimatedPositioned(
+                      duration: animDuration,
+                      curve: AppMotion.curve,
+                      left: capsuleLeft,
+                      top: 4,
+                      bottom: 4,
+                      width: capsuleWidth,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? colors.fillSecondary.withAlpha(150)
+                              : colors.fillSecondary.withAlpha(200),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(isDark ? 40 : 15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // ─── Destination Items ─────────────────────
+                    Row(
+                      children: [
+                        for (var i = 0; i < destinations.length; i++)
+                          Expanded(
+                            child: _BottomNavItem(
+                              key: destinations[i].key,
+                              destination: destinations[i],
+                              isSelected: i == currentIndex,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onNavigationChanged(i);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ],
+              );
+            },
           ),
         ),
       ),
@@ -116,7 +177,7 @@ class AdaptiveScaffold extends StatelessWidget {
             const SizedBox(height: AppSpacing.lg),
             for (var i = 0; i < destinations.length; i++) ...[
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                padding: const EdgeInsets.symmetric(vertical: 6.0),
                 child: _RailNavItem(
                   key: destinations[i].key,
                   destination: destinations[i],
@@ -148,6 +209,8 @@ class _BottomNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final color = isSelected ? colors.textPrimary : colors.textSecondary;
+    final reduceMotion = AppMotion.shouldReduceMotion(context);
+    final animDuration = reduceMotion ? Duration.zero : AppMotion.stateChangeDuration;
 
     return Semantics(
       button: true,
@@ -156,27 +219,36 @@ class _BottomNavItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         splashColor: Colors.transparent,
-        highlightColor: colors.textPrimary.withAlpha(10),
+        highlightColor: Colors.transparent,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isSelected ? destination.selectedIcon : destination.icon,
-              size: AppSpacing.iconNav,
-              color: color,
+            AnimatedScale(
+              scale: isSelected ? 1.10 : 1.0,
+              duration: animDuration,
+              curve: AppMotion.curve,
+              child: Icon(
+                isSelected ? destination.selectedIcon : destination.icon,
+                size: AppSpacing.iconNav,
+                color: color,
+              ),
             ),
             const SizedBox(height: 3),
-            Text(
-              destination.label,
+            AnimatedDefaultTextStyle(
+              duration: animDuration,
+              curve: AppMotion.curve,
               style: TextStyle(
                 fontFamily: AppTypography.caption.fontFamily,
                 fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: color,
                 letterSpacing: -0.1,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              child: Text(
+                destination.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -201,43 +273,120 @@ class _RailNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final color = isSelected ? colors.textPrimary : colors.textSecondary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = AppMotion.shouldReduceMotion(context);
+    final animDuration = reduceMotion ? Duration.zero : AppMotion.stateChangeDuration;
 
     return Semantics(
       button: true,
       selected: isSelected,
       label: destination.label,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
         splashColor: Colors.transparent,
-        highlightColor: colors.textPrimary.withAlpha(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        highlightColor: Colors.transparent,
+        child: AnimatedContainer(
+          duration: animDuration,
+          curve: AppMotion.curve,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark
+                    ? colors.fillSecondary.withAlpha(160)
+                    : colors.fillSecondary.withAlpha(200))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                isSelected ? destination.selectedIcon : destination.icon,
-                size: AppSpacing.iconNav,
-                color: color,
+              AnimatedScale(
+                scale: isSelected ? 1.10 : 1.0,
+                duration: animDuration,
+                curve: AppMotion.curve,
+                child: Icon(
+                  isSelected ? destination.selectedIcon : destination.icon,
+                  size: AppSpacing.iconNav,
+                  color: color,
+                ),
               ),
               const SizedBox(height: 4),
-              Text(
-                destination.label,
+              AnimatedDefaultTextStyle(
+                duration: animDuration,
+                curve: AppMotion.curve,
                 style: TextStyle(
                   fontFamily: AppTypography.caption.fontFamily,
                   fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: color,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  destination.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SwipeTabDetector extends StatefulWidget {
+  const _SwipeTabDetector({
+    required this.currentIndex,
+    required this.maxIndex,
+    required this.onNavigationChanged,
+    required this.child,
+  });
+
+  final int currentIndex;
+  final int maxIndex;
+  final ValueChanged<int> onNavigationChanged;
+  final Widget child;
+
+  @override
+  State<_SwipeTabDetector> createState() => _SwipeTabDetectorState();
+}
+
+class _SwipeTabDetectorState extends State<_SwipeTabDetector> {
+  double _dragDistance = 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragStart: (_) => _dragDistance = 0.0,
+      onHorizontalDragUpdate: (details) {
+        _dragDistance += details.primaryDelta ?? 0.0;
+      },
+      onHorizontalDragEnd: (details) {
+        final velocity = details.primaryVelocity ?? 0.0;
+        final distance = _dragDistance;
+        _dragDistance = 0.0;
+
+        if (distance < -50.0 || velocity < -200.0) {
+          // Swiped Left -> Next tab
+          if (widget.currentIndex < widget.maxIndex) {
+            HapticFeedback.selectionClick();
+            widget.onNavigationChanged(widget.currentIndex + 1);
+          }
+        } else if (distance > 50.0 || velocity > 200.0) {
+          // Swiped Right -> Previous tab
+          if (widget.currentIndex > 0) {
+            HapticFeedback.selectionClick();
+            widget.onNavigationChanged(widget.currentIndex - 1);
+          }
+        }
+      },
+      child: widget.child,
     );
   }
 }
