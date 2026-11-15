@@ -1,20 +1,18 @@
-/// VIT-AP Sports — Redesigned Tabular Leaderboard Screen.
-/// Follows VIT-AP Sports Design Rules: Material 3 with Apple HIG restraint,
-/// tabular figures for all numerical statistics, content-first, flat surfaces with hairline borders.
 library;
 
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_avatar.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../teams/data/models/team_model.dart';
 import '../providers/leaderboard_providers.dart';
@@ -32,7 +30,7 @@ class LeaderboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colors.background,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Leaderboard'),
         actions: [
           IconButton(
@@ -42,145 +40,131 @@ class LeaderboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.screenMargin,
-          vertical: AppSpacing.lg,
-        ),
-        children: [
-          // ─── 1. Sport filter (Cricket, Football, Badminton - 'All' removed) ──
-          SizedBox(
-            height: AppSpacing.chipHeight,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: const ['Cricket', 'Football', 'Badminton'].map((sport) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: AppChip(
-                    label: sport,
-                    isSelected: selectedSport == sport,
-                    onTap: () => ref.read(leaderboardSportProvider.notifier).state = sport,
-                  ),
-                );
-              }).toList(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+          child: ListView(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppBreakpoints.screenPadding(context),
+              vertical: AppSpacing.lg,
             ),
-          ),
+            children: [
+              // ─── 1. Sport filter (Cricket, Football, Badminton - 'All' removed) ──
+              AppSegmented<String>(
+                options: const ['Cricket', 'Football', 'Badminton'],
+                selected: selectedSport,
+                onSelected: (sport) => ref.read(leaderboardSportProvider.notifier).state = sport,
+                labelBuilder: (sport) => sport,
+              ),
 
-          // ─── 2. Cricket category filter (Batting, Bowling, Fielding) ──
-          if (selectedSport == 'Cricket') ...[
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              height: AppSpacing.chipHeight,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: const [
-                  (label: 'Batting', icon: Icons.sports_cricket_rounded),
-                  (label: 'Bowling', icon: Icons.sports_baseball_rounded),
-                  (label: 'Fielding', icon: Icons.sports_handball_rounded),
-                ].map((category) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.sm),
-                    child: AppChip(
-                      label: category.label,
-                      icon: category.icon,
-                      isSelected: cricketCategory == category.label,
-                      onTap: () => ref.read(cricketCategoryProvider.notifier).state = category.label,
+              // ─── 2. Cricket category filter (Batting, Bowling, Fielding) ──
+              if (selectedSport == 'Cricket') ...[
+                const SizedBox(height: AppSpacing.md),
+                AppSegmented<String>(
+                  options: const ['Batting', 'Bowling', 'Fielding'],
+                  selected: cricketCategory,
+                  onSelected: (cat) => ref.read(cricketCategoryProvider.notifier).state = cat,
+                  labelBuilder: (cat) => cat,
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+
+              // ─── 3. Top Players Header ──────────────────────────────────────
+              SectionHeader(
+                title: selectedSport == 'Cricket'
+                    ? 'Top $cricketCategory Leaders'
+                    : 'Top Players',
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // ─── 4. Tabular Player Leaderboard ──────────────────────────────
+              playersAsync.when(
+                loading: () => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.textPrimary,
                     ),
+                  ),
+                ),
+                error: (err, _) => AppCard(
+                  child: Center(
+                    child: Text('Error loading leaderboard: $err', style: AppTypography.caption),
+                  ),
+                ),
+                data: (players) {
+                  if (players.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.leaderboard_outlined,
+                      title: 'No leaderboard data yet',
+                      subtitle: selectedSport == 'Cricket'
+                          ? 'Play cricket matches to appear on the $cricketCategory leaderboard!'
+                          : 'Play matches to appear on the leaderboard!',
+                    );
+                  }
+
+                  return _PlayerLeaderboardTable(
+                    players: players,
+                    sport: selectedSport,
+                    category: cricketCategory,
+                    colors: colors,
+                    onPlayerTap: (playerId) {
+                      if (playerId.isNotEmpty) {
+                        context.go('/leaderboard/player/$playerId');
+                      }
+                    },
                   );
-                }).toList(),
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.xl),
-
-          // ─── 3. Top Players Header ──────────────────────────────────────
-          SectionHeader(
-            title: selectedSport == 'Cricket'
-                ? 'Top $cricketCategory Leaders'
-                : 'Top Players',
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // ─── 4. Tabular Player Leaderboard ──────────────────────────────
-          playersAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xxl),
-                child: CircularProgressIndicator(),
-              ),
-            ),
-            error: (err, _) => AppCard(
-              child: Center(
-                child: Text('Error loading leaderboard: $err', style: AppTypography.caption),
-              ),
-            ),
-            data: (players) {
-              if (players.isEmpty) {
-                return EmptyState(
-                  icon: Icons.leaderboard_outlined,
-                  title: 'No leaderboard data yet',
-                  subtitle: selectedSport == 'Cricket'
-                      ? 'Play cricket matches to appear on the $cricketCategory leaderboard!'
-                      : 'Play matches to appear on the leaderboard!',
-                );
-              }
-
-              return _PlayerLeaderboardTable(
-                players: players,
-                sport: selectedSport,
-                category: cricketCategory,
-                colors: colors,
-                onPlayerTap: (playerId) {
-                  if (playerId.isNotEmpty) {
-                    context.go('/leaderboard/player/$playerId');
-                  }
                 },
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.sectionGap),
-
-          // ─── 5. Top Teams Header ─────────────────────────────────────────
-          SectionHeader(
-            title: '$selectedSport Teams',
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // ─── 6. Tabular Team Leaderboard ─────────────────────────────────
-          teamsAsync.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xxl),
-                child: CircularProgressIndicator(),
               ),
-            ),
-            error: (err, _) => AppCard(
-              child: Center(
-                child: Text('Error loading team rankings: $err', style: AppTypography.caption),
-              ),
-            ),
-            data: (teams) {
-              if (teams.isEmpty) {
-                return EmptyState(
-                  icon: Icons.groups_outlined,
-                  title: 'No team rankings yet',
-                  subtitle: '$selectedSport teams will be ranked after completing matches.',
-                );
-              }
+              const SizedBox(height: AppSpacing.sectionGap),
 
-              return _TeamLeaderboardTable(
-                teams: teams,
-                colors: colors,
-                onTeamTap: (teamId) {
-                  if (teamId.isNotEmpty) {
-                    context.go('/teams/$teamId');
+              // ─── 5. Top Teams Header ─────────────────────────────────────────
+              SectionHeader(
+                title: '$selectedSport Teams',
+              ),
+              const SizedBox(height: AppSpacing.md),
+
+              // ─── 6. Tabular Team Leaderboard ─────────────────────────────────
+              teamsAsync.when(
+                loading: () => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                error: (err, _) => AppCard(
+                  child: Center(
+                    child: Text('Error loading team rankings: $err', style: AppTypography.caption),
+                  ),
+                ),
+                data: (teams) {
+                  if (teams.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.groups_outlined,
+                      title: 'No team rankings yet',
+                      subtitle: '$selectedSport teams will be ranked after completing matches.',
+                    );
                   }
+
+                  return _TeamLeaderboardTable(
+                    teams: teams,
+                    colors: colors,
+                    onTeamTap: (teamId) {
+                      if (teamId.isNotEmpty) {
+                        context.go('/teams/$teamId');
+                      }
+                    },
+                  );
                 },
-              );
-            },
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+            ],
           ),
-          const SizedBox(height: AppSpacing.xxl),
-        ],
+        ),
       ),
     );
   }
@@ -210,8 +194,7 @@ class _PlayerLeaderboardTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -232,22 +215,26 @@ class _PlayerLeaderboardTable extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.cardPadding,
-        vertical: AppSpacing.sm + 2,
+        vertical: AppSpacing.sm + 3,
       ),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant,
-        border: Border(bottom: BorderSide(color: colors.border, width: 1)),
+        color: colors.fillSecondary,
+        border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
       ),
       child: Row(
         children: [
           // Rank Header
           SizedBox(
             width: 28,
-            child: Text(
-              '#',
-              style: AppTypography.caption.copyWith(
-                fontWeight: FontWeight.w600,
-                color: colors.textSecondary,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '#',
+                style: AppTypography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colors.textSecondary,
+                ),
               ),
             ),
           ),
@@ -320,31 +307,37 @@ class _PlayerLeaderboardTable extends StatelessWidget {
     final playerId = player['id']?.toString() ?? '';
     final name = player['name']?.toString() ?? 'Player';
     final avatarUrl = player['avatar_url'] as String?;
+    final isLast = index == players.length - 1;
 
     return InkWell(
       onTap: () => onPlayerTap(playerId),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.cardPadding,
-          vertical: AppSpacing.sm + 1,
+          vertical: AppSpacing.sm + 2,
         ),
         decoration: BoxDecoration(
           color: colors.surface,
-          border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+          border: isLast ? null : Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
         ),
         child: Row(
           children: [
             // Rank Number (#1, #2, #3, ...)
             SizedBox(
               width: 28,
-              child: Text(
-                '#$rank',
-                style: TextStyle(
-                  fontFamily: AppTypography.caption.fontFamily,
-                  fontSize: 13,
-                  fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.w500,
-                  color: _rankColor(rank),
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '#$rank',
+                  style: TextStyle(
+                    fontFamily: AppTypography.caption.fontFamily,
+                    fontSize: 13,
+                    fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.w500,
+                    color: _rankColor(rank),
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ),
@@ -460,14 +453,18 @@ class _PlayerLeaderboardTable extends StatelessWidget {
   Widget _colHeader(String title, double width, {bool isHighlight = false}) {
     return SizedBox(
       width: width,
-      child: Text(
-        title,
-        style: AppTypography.caption.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-          color: isHighlight ? colors.accent : colors.textSecondary,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Text(
+          title,
+          style: AppTypography.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: isHighlight ? colors.accent : colors.textSecondary,
+          ),
+          textAlign: TextAlign.right,
         ),
-        textAlign: TextAlign.right,
       ),
     );
   }
@@ -475,16 +472,20 @@ class _PlayerLeaderboardTable extends StatelessWidget {
   Widget _colValue(String val, double width, {bool isHighlight = false}) {
     return SizedBox(
       width: width,
-      child: Text(
-        val,
-        style: TextStyle(
-          fontFamily: AppTypography.caption.fontFamily,
-          fontSize: 13,
-          fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
-          color: isHighlight ? colors.accent : colors.textPrimary,
-          fontFeatures: const [FontFeature.tabularFigures()],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Text(
+          val,
+          style: TextStyle(
+            fontFamily: AppTypography.caption.fontFamily,
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
+            color: isHighlight ? colors.accent : colors.textPrimary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          textAlign: TextAlign.right,
         ),
-        textAlign: TextAlign.right,
       ),
     );
   }
@@ -492,11 +493,11 @@ class _PlayerLeaderboardTable extends StatelessWidget {
   Color _rankColor(int rank) {
     switch (rank) {
       case 1:
-        return const Color(0xFFD97706); // Gold / Amber
+        return colors.gold;
       case 2:
-        return const Color(0xFF64748B); // Silver / Slate
+        return colors.silver;
       case 3:
-        return const Color(0xFFB45309); // Bronze
+        return colors.bronze;
       default:
         return colors.textSecondary;
     }
@@ -676,8 +677,7 @@ class _TeamLeaderboardTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: colors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        border: Border.all(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -687,21 +687,25 @@ class _TeamLeaderboardTable extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.cardPadding,
-              vertical: AppSpacing.sm + 2,
+              vertical: AppSpacing.sm + 3,
             ),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant,
-              border: Border(bottom: BorderSide(color: colors.border, width: 1)),
+              color: colors.fillSecondary,
+              border: Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
             ),
             child: Row(
               children: [
                 SizedBox(
                   width: 28,
-                  child: Text(
-                    '#',
-                    style: AppTypography.caption.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colors.textSecondary,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '#',
+                      style: AppTypography.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
                 ),
@@ -739,30 +743,36 @@ class _TeamLeaderboardTable extends StatelessWidget {
     final winRate = totalMatches > 0
         ? '${((team.wins / totalMatches) * 100).toStringAsFixed(0)}%'
         : '0%';
+    final isLast = index == teams.length - 1;
 
     return InkWell(
       onTap: () => onTeamTap(team.id),
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.cardPadding,
-          vertical: AppSpacing.sm + 1,
+          vertical: AppSpacing.sm + 2,
         ),
         decoration: BoxDecoration(
           color: colors.surface,
-          border: Border(bottom: BorderSide(color: colors.border, width: 0.5)),
+          border: isLast ? null : Border(bottom: BorderSide(color: colors.divider, width: 0.5)),
         ),
         child: Row(
           children: [
             SizedBox(
               width: 28,
-              child: Text(
-                '#$rank',
-                style: TextStyle(
-                  fontFamily: AppTypography.caption.fontFamily,
-                  fontSize: 13,
-                  fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.w500,
-                  color: _rankColor(rank),
-                  fontFeatures: const [FontFeature.tabularFigures()],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '#$rank',
+                  style: TextStyle(
+                    fontFamily: AppTypography.caption.fontFamily,
+                    fontSize: 13,
+                    fontWeight: rank <= 3 ? FontWeight.bold : FontWeight.w500,
+                    color: _rankColor(rank),
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ),
@@ -774,6 +784,7 @@ class _TeamLeaderboardTable extends StatelessWidget {
                     imageUrl: team.logoUrl,
                     name: team.name,
                     size: AppAvatarSize.small,
+                    isTeam: true,
                   ),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
@@ -804,14 +815,18 @@ class _TeamLeaderboardTable extends StatelessWidget {
   Widget _colHeader(String title, double width, {bool isHighlight = false}) {
     return SizedBox(
       width: width,
-      child: Text(
-        title,
-        style: AppTypography.caption.copyWith(
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-          color: isHighlight ? colors.accent : colors.textSecondary,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Text(
+          title,
+          style: AppTypography.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: isHighlight ? colors.accent : colors.textSecondary,
+          ),
+          textAlign: TextAlign.right,
         ),
-        textAlign: TextAlign.right,
       ),
     );
   }
@@ -819,16 +834,20 @@ class _TeamLeaderboardTable extends StatelessWidget {
   Widget _colValue(String val, double width, {bool isHighlight = false}) {
     return SizedBox(
       width: width,
-      child: Text(
-        val,
-        style: TextStyle(
-          fontFamily: AppTypography.caption.fontFamily,
-          fontSize: 13,
-          fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
-          color: isHighlight ? colors.accent : colors.textPrimary,
-          fontFeatures: const [FontFeature.tabularFigures()],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerRight,
+        child: Text(
+          val,
+          style: TextStyle(
+            fontFamily: AppTypography.caption.fontFamily,
+            fontSize: 13,
+            fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
+            color: isHighlight ? colors.accent : colors.textPrimary,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+          textAlign: TextAlign.right,
         ),
-        textAlign: TextAlign.right,
       ),
     );
   }
@@ -836,11 +855,11 @@ class _TeamLeaderboardTable extends StatelessWidget {
   Color _rankColor(int rank) {
     switch (rank) {
       case 1:
-        return const Color(0xFFD97706);
+        return colors.gold;
       case 2:
-        return const Color(0xFF64748B);
+        return colors.silver;
       case 3:
-        return const Color(0xFFB45309);
+        return colors.bronze;
       default:
         return colors.textSecondary;
     }

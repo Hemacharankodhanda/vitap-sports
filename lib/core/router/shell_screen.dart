@@ -1,13 +1,16 @@
-/// VIT-AP Sports — Shell screen with bottom navigation.
+/// VIT-AP Sports — Shell screen with adaptive Apple navigation.
 ///
-/// Persistent bottom nav bar with 5 tabs: Home, Teams, Matches, Leaderboard, Profile.
-/// Smooth icon/label color transition on tab switch.
+/// Persistent navigation shell:
+/// - Compact (< 600 dp): Frosted bottom navigation bar (icon 24 + 11-12sp label always visible,
+///   selected = filled icon + textPrimary, unselected = outlined icon + textSecondary, no indicator pill).
+/// - Medium (600..1023 dp) / Expanded (>= 1024 dp): Frosted/surface navigation rail on the left.
+/// - 5 persistent destinations: Home, Teams, Matches, Board, Profile.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../theme/app_colors.dart';
+import '../widgets/adaptive_scaffold.dart';
 
 class ShellScreen extends StatelessWidget {
   const ShellScreen({
@@ -19,57 +22,42 @@ class ShellScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
+    return AdaptiveScaffold(
+      currentIndex: navigationShell.currentIndex,
+      onNavigationChanged: (index) {
+        navigationShell.goBranch(
+          index,
+          initialLocation: index == navigationShell.currentIndex,
+        );
+      },
+      destinations: const [
+        AdaptiveDestination(
+          label: 'Home',
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home_rounded,
+        ),
+        AdaptiveDestination(
+          label: 'Teams',
+          icon: Icons.groups_outlined,
+          selectedIcon: Icons.groups_rounded,
+        ),
+        AdaptiveDestination(
+          label: 'Matches',
+          icon: Icons.sports_rounded,
+          selectedIcon: Icons.sports_rounded,
+        ),
+        AdaptiveDestination(
+          label: 'Board',
+          icon: Icons.leaderboard_outlined,
+          selectedIcon: Icons.leaderboard_rounded,
+        ),
+        AdaptiveDestination(
+          label: 'Profile',
+          icon: Icons.person_outline_rounded,
+          selectedIcon: Icons.person_rounded,
+        ),
+      ],
       body: navigationShell,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-          border: Border(
-            top: BorderSide(
-              color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
-              width: 0.5,
-            ),
-          ),
-        ),
-        child: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: (index) {
-            navigationShell.goBranch(
-              index,
-              initialLocation: index == navigationShell.currentIndex,
-            );
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.groups_outlined),
-              selectedIcon: Icon(Icons.groups_rounded),
-              label: 'Teams',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.sports_rounded),
-              selectedIcon: Icon(Icons.sports_rounded),
-              label: 'Matches',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.leaderboard_outlined),
-              selectedIcon: Icon(Icons.leaderboard_rounded),
-              label: 'Board',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

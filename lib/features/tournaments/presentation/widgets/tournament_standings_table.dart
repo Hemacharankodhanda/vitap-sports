@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../domain/models/tournament_models.dart';
@@ -51,8 +52,8 @@ class TournamentStandingsTable extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: colors.border.withValues(alpha: 0.15),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+              color: colors.fillSecondary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusCard)),
             ),
             child: Row(
               children: [
@@ -60,26 +61,32 @@ class TournamentStandingsTable extends StatelessWidget {
                   width: 28,
                   child: Text(
                     '#',
-                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
                 Expanded(
                   flex: 4,
                   child: Text(
                     'TEAM / ENTRANT',
-                    style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                    style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.textSecondary,
+                    ),
                   ),
                 ),
-                _headerCell('P'),
-                _headerCell('W'),
-                if (!isBadminton) _headerCell(isCricket ? 'T/NR' : 'D'),
-                _headerCell('L'),
-                _headerCell(isCricket ? 'NRR' : (isBadminton ? 'GD' : 'GD'), flex: 2),
-                _headerCell('PTS', isLast: true),
+                _headerCell('P', color: colors.textSecondary),
+                _headerCell('W', color: colors.textSecondary),
+                if (!isBadminton) _headerCell(isCricket ? 'T/NR' : 'D', color: colors.textSecondary),
+                _headerCell('L', color: colors.textSecondary),
+                _headerCell(isCricket ? 'NRR' : 'GD', flex: 2, color: colors.textSecondary),
+                _headerCell('PTS', isLast: true, color: colors.textSecondary),
               ],
             ),
           ),
-          Divider(height: 1, thickness: 1, color: colors.border),
+          Divider(height: 0.5, thickness: 0.5, color: colors.divider),
 
           // Table Rows
           for (int i = 0; i < rows.length; i++) ...[
@@ -92,10 +99,10 @@ class TournamentStandingsTable extends StatelessWidget {
               isQualified: (i + 1) <= qualifiersCount,
             ),
             if (i < rows.length - 1)
-              Divider(height: 1, thickness: 1, color: colors.border.withValues(alpha: 0.5)),
+              Divider(height: 0.5, thickness: 0.5, color: colors.divider),
           ],
           if (qualifiersCount > 0) ...[
-            Divider(height: 1, thickness: 1, color: colors.border),
+            Divider(height: 0.5, thickness: 0.5, color: colors.divider),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
@@ -104,7 +111,7 @@ class TournamentStandingsTable extends StatelessWidget {
                     width: 3,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: AppColors.win,
+                      color: colors.win,
                       borderRadius: BorderRadius.circular(1.5),
                     ),
                   ),
@@ -125,7 +132,7 @@ class TournamentStandingsTable extends StatelessWidget {
     );
   }
 
-  Widget _headerCell(String label, {int flex = 1, bool isLast = false}) {
+  Widget _headerCell(String label, {int flex = 1, bool isLast = false, Color? color}) {
     return Expanded(
       flex: flex,
       child: Text(
@@ -133,6 +140,7 @@ class TournamentStandingsTable extends StatelessWidget {
         textAlign: TextAlign.center,
         style: AppTypography.caption.copyWith(
           fontWeight: FontWeight.w700,
+          color: color,
         ),
       ),
     );
@@ -172,7 +180,7 @@ class _TableRow extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: isQualified
-            ? Border(left: BorderSide(color: AppColors.win, width: 3.5))
+            ? Border(left: BorderSide(color: colors.win, width: 3.0))
             : null,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -186,6 +194,7 @@ class _TableRow extends StatelessWidget {
               style: AppTypography.caption.copyWith(
                 fontWeight: isQualified ? FontWeight.w700 : FontWeight.w500,
                 color: isQualified ? colors.textPrimary : colors.textSecondary,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
@@ -211,6 +220,7 @@ class _TableRow extends StatelessWidget {
                     style: AppTypography.caption.copyWith(
                       fontSize: 10,
                       color: colors.textTertiary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                 ],
@@ -256,6 +266,7 @@ class _TableRow extends StatelessWidget {
         style: AppTypography.caption.copyWith(
           fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
           color: color ?? colors.textSecondary,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );

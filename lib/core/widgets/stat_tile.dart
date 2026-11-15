@@ -1,10 +1,10 @@
-/// VIT-AP Sports — StatTile and StatGridCard widgets.
+/// VIT-AP Sports — StatTile and StatGridCard widgets (Apple Design System).
 ///
 /// Component specification:
-/// - Stat tile: value 28 / 36 / w700 tabular, label Caption in textSecondary.
-/// - Group tiles in a single card in a 2 or 3 column grid with hairline dividers,
-///   not one card per tile.
-/// - Show '-' for undefined values, never NaN.
+/// - Tabular figures on all numbers via FontFeature.tabularFigures().
+/// - Hero value in large font with Caption label below in textSecondary.
+/// - Group tiles in a single card with hairline dividers (0.5 to 1 px).
+/// - Shows '-' for undefined values, never NaN.
 library;
 
 import 'dart:ui' show FontFeature;
@@ -35,7 +35,7 @@ class StatTile extends StatelessWidget {
         : value;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,10 +43,11 @@ class StatTile extends StatelessWidget {
           Text(
             displayValue,
             style: TextStyle(
-              fontFamily: AppTypography.largeTitle.fontFamily,
-              fontSize: 28,
-              height: 36 / 28,
+              fontFamily: AppTypography.title.fontFamily,
+              fontSize: 26,
+              height: 32 / 26,
               fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
               color: valueColor ?? colors.textPrimary,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -102,25 +103,31 @@ class StatGridCard extends StatelessWidget {
                     final tileIdx = startIdx + colIndex;
                     final isLastCol = colIndex == columns - 1;
 
-                    return Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            right: isLastCol
-                                ? BorderSide.none
-                                : BorderSide(color: colors.border, width: 1),
-                          ),
+                    if (tileIdx < tiles.length) {
+                      return Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(child: tiles[tileIdx]),
+                            if (!isLastCol)
+                              VerticalDivider(
+                                width: 1,
+                                thickness: 0.5,
+                                color: colors.divider,
+                              ),
+                          ],
                         ),
-                        child: tileIdx < tiles.length
-                            ? tiles[tileIdx]
-                            : const SizedBox.shrink(),
-                      ),
-                    );
+                      );
+                    }
+                    return Expanded(child: const SizedBox.shrink());
                   }),
                 ),
               ),
               if (!isLastRow)
-                Divider(height: 1, thickness: 1, color: colors.border),
+                Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  color: colors.divider,
+                ),
             ],
           );
         }),

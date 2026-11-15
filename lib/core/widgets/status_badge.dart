@@ -1,16 +1,18 @@
-/// VIT-AP Sports — StatusBadge and StatusLabel widgets.
+/// VIT-AP Sports — StatusBadge and StatusLabel widgets (Apple Design System).
 ///
 /// Component specification:
-/// Status label (non-interactive): height 24, radius 8, Caption / w600.
-/// - Live: liveContainer, live text, 6 px dot (the only pulsing element in the app)
-/// - Upcoming: neutral 6% tint, textSecondary
-/// - Completed / FT: 1 px border, textSecondary
-/// - Paused: warningContainer, warning text
+/// Status label (non-interactive): height 24, pill shape (radius 999), Caption w600.
+/// - Live: live-tinted container with 6 px pulsing red dot (only pulsing element in the app)
+/// - Upcoming: fillSecondary background, textSecondary text
+/// - Completed: surface background, textSecondary text
+/// - Paused: warningContainer tint, warning text
 library;
 
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
 enum MatchStatus { upcoming, live, completed, cancelled, paused }
@@ -75,51 +77,42 @@ class StatusLabel extends StatelessWidget {
 
     Color bgColor;
     Color textColor;
-    Border? border;
 
     switch (variant) {
       case StatusLabelVariant.live:
         bgColor = colors.liveContainer;
         textColor = colors.live;
-        break;
       case StatusLabelVariant.upcoming:
-        bgColor = colors.textPrimary.withAlpha(15); // 6% tint
+        bgColor = colors.fillSecondary;
         textColor = colors.textSecondary;
-        break;
       case StatusLabelVariant.completed:
-        bgColor = Colors.transparent;
+        bgColor = colors.surface;
         textColor = colors.textSecondary;
-        border = Border.all(color: colors.border, width: 1);
-        break;
       case StatusLabelVariant.paused:
         bgColor = colors.warningContainer;
         textColor = colors.warning;
-        break;
     }
 
     return Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: AppSpacing.statusBadgeHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-        border: border,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (variant == StatusLabelVariant.live) ...[
-            _LivePulsingDot(color: colors.live),
-            const SizedBox(width: 6),
+            const _PulsingDot(),
+            const SizedBox(width: AppSpacing.xs),
           ],
           Text(
             label,
             style: AppTypography.caption.copyWith(
               color: textColor,
               fontWeight: FontWeight.w600,
-              fontSize: 12,
-              letterSpacing: variant == StatusLabelVariant.live ? 0.5 : 0,
             ),
           ),
         ],
@@ -128,17 +121,14 @@ class StatusLabel extends StatelessWidget {
   }
 }
 
-/// 6 px pulsing dot (the only pulsing element in the app per spec).
-class _LivePulsingDot extends StatefulWidget {
-  const _LivePulsingDot({required this.color});
-
-  final Color color;
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
 
   @override
-  State<_LivePulsingDot> createState() => _LivePulsingDotState();
+  State<_PulsingDot> createState() => _PulsingDotState();
 }
 
-class _LivePulsingDotState extends State<_LivePulsingDot>
+class _PulsingDotState extends State<_PulsingDot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _animation;
@@ -148,7 +138,7 @@ class _LivePulsingDotState extends State<_LivePulsingDot>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     );
     _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
@@ -164,14 +154,13 @@ class _LivePulsingDotState extends State<_LivePulsingDot>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
-
-    if (reduceMotion) {
+    final colors = context.appColors;
+    if (AppMotion.shouldReduceMotion(context)) {
       return Container(
         width: 6,
         height: 6,
         decoration: BoxDecoration(
-          color: widget.color,
+          color: colors.live,
           shape: BoxShape.circle,
         ),
       );
@@ -183,7 +172,7 @@ class _LivePulsingDotState extends State<_LivePulsingDot>
         width: 6,
         height: 6,
         decoration: BoxDecoration(
-          color: widget.color,
+          color: colors.live,
           shape: BoxShape.circle,
         ),
       ),

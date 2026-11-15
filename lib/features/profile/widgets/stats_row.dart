@@ -26,6 +26,10 @@ class StatsRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppCard(
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.lg,
+        horizontal: AppSpacing.md,
+      ),
       child: Row(
         children: stats
             .asMap()
@@ -42,7 +46,7 @@ class StatsRow extends StatelessWidget {
                               color: isDark
                                   ? AppColors.darkDivider
                                   : AppColors.lightDivider,
-                              width: 1,
+                              width: 0.5,
                             ),
                           ),
                         )
@@ -53,7 +57,11 @@ class StatsRow extends StatelessWidget {
                       Text(
                         stat.value,
                         style: AppTypography.title.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.lightTextPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xxs),

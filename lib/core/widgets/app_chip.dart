@@ -1,10 +1,10 @@
-/// VIT-AP Sports — AppChip and ResultChip widgets.
+/// VIT-AP Sports — AppChip and ResultChip widgets (Apple Design System).
 ///
 /// Component specification:
-/// - Filter chip: height 32 (48 touch target), radius 8.
-///   Unselected: 1 px borderStrong, textPrimary.
-///   Selected: accentContainer, accent text, no checkmark.
-/// - Result chip (W / D / L): 24 x 24, radius 8, letter inside, container tints.
+/// - Pill shape (StadiumBorder / radius 999).
+/// - Unselected: fillSecondary background + textPrimary text, no border.
+/// - Selected: primaryFill background + onPrimary text, no checkmark.
+/// - Result chip (W / D / L): 24 x 24, radius 8, container tints (win/loss/warning).
 library;
 
 import 'package:flutter/material.dart';
@@ -33,23 +33,26 @@ class AppChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
-    final bgColor = isSelected ? colors.accentContainer : Colors.transparent;
-    final textColor = isSelected ? colors.accent : colors.textPrimary;
-    final borderColor = isSelected ? Colors.transparent : colors.borderStrong;
+    final bgColor = isSelected ? colors.primaryFill : colors.fillSecondary;
+    final textColor = isSelected ? colors.onPrimary : colors.textPrimary;
 
-    return Center(
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+        constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget, minWidth: AppSpacing.minTouchTarget),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+          splashColor: Colors.transparent,
+          highlightColor: textColor.withAlpha(20),
           child: Container(
             height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: borderColor, width: 1),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -103,25 +106,26 @@ class ResultChip extends StatelessWidget {
       bgColor = colors.lossContainer;
       textColor = colors.loss;
     } else {
-      bgColor = colors.textPrimary.withAlpha(15);
-      textColor = colors.textSecondary;
+      bgColor = colors.warningContainer;
+      textColor = colors.warning;
     }
 
     return Container(
       width: 24,
       height: 24,
-      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
       ),
+      alignment: Alignment.center,
       child: Text(
         clean,
         style: TextStyle(
           fontFamily: AppTypography.caption.fontFamily,
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: FontWeight.w700,
           color: textColor,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );

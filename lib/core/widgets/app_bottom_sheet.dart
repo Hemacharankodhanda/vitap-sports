@@ -1,9 +1,10 @@
-/// VIT-AP Sports — AppBottomSheet widget.
+/// VIT-AP Sports — AppBottomSheet widget (Apple Design System).
 ///
 /// Component specification:
-/// - Top radius 16.
-/// - 32 x 4 drag handle in borderStrong.
-/// - Padding 16 horizontal. Headline title, primary action pinned at bottom.
+/// - Top radius 28, surfaceElevated background, elevation 0.
+/// - Scrim 40% (0x66000000).
+/// - 36 x 5 pill drag handle in fillSecondary / textSecondary.
+/// - Padding 20 horizontal. Headline title, primary action pinned at bottom.
 library;
 
 import 'package:flutter/material.dart';
@@ -35,15 +36,20 @@ class AppBottomSheet extends StatelessWidget {
     bool isScrollControlled = true,
     bool isDismissible = true,
   }) {
+    final colors = context.appColors;
+
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
       isDismissible: isDismissible,
       useSafeArea: true,
       elevation: 0,
-      backgroundColor: context.appColors.surface,
+      barrierColor: Colors.black.withAlpha((AppColors.scrimOpacity * 255).round()),
+      backgroundColor: colors.surfaceElevated,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusSheet),
+        ),
       ),
       builder: (_) => AppBottomSheet(
         title: title,
@@ -58,47 +64,55 @@ class AppBottomSheet extends StatelessWidget {
     final colors = context.appColors;
 
     return SafeArea(
-      child: Padding(
-        padding: padding ??
-            const EdgeInsets.fromLTRB(
-              16,
-              8,
-              16,
-              16,
-            ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 32 x 4 drag handle in borderStrong
-            Center(
-              child: Container(
-                width: 32,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: colors.borderStrong,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 12),
+              width: 36,
+              height: 5,
+              decoration: BoxDecoration(
+                color: colors.fillSecondary,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
-            if (title != null) ...[
-              Text(
+          ),
+
+          // Title
+          if (title != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Text(
                 title!,
-                style: AppTypography.headline.copyWith(
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            Flexible(child: child),
-            if (bottomAction != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              bottomAction!,
-            ],
+            ),
+            Divider(height: 1, thickness: 0.5, color: colors.divider),
           ],
-        ),
+
+          // Content
+          Flexible(
+            child: Padding(
+              padding: padding ?? const EdgeInsets.all(20),
+              child: child,
+            ),
+          ),
+
+          // Pinned bottom action
+          if (bottomAction != null) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: bottomAction!,
+            ),
+          ],
+        ],
       ),
     );
   }

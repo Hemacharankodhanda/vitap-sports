@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -14,6 +15,7 @@ import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/profile_provider.dart';
@@ -130,12 +132,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(currentProfileProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
-        title: const Text('Edit Profile'),
+      appBar: const FrostedAppBar(
+        title: Text('Edit Profile'),
       ),
       body: profileAsync.when(
         loading: () => const LoadingIndicator(),
@@ -153,8 +156,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           return Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.screenMargin,
+              padding: EdgeInsets.symmetric(
+                horizontal: padding,
                 vertical: AppSpacing.lg,
               ),
               children: [
@@ -176,13 +179,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             width: 32,
                             height: 32,
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: isDark
+                                  ? AppColors.darkPrimaryFill
+                                  : AppColors.lightPrimaryFill,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.camera_alt_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: isDark
+                                  ? AppColors.darkOnPrimary
+                                  : AppColors.lightOnPrimary,
                             ),
                           ),
                         ),

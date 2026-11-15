@@ -1,12 +1,12 @@
-/// VIT-AP Sports — Login screen.
+/// VIT-AP Sports — Login screen (Apple Design System).
 ///
-/// Minimal auth screen: logo, tagline, single "Continue with Google" button.
-/// Clean, premium design per design.md guidelines.
+/// Clean, minimal auth screen: calm surfaces, large confident typography,
+/// pill button, generous whitespace, zero emojis.
+/// Scrollable viewport ensures clean rendering even at 200% text scale.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -42,88 +42,94 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final colors = context.appColors;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
+      backgroundColor: colors.background,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenMargin,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Spacer(flex: 3),
-
-              // ─── Logo / Brand ─────────────────────────
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withAlpha(20),
-                  borderRadius: BorderRadius.circular(AppSpacing.xl),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screenMargin,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
                 ),
-                child: Icon(
-                  Icons.sports_rounded,
-                  size: 44,
-                  color: Theme.of(context).colorScheme.primary,
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Spacer(flex: 3),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Logo container
+                      Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                        ),
+                        child: Icon(
+                          Icons.sports_rounded,
+                          size: 44,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // Title
+                      Text(
+                        'VIT-AP Sports',
+                        style: AppTypography.largeTitle.copyWith(
+                          color: colors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.68,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      // Tagline
+                      Text(
+                        'Your campus sports community.\nForm teams, play matches, track stats.',
+                        style: AppTypography.body.copyWith(
+                          color: colors.textSecondary,
+                          height: 1.4,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const Spacer(flex: 4),
+                      const SizedBox(height: AppSpacing.xxl),
+
+                      // Sign In Button
+                      AppButton(
+                        label: 'Continue with Google',
+                        onPressed: _handleSignIn,
+                        isLoading: _isLoading,
+                        icon: Icons.g_mobiledata_rounded,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // Domain notice
+                      Text(
+                        'Sign in with your @vitap.ac.in email',
+                        style: AppTypography.footnote.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // ─── Title ────────────────────────────────
-              Text(
-                'VIT-AP Sports',
-                style: AppTypography.largeTitle.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextPrimary
-                      : AppColors.lightTextPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              // ─── Tagline ──────────────────────────────
-              Text(
-                'Your campus sports community.\nForm teams, play matches, track stats.',
-                style: AppTypography.body.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextSecondary
-                      : AppColors.lightTextSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const Spacer(flex: 4),
-
-              // ─── Sign In Button ───────────────────────
-              AppButton(
-                label: 'Continue with Google',
-                onPressed: _handleSignIn,
-                isLoading: _isLoading,
-                icon: Icons.g_mobiledata_rounded,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              const SizedBox(height: AppSpacing.sm),
-
-              // ─── Domain notice ────────────────────────
-              Text(
-                'Sign in with your @vitap.ac.in email',
-                style: AppTypography.caption.copyWith(
-                  color: isDark
-                      ? AppColors.darkTextTertiary
-                      : AppColors.lightTextTertiary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              SizedBox(height: screenHeight * 0.06),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

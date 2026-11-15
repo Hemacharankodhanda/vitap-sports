@@ -69,13 +69,13 @@ class PlayerCareerStatsCard extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withAlpha(25),
+                  color: isDark ? AppColors.darkFillSecondary : AppColors.lightFillSecondary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   _sportIcon(sportRaw),
                   size: 20,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -94,6 +94,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
                       '$effectiveMatches Matches • $wins W - $losses L ($winRate% Win Rate)',
                       style: AppTypography.caption.copyWith(
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],
@@ -103,20 +104,24 @@ class PlayerCareerStatsCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withAlpha(35),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.withAlpha(120), width: 1),
+                    color: isDark ? AppColors.warningContainerDark : AppColors.warningContainerLight,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.emoji_events_rounded, size: 14, color: Colors.amber),
+                      Icon(
+                        Icons.workspace_premium_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.warningDark : AppColors.warningLight,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$mvps MVP',
                         style: AppTypography.caption.copyWith(
-                          color: Colors.amber[800] ?? Colors.amber,
+                          color: isDark ? AppColors.warningDark : AppColors.warningLight,
                           fontWeight: FontWeight.bold,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ],
@@ -144,7 +149,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
     if (sport.contains('cricket')) return Icons.sports_cricket_rounded;
     if (sport.contains('football')) return Icons.sports_soccer_rounded;
     if (sport.contains('badminton')) return Icons.sports_tennis_rounded;
-    return Icons.emoji_events_outlined;
+    return Icons.workspace_premium_outlined;
   }
 
   Widget _buildCricketStats(
@@ -190,7 +195,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -268,7 +273,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(
@@ -350,7 +355,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -389,7 +394,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -431,7 +436,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+            color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -484,7 +489,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(6),
+        color: isDark ? AppColors.darkFillSecondary.withAlpha(128) : AppColors.lightFillSecondary.withAlpha(128),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -592,8 +597,8 @@ class PlayerCareerStatsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withAlpha(5) : Colors.black.withAlpha(4),
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? AppColors.darkFillSecondary : AppColors.lightFillSecondary,
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -604,6 +609,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
               fontWeight: FontWeight.bold,
               fontSize: isHero ? 18 : 15,
               color: accentColor ?? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary),
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 2),
@@ -625,7 +631,7 @@ class PlayerCareerStatsCard extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 8.5,
-                color: isDark ? AppColors.darkTextSecondary.withAlpha(160) : AppColors.lightTextSecondary.withAlpha(160),
+                color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
               ),
             ),
           ],

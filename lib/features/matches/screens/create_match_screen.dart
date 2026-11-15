@@ -5,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_chip.dart';
+import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/providers/sport_filter_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../teams/providers/team_providers.dart';
@@ -107,8 +111,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
     final result = await showModalBottomSheet<Set<String>>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         final selected = Set<String>.from(currentSelected);
@@ -120,21 +126,37 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                   maxHeight: MediaQuery.of(context).size.height * 0.75,
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
+                  horizontal: AppSpacing.sheetPadding,
                   vertical: AppSpacing.md,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          isBadmintonDoubles
-                              ? '$teamName Squad (${selected.length}/2)'
-                              : '$teamName Squad (${selected.length})',
-                          style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                        Expanded(
+                          child: Text(
+                            isBadmintonDoubles
+                                ? '$teamName Squad (${selected.length}/2)'
+                                : '$teamName Squad (${selected.length})',
+                            style: AppTypography.headline.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
                         ),
                         if (!isBadmintonDoubles)
                           TextButton(
@@ -152,6 +174,10 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             },
                             child: Text(
                               selected.length == team.members.length ? 'Deselect All' : 'Select All',
+                              style: AppTypography.callout.copyWith(
+                                color: context.colors.primaryFill,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                       ],
@@ -162,17 +188,20 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         'Doubles matches require exactly 2 players.',
                         style: AppTypography.caption.copyWith(
                           color: selected.length == 2
-                              ? AppColors.success
-                              : (selected.length > 2 ? AppColors.error : AppColors.warning),
+                              ? AppColors.win
+                              : (selected.length > 2 ? AppColors.loss : AppColors.warning),
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
-                    const Divider(),
+                    Divider(color: context.colors.divider, height: AppSpacing.lg, thickness: 0.5),
                     if (team.members.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(AppSpacing.lg),
-                        child: Text('No members found in this team.'),
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Text(
+                          'No members found in this team.',
+                          style: AppTypography.body.copyWith(color: context.colors.textSecondary),
+                        ),
                       )
                     else
                       Flexible(
@@ -183,8 +212,21 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                             final member = team.members[index];
                             final isChecked = selected.contains(member.userId);
                             return CheckboxListTile(
-                              title: Text(member.userName ?? 'Unknown Player'),
-                              subtitle: Text(member.role.toUpperCase()),
+                              activeColor: context.colors.primaryFill,
+                              checkColor: context.colors.onPrimary,
+                              title: Text(
+                                member.userName ?? 'Unknown Player',
+                                style: AppTypography.body.copyWith(
+                                  color: context.colors.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                member.role.toUpperCase(),
+                                style: AppTypography.caption.copyWith(
+                                  color: context.colors.textSecondary,
+                                ),
+                              ),
                               value: isChecked,
                               onChanged: (val) {
                                 if (isBadmintonDoubles && val == true && selected.length >= 2) {
@@ -416,385 +458,451 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sportsAsync = ref.watch(sportsListProvider);
+    final horizontalPadding = AppBreakpoints.screenPadding(context);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(title: const Text('Create Match')),
+      backgroundColor: context.colors.background,
+      appBar: const FrostedAppBar(title: Text('Create Match')),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenMargin,
-            vertical: AppSpacing.lg,
-          ),
-          children: [
-            // Sport
-            Text('Sport', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-            const SizedBox(height: AppSpacing.sm),
-            sportsAsync.when(
-              loading: () => const CircularProgressIndicator(),
-              error: (err, stack) => const Text('Failed to load sports'),
-              data: (sports) => Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: sports
-                    .map((s) => AppChip(
-                          label: s['name'] as String,
-                          isSelected: _selectedSportId == s['id'],
-                          onTap: () {
-                            if (_selectedSportId != s['id']) {
-                              setState(() {
-                                _selectedSportId = s['id'] as String;
-                                _badmintonType = 'singles';
-                                _selectedPlayer1Id = null;
-                                _selectedPlayer2Id = null;
-                                _player1CustomCtrl.clear();
-                                _player2CustomCtrl.clear();
-                                _isCustomP1 = false;
-                                _isCustomP2 = false;
-                                _homeTeamId = null;
-                                _awayTeamId = null;
-                                _homeSelectedUserIds.clear();
-                                _awaySelectedUserIds.clear();
-                                _homeSquadConfigured = false;
-                                _awaySquadConfigured = false;
-                              });
-                            }
-                          },
-                        ))
-                    .toList(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppBreakpoints.maxReadingWidth),
+            child: ListView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: AppSpacing.lg,
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Badminton Match Type: Singles or Doubles
-            if (_isBadminton(sportsAsync.valueOrNull)) ...[
-              Text('Match Type', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  AppChip(
-                    label: 'Singles',
-                    isSelected: _badmintonType == 'singles',
-                    onTap: () {
-                      setState(() {
-                        _badmintonType = 'singles';
-                        _homeTeamId = null;
-                        _awayTeamId = null;
-                        _homeSelectedUserIds.clear();
-                        _awaySelectedUserIds.clear();
-                      });
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  AppChip(
-                    label: 'Doubles',
-                    isSelected: _badmintonType == 'doubles',
-                    onTap: () {
-                      setState(() {
-                        _badmintonType = 'doubles';
-                        _selectedPlayer1Id = null;
-                        _selectedPlayer2Id = null;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-
-            // If Badminton Singles: Do not show option of teams, show option of players
-            if (_isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'singles') ...[
-              Text('Players', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSinglesPlayersSection(),
-              const SizedBox(height: AppSpacing.xl),
-            ] else ...[
-              // Teams Selection (For cricket, football, or badminton doubles)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Teams', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-                  if (_isBadminton(sportsAsync.valueOrNull))
-                    Text(
-                      'Doubles: exactly 2 players per team',
-                      style: AppTypography.caption.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              ref.watch(teamsBySportProvider(_selectedSportId)).when(
-                    loading: () => const CircularProgressIndicator(),
-                    error: (err, stack) => const Text('Failed to load teams'),
-                    data: (teams) {
-                      final isBadmintonDoubles = _isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'doubles';
-
-                      final filteredTeams = teams
-                          .where((t) => _selectedSportId == null || t.sportId == _selectedSportId)
-                          .toList();
-                      final items = filteredTeams
-                          .map((t) => DropdownMenuItem(
-                                value: t.id,
-                                child: Text(t.name),
-                              ))
-                          .toList();
-
-                      final homeTeamObj = filteredTeams
-                          .where((t) => t.id == _homeTeamId)
-                          .firstOrNull;
-                      final awayTeamObj = filteredTeams
-                          .where((t) => t.id == _awayTeamId)
-                          .firstOrNull;
-
-                      final sportObj = sportsAsync.valueOrNull
-                          ?.where((s) => s['id'] == _selectedSportId)
-                          .firstOrNull;
-                      final sportName = sportObj?['name'] as String? ?? 'this sport';
-
-                      if (items.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.35),
-                            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                            border: Border.all(color: Theme.of(context).dividerColor),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'No teams found for $sportName.',
-                                style: AppTypography.body,
-                              ),
-                              if (isBadmintonDoubles) ...[
-                                const SizedBox(height: AppSpacing.xs),
-                                Text(
-                                  'Tip: You can switch to Badminton Singles above to play immediately without teams.',
-                                  style: AppTypography.caption.copyWith(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(height: AppSpacing.sm),
-                              OutlinedButton.icon(
-                                icon: const Icon(Icons.add, size: 18),
-                                label: Text('Create a $sportName Team'),
-                                onPressed: () => context.push('/teams/create'),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          DropdownButtonFormField<String>(
-                            key: ValueKey('team1_${_selectedSportId}_${_homeTeamId}_${items.length}'),
-                            initialValue: _homeTeamId,
-                            decoration: const InputDecoration(
-                              labelText: 'Team 1',
-                              prefixIcon: Icon(Icons.shield_outlined),
-                              border: OutlineInputBorder(),
-                            ),
-                            items: items,
-                            onChanged: (v) {
-                              setState(() {
-                                _homeTeamId = v;
-                                _homeSelectedUserIds.clear();
-                                _homeSquadConfigured = false;
-                              });
-                            },
-                            validator: (v) => v == null ? 'Select Team 1' : null,
-                          ),
-                          if (_homeTeamId != null && homeTeamObj != null) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.group_outlined, size: 18),
-                                    label: Text(
-                                      _homeSquadConfigured
-                                          ? 'Manage ${homeTeamObj.name} Squad (${_homeSelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
-                                          : 'Manage ${homeTeamObj.name} Squad',
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
-                                    ),
-                                    onPressed: () => _manageSquadForTeam(
-                                      teamId: _homeTeamId!,
-                                      teamName: homeTeamObj.name,
-                                      isTeam1: true,
-                                      isBadmintonDoubles: isBadmintonDoubles,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (isBadmintonDoubles) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                _homeSelectedUserIds.length == 2
-                                    ? '✓ 2 players selected for doubles'
-                                    : (_homeSelectedUserIds.length > 2
-                                        ? '⚠ ${_homeSelectedUserIds.length} players selected (must be exactly 2)'
-                                        : '⚠ ${_homeSelectedUserIds.length}/2 players selected (please select 2)'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _homeSelectedUserIds.length == 2
-                                      ? AppColors.success
-                                      : (_homeSelectedUserIds.length > 2 ? AppColors.error : AppColors.warning),
-                                ),
-                              ),
-                            ],
-                          ],
-                          const SizedBox(height: AppSpacing.md),
-                          DropdownButtonFormField<String>(
-                            key: ValueKey('team2_${_selectedSportId}_${_awayTeamId}_${items.length}'),
-                            initialValue: _awayTeamId,
-                            decoration: const InputDecoration(
-                              labelText: 'Team 2',
-                              prefixIcon: Icon(Icons.shield_outlined),
-                              border: OutlineInputBorder(),
-                            ),
-                            items: items,
-                            onChanged: (v) {
-                              setState(() {
-                                _awayTeamId = v;
-                                _awaySelectedUserIds.clear();
-                                _awaySquadConfigured = false;
-                              });
-                            },
-                            validator: (v) => v == null ? 'Select Team 2' : null,
-                          ),
-                          if (_awayTeamId != null && awayTeamObj != null) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.group_outlined, size: 18),
-                                    label: Text(
-                                      _awaySquadConfigured
-                                          ? 'Manage ${awayTeamObj.name} Squad (${_awaySelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
-                                          : 'Manage ${awayTeamObj.name} Squad',
-                                      style: const TextStyle(fontWeight: FontWeight.w600),
-                                    ),
-                                    onPressed: () => _manageSquadForTeam(
-                                      teamId: _awayTeamId!,
-                                      teamName: awayTeamObj.name,
-                                      isTeam1: false,
-                                      isBadmintonDoubles: isBadmintonDoubles,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (isBadmintonDoubles) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                _awaySelectedUserIds.length == 2
-                                    ? '✓ 2 players selected for doubles'
-                                    : (_awaySelectedUserIds.length > 2
-                                        ? '⚠ ${_awaySelectedUserIds.length} players selected (must be exactly 2)'
-                                        : '⚠ ${_awaySelectedUserIds.length}/2 players selected (please select 2)'),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: _awaySelectedUserIds.length == 2
-                                      ? AppColors.success
-                                      : (_awaySelectedUserIds.length > 2 ? AppColors.error : AppColors.warning),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-            
-            // Check if Cricket is selected to show Overs input
-            if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && s['name'] == 'Cricket') ?? false) ...[
-              AppTextField(
-                controller: _oversController,
-                label: 'Overs',
-                hint: 'e.g., 20',
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.sports_cricket_outlined,
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Overs are required for Cricket' : null,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-            ],
-
-            // Venue
-            AppTextField(
-              controller: _venueController,
-              label: 'Venue',
-              hint: 'e.g., Ground A, Indoor Court',
-              prefixIcon: Icons.location_on_outlined,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Venue is required' : null,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Date & Time
-            Row(
               children: [
-                Expanded(
-                  child: AppTextField(
-                    label: 'Date',
-                    hint: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-                    readOnly: true,
-                    onTap: _pickDate,
-                    prefixIcon: Icons.calendar_today_rounded,
+                // Sport
+                Text(
+                  'Sport',
+                  style: AppTypography.callout.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textPrimary,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: AppTextField(
-                    label: 'Time',
-                    hint: _selectedTime.format(context),
-                    readOnly: true,
-                    onTap: _pickTime,
-                    prefixIcon: Icons.schedule_rounded,
+                const SizedBox(height: AppSpacing.sm),
+                sportsAsync.when(
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: CircularProgressIndicator(),
+                    ),
                   ),
+                  error: (err, stack) => Text(
+                    'Failed to load sports',
+                    style: AppTypography.body.copyWith(color: context.colors.textSecondary),
+                  ),
+                  data: (sports) => Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.sm,
+                    children: sports
+                        .map((s) => AppChip(
+                              label: s['name'] as String,
+                              isSelected: _selectedSportId == s['id'],
+                              onTap: () {
+                                if (_selectedSportId != s['id']) {
+                                  setState(() {
+                                    _selectedSportId = s['id'] as String;
+                                    _badmintonType = 'singles';
+                                    _selectedPlayer1Id = null;
+                                    _selectedPlayer2Id = null;
+                                    _player1CustomCtrl.clear();
+                                    _player2CustomCtrl.clear();
+                                    _isCustomP1 = false;
+                                    _isCustomP2 = false;
+                                    _homeTeamId = null;
+                                    _awayTeamId = null;
+                                    _homeSelectedUserIds.clear();
+                                    _awaySelectedUserIds.clear();
+                                    _homeSquadConfigured = false;
+                                    _awaySquadConfigured = false;
+                                  });
+                                }
+                              },
+                            ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Badminton Match Type: Singles or Doubles
+                if (_isBadminton(sportsAsync.valueOrNull)) ...[
+                  Text(
+                    'Match Type',
+                    style: AppTypography.callout.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      AppChip(
+                        label: 'Singles',
+                        isSelected: _badmintonType == 'singles',
+                        onTap: () {
+                          setState(() {
+                            _badmintonType = 'singles';
+                            _homeTeamId = null;
+                            _awayTeamId = null;
+                            _homeSelectedUserIds.clear();
+                            _awaySelectedUserIds.clear();
+                          });
+                        },
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      AppChip(
+                        label: 'Doubles',
+                        isSelected: _badmintonType == 'doubles',
+                        onTap: () {
+                          setState(() {
+                            _badmintonType = 'doubles';
+                            _selectedPlayer1Id = null;
+                            _selectedPlayer2Id = null;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+
+                // If Badminton Singles: Do not show option of teams, show option of players
+                if (_isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'singles') ...[
+                  Text(
+                    'Players',
+                    style: AppTypography.callout.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _buildSinglesPlayersSection(),
+                  const SizedBox(height: AppSpacing.xl),
+                ] else ...[
+                  // Teams Selection (For cricket, football, or badminton doubles)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Teams',
+                        style: AppTypography.callout.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      if (_isBadminton(sportsAsync.valueOrNull))
+                        Text(
+                          'Doubles: exactly 2 players per team',
+                          style: AppTypography.caption.copyWith(
+                            color: context.colors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  ref.watch(teamsBySportProvider(_selectedSportId)).when(
+                        loading: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(AppSpacing.md),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        error: (err, stack) => Text(
+                          'Failed to load teams',
+                          style: AppTypography.body.copyWith(color: context.colors.textSecondary),
+                        ),
+                        data: (teams) {
+                          final isBadmintonDoubles = _isBadminton(sportsAsync.valueOrNull) && _badmintonType == 'doubles';
+
+                          final filteredTeams = teams
+                              .where((t) => _selectedSportId == null || t.sportId == _selectedSportId)
+                              .toList();
+                          final items = filteredTeams
+                              .map((t) => DropdownMenuItem(
+                                    value: t.id,
+                                    child: Text(t.name),
+                                  ))
+                              .toList();
+
+                          final homeTeamObj = filteredTeams
+                              .where((t) => t.id == _homeTeamId)
+                              .firstOrNull;
+                          final awayTeamObj = filteredTeams
+                              .where((t) => t.id == _awayTeamId)
+                              .firstOrNull;
+
+                          final sportObj = sportsAsync.valueOrNull
+                              ?.where((s) => s['id'] == _selectedSportId)
+                              .firstOrNull;
+                          final sportName = sportObj?['name'] as String? ?? 'this sport';
+
+                          if (items.isEmpty) {
+                            return Container(
+                              padding: const EdgeInsets.all(AppSpacing.cardPadding),
+                              decoration: BoxDecoration(
+                                color: context.colors.surface,
+                                borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'No teams found for $sportName.',
+                                    style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                                  ),
+                                  if (isBadmintonDoubles) ...[
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      'Tip: You can switch to Badminton Singles above to play immediately without teams.',
+                                      style: AppTypography.caption.copyWith(
+                                        color: context.colors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(height: AppSpacing.md),
+                                  AppButton(
+                                    label: 'Create a $sportName Team',
+                                    icon: Icons.add_rounded,
+                                    variant: AppButtonVariant.secondary,
+                                    onPressed: () => context.push('/teams/create'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              DropdownButtonFormField<String>(
+                                key: ValueKey('team1_${_selectedSportId}_${_homeTeamId}_${items.length}'),
+                                initialValue: _homeTeamId,
+                                dropdownColor: context.colors.surfaceElevated,
+                                style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                                decoration: InputDecoration(
+                                  labelText: 'Team 1',
+                                  labelStyle: AppTypography.callout.copyWith(color: context.colors.textSecondary),
+                                  prefixIcon: Icon(Icons.shield_outlined, color: context.colors.textSecondary),
+                                  filled: true,
+                                  fillColor: context.colors.surface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide(color: context.colors.textPrimary, width: 1.5),
+                                  ),
+                                ),
+                                items: items,
+                                onChanged: (v) {
+                                  setState(() {
+                                    _homeTeamId = v;
+                                    _homeSelectedUserIds.clear();
+                                    _homeSquadConfigured = false;
+                                  });
+                                },
+                                validator: (v) => v == null ? 'Select Team 1' : null,
+                              ),
+                              if (_homeTeamId != null && homeTeamObj != null) ...[
+                                const SizedBox(height: AppSpacing.xs),
+                                AppButton(
+                                  variant: AppButtonVariant.secondary,
+                                  icon: Icons.group_outlined,
+                                  label: _homeSquadConfigured
+                                      ? 'Manage ${homeTeamObj.name} Squad (${_homeSelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
+                                      : 'Manage ${homeTeamObj.name} Squad',
+                                  onPressed: () => _manageSquadForTeam(
+                                    teamId: _homeTeamId!,
+                                    teamName: homeTeamObj.name,
+                                    isTeam1: true,
+                                    isBadmintonDoubles: isBadmintonDoubles,
+                                  ),
+                                ),
+                                if (isBadmintonDoubles) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _homeSelectedUserIds.length == 2
+                                        ? '2 players selected for doubles'
+                                        : (_homeSelectedUserIds.length > 2
+                                            ? '${_homeSelectedUserIds.length} players selected (must be exactly 2)'
+                                            : '${_homeSelectedUserIds.length}/2 players selected (please select 2)'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _homeSelectedUserIds.length == 2
+                                          ? AppColors.win
+                                          : (_homeSelectedUserIds.length > 2 ? AppColors.loss : AppColors.warning),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                              const SizedBox(height: AppSpacing.md),
+                              DropdownButtonFormField<String>(
+                                key: ValueKey('team2_${_selectedSportId}_${_awayTeamId}_${items.length}'),
+                                initialValue: _awayTeamId,
+                                dropdownColor: context.colors.surfaceElevated,
+                                style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                                decoration: InputDecoration(
+                                  labelText: 'Team 2',
+                                  labelStyle: AppTypography.callout.copyWith(color: context.colors.textSecondary),
+                                  prefixIcon: Icon(Icons.shield_outlined, color: context.colors.textSecondary),
+                                  filled: true,
+                                  fillColor: context.colors.surface,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                                    borderSide: BorderSide(color: context.colors.textPrimary, width: 1.5),
+                                  ),
+                                ),
+                                items: items,
+                                onChanged: (v) {
+                                  setState(() {
+                                    _awayTeamId = v;
+                                    _awaySelectedUserIds.clear();
+                                    _awaySquadConfigured = false;
+                                  });
+                                },
+                                validator: (v) => v == null ? 'Select Team 2' : null,
+                              ),
+                              if (_awayTeamId != null && awayTeamObj != null) ...[
+                                const SizedBox(height: AppSpacing.xs),
+                                AppButton(
+                                  variant: AppButtonVariant.secondary,
+                                  icon: Icons.group_outlined,
+                                  label: _awaySquadConfigured
+                                      ? 'Manage ${awayTeamObj.name} Squad (${_awaySelectedUserIds.length}${isBadmintonDoubles ? '/2' : ''})'
+                                      : 'Manage ${awayTeamObj.name} Squad',
+                                  onPressed: () => _manageSquadForTeam(
+                                    teamId: _awayTeamId!,
+                                    teamName: awayTeamObj.name,
+                                    isTeam1: false,
+                                    isBadmintonDoubles: isBadmintonDoubles,
+                                  ),
+                                ),
+                                if (isBadmintonDoubles) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _awaySelectedUserIds.length == 2
+                                        ? '2 players selected for doubles'
+                                        : (_awaySelectedUserIds.length > 2
+                                            ? '${_awaySelectedUserIds.length} players selected (must be exactly 2)'
+                                            : '${_awaySelectedUserIds.length}/2 players selected (please select 2)'),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: _awaySelectedUserIds.length == 2
+                                          ? AppColors.win
+                                          : (_awaySelectedUserIds.length > 2 ? AppColors.loss : AppColors.warning),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+                
+                // Check if Cricket is selected to show Overs input
+                if (sportsAsync.valueOrNull?.any((s) => s['id'] == _selectedSportId && s['name'] == 'Cricket') ?? false) ...[
+                  AppTextField(
+                    controller: _oversController,
+                    label: 'Overs',
+                    hint: 'e.g., 20',
+                    keyboardType: TextInputType.number,
+                    prefixIcon: Icons.sports_cricket_outlined,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Overs are required for Cricket' : null,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+
+                // Venue
+                AppTextField(
+                  controller: _venueController,
+                  label: 'Venue',
+                  hint: 'e.g., Ground A, Indoor Court',
+                  prefixIcon: Icons.location_on_outlined,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? 'Venue is required' : null,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Date & Time
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: 'Date',
+                        hint: '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                        readOnly: true,
+                        onTap: _pickDate,
+                        prefixIcon: Icons.calendar_today_rounded,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'Time',
+                        hint: _selectedTime.format(context),
+                        readOnly: true,
+                        onTap: _pickTime,
+                        prefixIcon: Icons.schedule_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xl),
+
+                // Format
+                Text(
+                  'Format',
+                  style: AppTypography.callout.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: _formats
+                      .map((f) => AppChip(
+                            label: f,
+                            isSelected: _selectedFormat == f,
+                            onTap: () => setState(() => _selectedFormat = f),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+
+                AppButton(
+                  label: 'Create Match',
+                  onPressed: _handleCreate,
+                  isLoading: _isLoading,
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Format
-            Text('Format', style: AppTypography.caption.copyWith(fontWeight: FontWeight.w500)),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.sm,
-              children: _formats
-                  .map((f) => AppChip(
-                        label: f,
-                        isSelected: _selectedFormat == f,
-                        onTap: () => setState(() => _selectedFormat = f),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            AppButton(
-              label: 'Create Match',
-              onPressed: _handleCreate,
-              isLoading: _isLoading,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -846,10 +954,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               DropdownButtonFormField<String>(
                 key: ValueKey('p1_${_selectedSportId}_${validP1}_${playerItems.length}'),
                 initialValue: validP1,
+                dropdownColor: context.colors.surfaceElevated,
+                style: AppTypography.body.copyWith(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Player 1',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: const OutlineInputBorder(),
+                  labelStyle: AppTypography.callout.copyWith(color: context.colors.textSecondary),
+                  prefixIcon: Icon(Icons.person_outline, color: context.colors.textSecondary),
+                  filled: true,
+                  fillColor: context.colors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide(color: context.colors.textPrimary, width: 1.5),
+                  ),
                   suffixIcon: TextButton(
                     onPressed: () {
                       setState(() {
@@ -857,7 +981,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         _selectedPlayer1Id = null;
                       });
                     },
-                    child: const Text('Custom', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Custom',
+                      style: AppTypography.caption.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 items: playerItems,
@@ -885,7 +1015,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         _player1CustomCtrl.clear();
                       });
                     },
-                    child: const Text('From List', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'From List',
+                      style: AppTypography.caption.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -897,10 +1033,26 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
               DropdownButtonFormField<String>(
                 key: ValueKey('p2_${_selectedSportId}_${validP2}_${playerItems.length}'),
                 initialValue: validP2,
+                dropdownColor: context.colors.surfaceElevated,
+                style: AppTypography.body.copyWith(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Player 2',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: const OutlineInputBorder(),
+                  labelStyle: AppTypography.callout.copyWith(color: context.colors.textSecondary),
+                  prefixIcon: Icon(Icons.person_outline, color: context.colors.textSecondary),
+                  filled: true,
+                  fillColor: context.colors.surface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
+                    borderSide: BorderSide(color: context.colors.textPrimary, width: 1.5),
+                  ),
                   suffixIcon: TextButton(
                     onPressed: () {
                       setState(() {
@@ -908,7 +1060,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         _selectedPlayer2Id = null;
                       });
                     },
-                    child: const Text('Custom', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'Custom',
+                      style: AppTypography.caption.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ),
                 items: playerItems,
@@ -940,7 +1098,13 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
                         _player2CustomCtrl.clear();
                       });
                     },
-                    child: const Text('From List', style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      'From List',
+                      style: AppTypography.caption.copyWith(
+                        color: context.colors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -960,12 +1124,12 @@ class _CreateMatchScreenState extends ConsumerState<CreateMatchScreen> {
             padding: const EdgeInsets.all(AppSpacing.sm),
             margin: const EdgeInsets.only(bottom: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              color: context.colors.fillSecondary,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
             ),
             child: Text(
               note,
-              style: AppTypography.caption.copyWith(color: Theme.of(context).colorScheme.primary),
+              style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
             ),
           ),
         ],

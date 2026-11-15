@@ -1,22 +1,24 @@
-/// VIT-AP Sports — AppAvatar widget.
+/// VIT-AP Sports — AppAvatar widget (Apple Design System).
 ///
 /// Component specification:
+/// - Players are circles (BoxShape.circle).
+/// - Teams are rounded squares (radius 12).
 /// - Sizes: 24, 32, 40, 56.
-/// - Players are circles, teams are rounded squares (radius 8, or 12 at 56).
-/// - Initials fallback uses one neutral tint with textSecondary letters.
-/// - 150 ms fade-in for network images with neutral placeholder.
+/// - Fallback initials use fillSecondary background with textSecondary letters.
+/// - 150 ms smooth fade-in for network images.
 library;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 
 enum AppAvatarSize {
   size24(24, 10, 6),
   size32(32, 12, 8),
-  size40(40, 14, 8),
+  size40(40, 14, 10),
   size56(56, 18, 12);
 
   const AppAvatarSize(this.dimension, this.fontSize, this.teamRadius);
@@ -59,26 +61,30 @@ class AppAvatar extends StatelessWidget {
   }
 
   BorderRadius? get _borderRadius =>
-      isTeam ? BorderRadius.circular(size.teamRadius) : null;
+      isTeam ? BorderRadius.circular(AppSpacing.radiusAvatarTeam) : null;
 
   BoxShape get _shape => isTeam ? BoxShape.rectangle : BoxShape.circle;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheDim = (size.dimension * dpr).round();
     Widget avatar;
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       avatar = CachedNetworkImage(
         imageUrl: imageUrl!,
         fadeInDuration: const Duration(milliseconds: 150),
+        memCacheWidth: cacheDim,
+        memCacheHeight: cacheDim,
         imageBuilder: (_, imageProvider) => Container(
           width: size.dimension,
           height: size.dimension,
           decoration: BoxDecoration(
             shape: _shape,
             borderRadius: _borderRadius,
-            border: showBorder ? Border.all(color: colors.border, width: 1) : null,
+            border: showBorder ? Border.all(color: colors.divider, width: 0.5) : null,
             image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
           ),
         ),
@@ -90,10 +96,18 @@ class AppAvatar extends StatelessWidget {
     }
 
     if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: isTeam ? BorderRadius.circular(size.teamRadius) : BorderRadius.circular(size.dimension / 2),
-        child: avatar,
+      return Semantics(
+        button: true,
+        label: name != null ? '$name avatar' : 'Avatar',
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: isTeam
+              ? BorderRadius.circular(AppSpacing.radiusAvatarTeam)
+              : BorderRadius.circular(size.dimension / 2),
+          splashColor: Colors.transparent,
+          highlightColor: colors.textPrimary.withAlpha(15),
+          child: avatar,
+        ),
       );
     }
 
@@ -105,16 +119,16 @@ class AppAvatar extends StatelessWidget {
       width: size.dimension,
       height: size.dimension,
       decoration: BoxDecoration(
+        color: colors.fillSecondary,
         shape: _shape,
         borderRadius: _borderRadius,
-        color: colors.surfaceVariant,
-        border: showBorder ? Border.all(color: colors.border, width: 1) : null,
+        border: showBorder ? Border.all(color: colors.divider, width: 0.5) : null,
       ),
       alignment: Alignment.center,
       child: Text(
         _initials,
         style: TextStyle(
-          fontFamily: AppTypography.caption.fontFamily,
+          fontFamily: AppTypography.callout.fontFamily,
           fontSize: size.fontSize,
           fontWeight: FontWeight.w600,
           color: colors.textSecondary,

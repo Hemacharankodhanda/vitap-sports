@@ -1,49 +1,70 @@
-/// VIT-AP Sports — Free agents screen.
+/// VIT-AP Sports — Free agents screen (Apple Design System).
+///
+/// Clean, calm directory for free agents: pill chips filter,
+/// calm surface backgrounds, zero emojis.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/frosted_bar.dart';
 
-class FreeAgentsScreen extends StatelessWidget {
+class FreeAgentsScreen extends StatefulWidget {
   const FreeAgentsScreen({super.key});
 
   @override
+  State<FreeAgentsScreen> createState() => _FreeAgentsScreenState();
+}
+
+class _FreeAgentsScreenState extends State<FreeAgentsScreen> {
+  String _selectedSport = 'All';
+
+  static const _sports = [
+    'All',
+    'Cricket',
+    'Football',
+    'Basketball',
+    'Badminton',
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
+
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(title: const Text('Free Agents')),
+      backgroundColor: colors.background,
+      appBar: const FrostedAppBar(
+        title: Text('Free Agents'),
+      ),
       body: Column(
         children: [
           // Sport filter
           SizedBox(
-            height: AppSpacing.chipHeight + AppSpacing.lg * 2,
-            child: ListView(
+            height: 52,
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.screenMargin,
-                vertical: AppSpacing.sm,
+                vertical: 8,
               ),
-              children: const [
-                AppChip(label: 'All', isSelected: true),
-                SizedBox(width: AppSpacing.sm),
-                AppChip(label: 'Cricket'),
-                SizedBox(width: AppSpacing.sm),
-                AppChip(label: 'Football'),
-                SizedBox(width: AppSpacing.sm),
-                AppChip(label: 'Basketball'),
-                SizedBox(width: AppSpacing.sm),
-                AppChip(label: 'Badminton'),
-              ],
+              itemCount: _sports.length,
+              separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
+              itemBuilder: (context, index) {
+                final sport = _sports[index];
+                return AppChip(
+                  label: sport,
+                  isSelected: _selectedSport == sport,
+                  onTap: () => setState(() => _selectedSport = sport),
+                );
+              },
             ),
           ),
-          // Players list
+          Divider(height: 1, thickness: 0.5, color: colors.divider),
+
+          // Players list / Empty state
           const Expanded(
             child: EmptyState(
               icon: Icons.person_search_rounded,

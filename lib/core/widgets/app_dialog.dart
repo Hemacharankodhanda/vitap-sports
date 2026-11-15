@@ -1,15 +1,16 @@
-/// VIT-AP Sports — AppDialog widget.
+/// VIT-AP Sports — AppDialog widget (Apple Design System).
 ///
 /// Component specification:
-/// - Radius 16, max width 400, padding 24.
-/// - Title heading, Body text in textSecondary.
-/// - Right-aligned text-button actions. No header icons.
-/// - Used for destructive confirmation and critical decisions. Scrim 40%.
+/// - Radius 24, surfaceElevated background (#FFFFFF / #2C2C2E), elevation 0.
+/// - Scrim 40% (0x66000000).
+/// - Headline title, Body text in textSecondary.
+/// - Stacked pill buttons (primary / filled loss confirm, secondary cancel).
 library;
 
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import 'app_button.dart';
 
@@ -43,7 +44,7 @@ class AppDialog extends StatelessWidget {
   }) {
     return showDialog<bool>(
       context: context,
-      barrierColor: Colors.black.withAlpha((0.40 * 255).round()), // 40% scrim
+      barrierColor: Colors.black.withAlpha((AppColors.scrimOpacity * 255).round()),
       builder: (ctx) => AppDialog(
         title: title,
         message: message,
@@ -61,55 +62,49 @@ class AppDialog extends StatelessWidget {
     final colors = context.appColors;
 
     return Dialog(
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colors.border, width: 1),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusDialog),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: const BoxConstraints(maxWidth: 360),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 title,
                 style: AppTypography.title.copyWith(
                   color: colors.textPrimary,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 message,
                 style: AppTypography.body.copyWith(
                   color: colors.textSecondary,
                 ),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppButton(
-                    label: cancelLabel,
-                    variant: AppButtonVariant.text,
-                    size: AppButtonSize.medium,
-                    isExpanded: false,
-                    onPressed: onCancel ?? () => Navigator.of(context).pop(),
-                  ),
-                  const SizedBox(width: 8),
-                  AppButton(
-                    label: confirmLabel,
-                    variant: isDestructive ? AppButtonVariant.destructive : AppButtonVariant.primary,
-                    size: AppButtonSize.medium,
-                    isExpanded: false,
-                    onPressed: onConfirm,
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.xl),
+              AppButton(
+                label: confirmLabel,
+                variant: isDestructive
+                    ? AppButtonVariant.destructive
+                    : AppButtonVariant.primary,
+                onPressed: onConfirm,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton(
+                label: cancelLabel,
+                variant: AppButtonVariant.secondary,
+                onPressed: onCancel,
               ),
             ],
           ),

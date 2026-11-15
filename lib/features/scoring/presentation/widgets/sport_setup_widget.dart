@@ -12,6 +12,8 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_chip.dart';
+import '../../../../core/widgets/app_switch.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../domain/player_option.dart';
 import '../../providers/live_scorer_providers.dart';
 
@@ -200,17 +202,24 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     final sport = widget.state.sport.toLowerCase();
 
     return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.tune_rounded, size: AppSpacing.iconNav, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                Icons.tune_rounded,
+                size: AppSpacing.iconNav,
+                color: context.colors.textPrimary,
+              ),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 'Pre-Match Setup',
-                style: AppTypography.title.copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.title.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.textPrimary,
+                ),
               ),
             ],
           ),
@@ -223,27 +232,30 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           else if (sport == 'football')
             _buildFootballSetup()
           else
-            const Text('Configure rules to begin.'),
+            Text(
+              'Configure rules to begin.',
+              style: AppTypography.body.copyWith(color: context.colors.textSecondary),
+            ),
 
           if (sport == 'badminton' &&
               _badmintonFormat == 'doubles' &&
               (_badmintonHomeDoubles.length != 2 || _badmintonAwayDoubles.length != 2)) ...[
+            const SizedBox(height: AppSpacing.md),
             Container(
-              padding: const EdgeInsets.all(AppSpacing.sm),
+              padding: const EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: AppColors.error.withAlpha(25),
-                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-                border: Border.all(color: AppColors.error.withAlpha(80)),
+                color: AppColors.loss.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                  const Icon(Icons.warning_amber_rounded, color: AppColors.loss, size: 20),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       'Doubles matches require exactly 2 players per team before proceeding.',
                       style: AppTypography.caption.copyWith(
-                        color: AppColors.error,
+                        color: AppColors.loss,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -251,7 +263,6 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
           ],
 
           const SizedBox(height: AppSpacing.xl),
@@ -270,7 +281,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Toss Winner',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -299,7 +316,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Elected To', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Elected To',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -331,7 +354,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         // ─── Selectable Lineup Pickers ───
         Text(
           'Opening Batters ($_battingTeamName)',
-          style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         _buildPlayerSelectorTile(
@@ -365,7 +391,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
 
         Text(
           'Opening Bowler ($_bowlingTeamName)',
-          style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         _buildPlayerSelectorTile(
@@ -390,31 +419,44 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     required String teamName,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm + 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm + 4,
+        ),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          color: context.colors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
           border: Border.all(
-            color: isDark ? AppColors.darkDivider : AppColors.lightDivider,
+            color: context.colors.divider,
+            width: 0.5,
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.person_outline_rounded, size: 22, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.person_outline_rounded,
+              size: 22,
+              color: context.colors.textPrimary,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: AppTypography.caption),
+                  Text(
+                    label,
+                    style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
+                  ),
                   Text(
                     playerName != null && playerName.isNotEmpty ? playerName : 'Tap to select player',
-                    style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                    style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.textPrimary,
+                    ),
                   ),
                 ],
               ),
@@ -422,7 +464,7 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             Icon(
               Icons.expand_more_rounded,
               size: 20,
-              color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              color: context.colors.textSecondary,
             ),
           ],
         ),
@@ -452,17 +494,19 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         return StatefulBuilder(
           builder: (c, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
@@ -470,43 +514,62 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
                     Row(
                       children: [
-                        Icon(Icons.group_rounded, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
+                        Icon(Icons.group_rounded, color: context.colors.textPrimary, size: AppSpacing.iconNav),
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(title, style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
-                              Text('Team: $teamName', style: AppTypography.caption),
+                              Text(
+                                title,
+                                style: AppTypography.headline.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                'Team: $teamName',
+                                style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
+                              ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    Divider(color: context.colors.divider, height: AppSpacing.lg, thickness: 0.5),
 
                     if (!showCustom) ...[
                       if (available.isNotEmpty) ...[
-                        Text('Squad Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Squad Players',
+                          style: AppTypography.callout.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
                         Wrap(
                           spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.xs,
+                          runSpacing: AppSpacing.sm,
                           children: available.map((p) {
                             final isSelected = p.id == currentSelection || p.name == currentSelection;
-                            return ActionChip(
-                              avatar: isSelected
-                                  ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                  : null,
-                              label: Text(p.name),
-                              backgroundColor: isSelected ? Theme.of(context).colorScheme.primary : null,
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : null,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                              onPressed: () {
+                            return AppChip(
+                              label: p.name,
+                              isSelected: isSelected,
+                              onTap: () {
                                 onSelected(p.id);
                                 Navigator.pop(ctx);
                               },
@@ -516,31 +579,48 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                         const SizedBox(height: AppSpacing.md),
                       ],
 
-                      TextButton.icon(
-                        icon: const Icon(Icons.person_add_rounded, size: 18),
-                        label: const Text('+ Enter Custom Player Name'),
-                        onPressed: () => setSheetState(() => showCustom = true),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: Icon(Icons.person_add_rounded, size: 18, color: context.colors.primaryFill),
+                          label: Text(
+                            '+ Enter Custom Player Name',
+                            style: AppTypography.callout.copyWith(
+                              color: context.colors.primaryFill,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () => setSheetState(() => showCustom = true),
+                        ),
                       ),
                     ] else ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Custom Player Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Custom Player Name',
+                            style: AppTypography.callout.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
                           TextButton(
                             onPressed: () => setSheetState(() => showCustom = false),
-                            child: const Text('← Pick from Squad'),
+                            child: Text(
+                              '← Pick from Squad',
+                              style: AppTypography.caption.copyWith(
+                                color: context.colors.primaryFill,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      TextField(
+                      AppTextField(
                         controller: customCtrl,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Player Name',
-                          hintText: 'e.g. Virat Kohli',
-                          isDense: true,
-                        ),
+                        label: 'Player Name',
+                        hint: 'e.g. Virat Kohli',
                         onChanged: (val) => setSheetState(() {}),
                         onSubmitted: (val) {
                           final name = val.trim();
@@ -583,7 +663,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Match Format', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Match Format',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -614,7 +700,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
 
         // If Singles: Show option of PLAYERS, not teams!
         if (_badmintonFormat == 'singles') ...[
-          Text('Players', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Players',
+            style: AppTypography.headline.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           _buildPlayerSelectorTile(
             label: 'Player 1 (Home)',
@@ -653,7 +745,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Toss Winner',
+            style: AppTypography.headline.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
@@ -674,7 +772,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           // If Doubles: Show Teams and require exactly 2 players per team!
           Text(
             '${widget.state.homeName} Pair (${_badmintonHomeDoubles.length}/2)',
-            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+            style: AppTypography.headline.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           _buildDoublesPairCard(
@@ -687,7 +788,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
 
           Text(
             '${widget.state.awayName} Pair (${_badmintonAwayDoubles.length}/2)',
-            style: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+            style: AppTypography.headline.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
           _buildDoublesPairCard(
@@ -698,7 +802,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           ),
           const SizedBox(height: AppSpacing.md),
 
-          Text('Toss Winner', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            'Toss Winner',
+            style: AppTypography.headline.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
+          ),
           const SizedBox(height: AppSpacing.xs),
           Row(
             children: [
@@ -718,7 +828,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ],
 
         const SizedBox(height: AppSpacing.md),
-        Text('Elected To', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Elected To',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -737,7 +853,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Best Of', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Best Of',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [1, 3, 5].map((g) {
@@ -761,18 +883,18 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     required Set<String> selectedPlayerIds,
     required List<PlayerOption> availablePlayers,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isReady = selectedPlayerIds.length == 2;
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        color: context.colors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
         border: Border.all(
           color: isReady
-              ? AppColors.success.withAlpha(120)
-              : (selectedPlayerIds.length > 2 ? AppColors.error : AppColors.warning),
+              ? AppColors.win.withValues(alpha: 0.5)
+              : (selectedPlayerIds.length > 2 ? AppColors.loss : AppColors.warning),
+          width: 0.5,
         ),
       ),
       child: Column(
@@ -783,21 +905,24 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             children: [
               Text(
                 isReady
-                    ? '✓ 2 players selected'
+                    ? '2 players selected'
                     : (selectedPlayerIds.length > 2
-                        ? '⚠ ${selectedPlayerIds.length} players (must be 2)'
-                        : '⚠ ${selectedPlayerIds.length}/2 players selected'),
+                        ? '${selectedPlayerIds.length} players (must be 2)'
+                        : '${selectedPlayerIds.length}/2 players selected'),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isReady
-                      ? AppColors.success
-                      : (selectedPlayerIds.length > 2 ? AppColors.error : AppColors.warning),
+                      ? AppColors.win
+                      : (selectedPlayerIds.length > 2 ? AppColors.loss : AppColors.warning),
                 ),
               ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.edit_outlined, size: 14),
-                label: const Text('Manage Pair', style: TextStyle(fontSize: 12)),
+              AppButton(
+                label: 'Manage Pair',
+                isExpanded: false,
+                size: AppButtonSize.small,
+                variant: AppButtonVariant.secondary,
+                icon: Icons.edit_outlined,
                 onPressed: () => _openDoublesSquadPicker(
                   teamName: teamName,
                   availablePlayers: availablePlayers,
@@ -820,15 +945,32 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             ],
           ),
           if (selectedPlayerIds.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.sm),
             Wrap(
               spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: selectedPlayerIds.map((id) {
                 final match = availablePlayers.where((p) => p.id == id).firstOrNull;
-                return Chip(
-                  avatar: const Icon(Icons.person, size: 14),
-                  label: Text(match?.name ?? id, style: const TextStyle(fontSize: 12)),
-                  visualDensity: VisualDensity.compact,
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: context.colors.fillSecondary,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person, size: 14, color: context.colors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        match?.name ?? id,
+                        style: AppTypography.caption.copyWith(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }).toList(),
             ),
@@ -850,8 +992,10 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: context.colors.surfaceElevated,
+      barrierColor: context.colors.scrim,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusSheetTop)),
       ),
       builder: (ctx) {
         final selected = Set<String>.from(currentSelected);
@@ -859,9 +1003,9 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
           builder: (c, setSheetState) {
             return Padding(
               padding: EdgeInsets.only(
-                left: AppSpacing.lg,
-                right: AppSpacing.lg,
-                top: AppSpacing.lg,
+                left: AppSpacing.sheetPadding,
+                right: AppSpacing.sheetPadding,
+                top: AppSpacing.md,
                 bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
               ),
               child: SingleChildScrollView(
@@ -869,31 +1013,59 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 5,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: context.colors.divider,
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('$teamName Pair (${selected.length}/2)', style: AppTypography.title.copyWith(fontWeight: FontWeight.bold)),
+                        Text(
+                          '$teamName Pair (${selected.length}/2)',
+                          style: AppTypography.headline.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.textPrimary,
+                          ),
+                        ),
                         Text(
                           selected.length == 2 ? 'Ready' : 'Must be exactly 2',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: selected.length == 2 ? AppColors.success : AppColors.error,
+                            color: selected.length == 2 ? AppColors.win : AppColors.loss,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    Divider(color: context.colors.divider, height: AppSpacing.lg, thickness: 0.5),
 
                     if (!showCustom) ...[
                       if (availablePlayers.isNotEmpty) ...[
-                        Text('Select 2 players for this pair:', style: AppTypography.caption),
+                        Text(
+                          'Select 2 players for this pair:',
+                          style: AppTypography.caption.copyWith(color: context.colors.textSecondary),
+                        ),
                         const SizedBox(height: AppSpacing.xs),
                         ...availablePlayers.map((p) {
                           final isChecked = selected.contains(p.id) || selected.contains(p.name);
                           return CheckboxListTile(
                             dense: true,
-                            title: Text(p.name),
+                            activeColor: context.colors.primaryFill,
+                            checkColor: context.colors.onPrimary,
+                            title: Text(
+                              p.name,
+                              style: AppTypography.body.copyWith(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
                             value: isChecked,
                             onChanged: (val) {
                               if (val == true && selected.length >= 2) {
@@ -917,31 +1089,48 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
                           );
                         }),
                       ],
-                      TextButton.icon(
-                        icon: const Icon(Icons.person_add_rounded, size: 18),
-                        label: const Text('+ Enter Custom Player Name'),
-                        onPressed: () => setSheetState(() => showCustom = true),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: Icon(Icons.person_add_rounded, size: 18, color: context.colors.primaryFill),
+                          label: Text(
+                            '+ Enter Custom Player Name',
+                            style: AppTypography.callout.copyWith(
+                              color: context.colors.primaryFill,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () => setSheetState(() => showCustom = true),
+                        ),
                       ),
                     ] else ...[
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Custom Player Name', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+                          Text(
+                            'Custom Player Name',
+                            style: AppTypography.callout.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
                           TextButton(
                             onPressed: () => setSheetState(() => showCustom = false),
-                            child: const Text('← Pick from Squad'),
+                            child: Text(
+                              '← Pick from Squad',
+                              style: AppTypography.caption.copyWith(
+                                color: context.colors.primaryFill,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      TextField(
+                      AppTextField(
                         controller: customCtrl,
-                        autofocus: true,
-                        decoration: const InputDecoration(
-                          labelText: 'Player Name',
-                          hintText: 'e.g. Lakshya Sen',
-                          isDense: true,
-                        ),
+                        label: 'Player Name',
+                        hint: 'e.g. Lakshya Sen',
                         onChanged: (val) => setSheetState(() {}),
                       ),
                       const SizedBox(height: AppSpacing.sm),
@@ -983,7 +1172,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Half Length', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Half Length',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [10, 15, 20, 45].map((m) {
@@ -999,7 +1194,13 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
         ),
         const SizedBox(height: AppSpacing.md),
 
-        Text('Kickoff Team', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
+        Text(
+          'Kickoff Team',
+          style: AppTypography.headline.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
+          ),
+        ),
         const SizedBox(height: AppSpacing.xs),
         Row(
           children: [
@@ -1016,19 +1217,45 @@ class _SportSetupWidgetState extends State<SportSetupWidget> {
             ),
           ],
         ),
-        const SizedBox(height: AppSpacing.md),
+        const SizedBox(height: AppSpacing.lg),
 
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: Text('Extra Time (if drawn)', style: AppTypography.body),
-          value: _footballExtraTime,
-          onChanged: (val) => setState(() => _footballExtraTime = val),
-        ),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: Text('Penalty Shootout', style: AppTypography.body),
-          value: _footballShootout,
-          onChanged: (val) => setState(() => _footballShootout = val),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: context.colors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Extra Time (if drawn)',
+                    style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                  ),
+                  AppSwitch(
+                    value: _footballExtraTime,
+                    onChanged: (val) => setState(() => _footballExtraTime = val),
+                  ),
+                ],
+              ),
+              Divider(color: context.colors.divider, height: AppSpacing.md, thickness: 0.5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Penalty Shootout',
+                    style: AppTypography.body.copyWith(color: context.colors.textPrimary),
+                  ),
+                  AppSwitch(
+                    value: _footballShootout,
+                    onChanged: (val) => setState(() => _footballShootout = val),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );

@@ -1,7 +1,7 @@
 /// VIT-AP Sports — Scorer Action Grid.
 ///
 /// Dynamic grid driven by pure engine availableActions.
-/// Features large touch targets (>= 48dp), haptic feedback,
+/// Features large touch targets (>= 48dp, scorer keys 64-80dp), haptic feedback,
 /// and contextual prompt dialogs.
 library;
 
@@ -41,7 +41,7 @@ class ScorerActionGrid extends StatelessWidget {
           padding: const EdgeInsets.all(AppSpacing.xl),
           child: Text(
             'No scoring actions available. Match may be completed or awaiting setup.',
-            style: AppTypography.body,
+            style: AppTypography.body.copyWith(color: context.colors.textSecondary),
             textAlign: TextAlign.center,
           ),
         ),
@@ -125,35 +125,32 @@ class ScorerActionGrid extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context, ScoringAction action, {required bool isLarge}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     Color bg;
     Color fg;
 
     if (action.isDestructive) {
-      bg = AppColors.error;
-      fg = Colors.white;
+      bg = AppColors.loss.withValues(alpha: 0.16);
+      fg = AppColors.loss;
     } else if (action.isPrimary) {
-      bg = Theme.of(context).colorScheme.primary;
-      fg = Colors.white;
+      bg = context.colors.primaryFill;
+      fg = context.colors.onPrimary;
     } else {
-      bg = isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
-      fg = isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary;
+      bg = context.colors.fillSecondary;
+      fg = context.colors.textPrimary;
     }
 
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
         onTap: () async {
-          // Haptic feedback per HIG
           HapticFeedback.lightImpact();
           await _handleActionTap(context, action);
         },
         child: Container(
-          constraints: const BoxConstraints(
-            minHeight: AppSpacing.buttonHeightPrimary, // 48dp >= 44pt touch target
+          constraints: BoxConstraints(
+            minHeight: isLarge ? AppSpacing.scorerKeyHeightMin : AppSpacing.buttonHeightPrimary,
             minWidth: 48,
           ),
           padding: const EdgeInsets.symmetric(
@@ -170,11 +167,13 @@ class ScorerActionGrid extends StatelessWidget {
                   style: isLarge
                       ? AppTypography.title.copyWith(
                           color: fg,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         )
                       : AppTypography.body.copyWith(
                           color: fg,
                           fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                   textAlign: TextAlign.center,
                 ),
@@ -183,8 +182,9 @@ class ScorerActionGrid extends StatelessWidget {
                   Text(
                     action.subLabel!,
                     style: AppTypography.caption.copyWith(
-                      color: fg.withAlpha(200),
+                      color: fg.withValues(alpha: 0.8),
                       fontSize: 10,
+                      fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -313,7 +313,7 @@ class ScorerActionGrid extends StatelessWidget {
       return;
     }
 
-    // 4. Inject explicit IDs into Cricket delivery events (and prompt for Wide / No-ball extra runs)
+    // 5. Inject explicit IDs into Cricket delivery events (and prompt for Wide / No-ball extra runs)
     if (action.type == 'delivery') {
       final cricket = state.scoringState as CricketState?;
       final active = cricket?.activeInnings;
@@ -360,7 +360,7 @@ class ScorerActionGrid extends StatelessWidget {
       return;
     }
 
-    // 5. Inject explicit IDs into Badminton rally_won events
+    // 6. Inject explicit IDs into Badminton rally_won events
     if (action.type == 'rally_won') {
       final badminton = state.scoringState as BadmintonState?;
       final payload = Map<String, dynamic>.from(action.payload);

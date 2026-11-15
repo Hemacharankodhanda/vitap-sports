@@ -1,4 +1,3 @@
-/// VIT-AP Sports — Live Matches Home Feed & Real-time Update Tests.
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

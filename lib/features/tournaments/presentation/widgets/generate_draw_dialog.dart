@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../domain/models/tournament_models.dart';
@@ -140,7 +141,10 @@ class _GenerateDrawDialogState extends ConsumerState<GenerateDrawDialog> {
     final canGenerate = entryCount >= 2;
 
     return AlertDialog(
-      backgroundColor: colors.surface,
+      backgroundColor: colors.surfaceElevated,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusDialog),
+      ),
       title: Text(
         'Generate Tournament Draw',
         style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
@@ -242,12 +246,17 @@ class _GenerateDrawDialogState extends ConsumerState<GenerateDrawDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AppButton(
+          label: 'Cancel',
+          variant: AppButtonVariant.secondary,
+          size: AppButtonSize.small,
+          isExpanded: false,
           onPressed: _isCommitting ? null : () => Navigator.of(context).pop(),
-          child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
         ),
         AppButton(
           label: 'Commit Draw',
+          size: AppButtonSize.small,
+          isExpanded: false,
           isLoading: _isCommitting,
           onPressed: (!canGenerate || _isCommitting) ? null : _commit,
         ),

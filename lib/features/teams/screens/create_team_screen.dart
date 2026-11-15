@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
-import '../../../core/utils/image_utils.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_chip.dart';
 import '../../../core/widgets/app_text_field.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/team_providers.dart';
 
@@ -84,17 +85,18 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
     final sportsAsync = ref.watch(sportsListProvider);
 
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(title: const Text('Create Team')),
+      appBar: const FrostedAppBar(title: Text('Create Team')),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.screenMargin,
+          padding: EdgeInsets.symmetric(
+            horizontal: padding,
             vertical: AppSpacing.lg,
           ),
           children: [

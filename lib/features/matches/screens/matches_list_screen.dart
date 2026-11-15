@@ -5,10 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/app_breakpoints.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_segmented.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/error_view.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/loading_indicator.dart';
 import '../../../core/widgets/sport_filter_bar.dart';
 import '../providers/match_providers.dart';
@@ -44,6 +47,7 @@ class _MatchesListScreenState extends ConsumerState<MatchesListScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final padding = AppBreakpoints.screenPadding(context);
     final currentStatus = _statuses[_tabController.index];
     final matchesAsync = ref.watch(
       matchesListProvider(currentStatus),
@@ -52,7 +56,7 @@ class _MatchesListScreenState extends ConsumerState<MatchesListScreen>
     return Scaffold(
       backgroundColor:
           isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      appBar: FrostedAppBar(
         title: const Text('Matches'),
         actions: [
           IconButton(
@@ -66,13 +70,26 @@ class _MatchesListScreenState extends ConsumerState<MatchesListScreen>
             tooltip: 'Create Match',
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: _tabs.map((t) => Tab(text: t)).toList(),
-        ),
       ),
       body: Column(
         children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: padding,
+              vertical: AppSpacing.sm,
+            ),
+            child: AppSegmented<String>(
+              options: _tabs,
+              selected: _tabs[_tabController.index],
+              labelBuilder: (tab) => tab,
+              onSelected: (selected) {
+                final index = _tabs.indexOf(selected);
+                if (index != -1) {
+                  _tabController.animateTo(index);
+                }
+              },
+            ),
+          ),
           const SportFilterBar(),
           Expanded(
             child: matchesAsync.when(
@@ -93,8 +110,8 @@ class _MatchesListScreenState extends ConsumerState<MatchesListScreen>
                 }
 
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.screenMargin,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: padding,
                     vertical: AppSpacing.lg,
                   ),
                   itemCount: matches.length,

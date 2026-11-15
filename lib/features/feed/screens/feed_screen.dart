@@ -1,4 +1,7 @@
-/// VIT-AP Sports — Feed screen (Home tab).
+/// VIT-AP Sports — Feed screen (Home tab) (Apple Design System).
+///
+/// Content-first Apple look: generous whitespace, calm monochrome surfaces,
+/// frosted navigation bar, live status indicators, zero emojis.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +13,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/frosted_bar.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../core/widgets/sport_filter_bar.dart';
 import '../../../core/widgets/status_badge.dart';
@@ -21,17 +25,17 @@ class FeedScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
     final liveMatchesAsync = ref.watch(liveMatchesStreamProvider);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.lightBackground,
-      appBar: AppBar(
+      backgroundColor: colors.background,
+      appBar: FrostedAppBar(
         title: Text(
           'VIT-AP Sports',
-          style: AppTypography.headline.copyWith(
+          style: AppTypography.title.copyWith(
             fontWeight: FontWeight.w700,
+            color: colors.textPrimary,
           ),
         ),
         actions: [
@@ -39,6 +43,7 @@ class FeedScreen extends ConsumerWidget {
             icon: const Icon(Icons.person_add_alt_rounded, size: AppSpacing.iconNav),
             onPressed: () => context.go('/home/free-agents'),
             tooltip: 'Free Agents',
+            color: colors.textPrimary,
           ),
         ],
         bottom: const SportFilterBar(),
@@ -67,14 +72,21 @@ class FeedScreen extends ConsumerWidget {
                         Text(
                           'Live Matches',
                           style: AppTypography.headline.copyWith(
-                            fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.w700,
+                            color: colors.textPrimary,
                           ),
                         ),
                       ],
                     ),
                     TextButton(
                       onPressed: () => context.go('/matches'),
-                      child: const Text('View All'),
+                      child: Text(
+                        'View All',
+                        style: AppTypography.callout.copyWith(
+                          color: colors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -154,28 +166,27 @@ class _WideQuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final colors = context.appColors;
 
     return AppCard(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.all(AppSpacing.cardPadding),
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: primaryColor.withAlpha(25),
+              color: colors.fillSecondary,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: primaryColor,
+              color: colors.textPrimary,
               size: 24,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,20 +194,16 @@ class _WideQuickActionCard extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AppTypography.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: isDark
-                        ? AppColors.darkTextPrimary
-                        : AppColors.lightTextPrimary,
+                  style: AppTypography.headline.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: AppTypography.caption.copyWith(
-                    color: isDark
-                        ? AppColors.darkTextSecondary
-                        : AppColors.lightTextSecondary,
+                  style: AppTypography.footnote.copyWith(
+                    color: colors.textSecondary,
                   ),
                 ),
               ],
@@ -206,7 +213,7 @@ class _WideQuickActionCard extends StatelessWidget {
           Icon(
             Icons.arrow_forward_ios_rounded,
             size: 14,
-            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            color: colors.textSecondary,
           ),
         ],
       ),
@@ -227,10 +234,11 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = context.appColors;
 
     return AppCard(
       onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -238,19 +246,17 @@ class _QuickActionCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withAlpha(20),
+              color: colors.fillSecondary,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: AppSpacing.iconNav),
+            child: Icon(icon, color: colors.textPrimary, size: AppSpacing.iconNav),
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
             label,
-            style: AppTypography.caption.copyWith(
+            style: AppTypography.callout.copyWith(
               fontWeight: FontWeight.w600,
-              color: isDark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.lightTextPrimary,
+              color: colors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),

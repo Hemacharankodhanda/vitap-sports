@@ -1,10 +1,16 @@
+/// VIT-AP Sports — App Theme Provider.
+///
+/// Manages ThemeMode (System, Light, Dark) with persistence via SharedPreferences.
+/// Eliminates cold-start flash via pre-loaded initialThemeModeProvider.
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_colors.dart';
 
-// Available accent colors
+// Available accent colors (kept for backwards compatibility)
 enum AppAccentColor {
   orange(AppColors.accent, 'Orange'),
   blue(Colors.blue, 'Blue'),
@@ -37,8 +43,12 @@ class AppThemeState {
   }
 }
 
+/// Pre-loaded theme mode passed from main() before the first frame
+final initialThemeModeProvider = Provider<ThemeMode>((ref) => ThemeMode.system);
+
 class AppThemeNotifier extends StateNotifier<AppThemeState> {
-  AppThemeNotifier() : super(const AppThemeState()) {
+  AppThemeNotifier({ThemeMode initialMode = ThemeMode.system})
+      : super(AppThemeState(themeMode: initialMode)) {
     _loadPreferences();
   }
 
@@ -50,9 +60,10 @@ class AppThemeNotifier extends StateNotifier<AppThemeState> {
     
     // Load ThemeMode
     final themeModeStr = prefs.getString(_themeModeKey);
-    ThemeMode mode = ThemeMode.system;
+    ThemeMode mode = state.themeMode;
     if (themeModeStr == 'light') mode = ThemeMode.light;
     if (themeModeStr == 'dark') mode = ThemeMode.dark;
+    if (themeModeStr == 'system') mode = ThemeMode.system;
 
     // Load AccentColor
     final accentColorStr = prefs.getString(_accentColorKey);
@@ -81,5 +92,6 @@ class AppThemeNotifier extends StateNotifier<AppThemeState> {
 }
 
 final themeProvider = StateNotifierProvider<AppThemeNotifier, AppThemeState>((ref) {
-  return AppThemeNotifier();
+  final initialMode = ref.watch(initialThemeModeProvider);
+  return AppThemeNotifier(initialMode: initialMode);
 });

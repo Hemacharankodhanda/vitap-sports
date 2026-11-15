@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/frosted_bar.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../../teams/providers/team_providers.dart';
@@ -196,12 +197,14 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
     final isAdmin = isAdminAsync.valueOrNull ?? false;
     final pendingCount = entries.where((e) => e.status == EntryStatus.pending).length;
 
+    final colors = context.appColors;
+
     return Scaffold(
-      appBar: AppBar(
+      backgroundColor: colors.background,
+      appBar: FrostedAppBar(
         title: tournamentAsync.when(
           data: (t) => Text(
             t?.name ?? 'Tournament',
-            style: AppTypography.title.copyWith(fontWeight: FontWeight.w700),
           ),
           loading: () => const Text('Loading...'),
           error: (_, _) => const Text('Tournament'),
@@ -209,6 +212,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
             onPressed: () {
               ref.invalidate(tournamentDetailProvider(widget.tournamentId));
               ref.invalidate(tournamentEntriesProvider(widget.tournamentId));
@@ -219,10 +223,11 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: AppColors.accent,
-          unselectedLabelColor: context.appColors.textSecondary,
-          indicatorColor: AppColors.accent,
-          indicatorWeight: 2.5,
+          labelColor: colors.textPrimary,
+          unselectedLabelColor: colors.textSecondary,
+          indicatorColor: colors.textPrimary,
+          indicatorWeight: 2.0,
+          indicatorSize: TabBarIndicatorSize.label,
           tabs: [
             const Tab(text: 'Overview'),
             const Tab(text: 'Fixtures'),
@@ -239,7 +244,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                       decoration: BoxDecoration(
-                        color: AppColors.loss,
+                        color: colors.loss,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -1059,7 +1064,7 @@ class _TournamentDetailScreenState extends ConsumerState<TournamentDetailScreen>
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'No ${_teamsFilter} entries found.',
+                      'No $_teamsFilter entries found.',
                       style: AppTypography.body.copyWith(color: colors.textSecondary),
                     ),
                   ),

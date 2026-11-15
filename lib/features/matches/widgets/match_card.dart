@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -13,7 +12,7 @@ import '../data/models/match_model.dart';
 ///
 /// Presents sports fixtures (Cricket, Football, Badminton) in an iconic,
 /// stacked two-row team layout matching Google's sports search cards:
-/// - Real-time batting indicators (🏏)
+/// - Real-time batting indicators (sports_cricket icon)
 /// - Tabular runs, wickets, and overs: e.g. 165/4 (20.0)
 /// - Live chase equations: e.g. "Titans need 24 runs in 9 balls (RRR 16.0)"
 /// - Result margins with winner highlighting
@@ -685,7 +684,12 @@ class MatchCard extends StatelessWidget {
                 ),
                 if (isBatting) ...[
                   const SizedBox(width: 6),
-                  const Text('🏏', style: TextStyle(fontSize: 13)),
+                  Icon(
+                    Icons.sports_cricket_rounded,
+                    key: const ValueKey('cricket_batting_indicator'),
+                    size: 14,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
                 ],
                 if (_isCompleted && isWinner) ...[
                   const SizedBox(width: 6),

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../profile/data/models/user_model.dart';
 import '../../teams/data/models/team_model.dart';
 
 final leaderboardSportProvider = StateProvider<String>((ref) => 'Cricket');

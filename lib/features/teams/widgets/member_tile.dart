@@ -70,8 +70,10 @@ class MemberTile extends StatelessWidget {
                 vertical: AppSpacing.xxs,
               ),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withAlpha(20),
-                borderRadius: BorderRadius.circular(AppSpacing.chipRadius),
+                color: isDark
+                    ? AppColors.warningContainerDark
+                    : AppColors.warningContainerLight,
+                borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -79,14 +81,19 @@ class MemberTile extends StatelessWidget {
                   Icon(
                     Icons.star_rounded,
                     size: 12,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: isDark
+                        ? AppColors.warningDark
+                        : AppColors.warningLight,
                   ),
                   const SizedBox(width: AppSpacing.xxs),
                   Text(
                     'Captain',
-                    style: AppTypography.overline.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
+                    style: AppTypography.caption.copyWith(
+                      color: isDark
+                          ? AppColors.warningDark
+                          : AppColors.warningLight,
                       fontWeight: FontWeight.w600,
+                      fontSize: 11,
                     ),
                   ),
                 ],
@@ -94,10 +101,10 @@ class MemberTile extends StatelessWidget {
             ),
           ] else if (showRemove)
             IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.remove_circle_outline_rounded,
                 size: AppSpacing.iconInline,
-                color: AppColors.error,
+                color: isDark ? AppColors.lossDark : AppColors.lossLight,
               ),
               onPressed: onRemove,
               tooltip: 'Remove member',

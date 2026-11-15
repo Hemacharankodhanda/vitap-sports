@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vitap_sports/features/matches/data/models/match_model.dart';
 import 'package:vitap_sports/features/matches/widgets/match_card.dart';
 import 'package:vitap_sports/features/matches/widgets/professional_scorecard.dart';
-import 'package:vitap_sports/features/scorecards/screens/scorecard_view_screen.dart';
-import 'package:vitap_sports/features/scoring/engines/badminton/badminton_engine.dart';
 import 'package:vitap_sports/features/scoring/engines/badminton/badminton_state.dart';
 
 void main() {

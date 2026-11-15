@@ -1,9 +1,9 @@
-/// VIT-AP Sports — ErrorView and InlineErrorBanner widgets.
+/// VIT-AP Sports — ErrorView and InlineErrorBanner widgets (Apple Design System).
 ///
 /// Component specification:
-/// - Error (blocking): centred column (max width 280): 40 px outline icon in textSecondary,
-///   Headline title, one to two lines of Body text in textSecondary, and a Retry button.
-/// - Error (inline): a banner with negative container tint, 20 px icon,
+/// - Error (blocking): centred column (max width 300): 44 px outline icon in textSecondary,
+///   Headline title, Body text in textSecondary, and pill Retry button.
+/// - Error (inline): banner with loss container tint, 20 px icon,
 ///   one line of text and a text Retry action.
 library;
 
@@ -32,16 +32,19 @@ class ErrorView extends StatelessWidget {
 
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280),
+        constraints: const BoxConstraints(maxWidth: 300),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.screenMargin,
+            vertical: AppSpacing.xxl,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon ?? Icons.error_outline_rounded,
-                size: 40,
+                size: 44,
                 color: colors.textSecondary,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -60,18 +63,15 @@ class ErrorView extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               if (onRetry != null) ...[
                 const SizedBox(height: AppSpacing.lg),
                 AppButton(
-                  label: 'Retry',
+                  label: 'Try Again',
                   onPressed: onRetry,
                   variant: AppButtonVariant.secondary,
                   size: AppButtonSize.medium,
                   isExpanded: false,
-                  icon: Icons.refresh_rounded,
                 ),
               ],
             ],
@@ -82,51 +82,46 @@ class ErrorView extends StatelessWidget {
   }
 }
 
-/// Inline error banner with negative container tint, 20px icon, one line of text and text Retry action.
+/// Inline error banner for recoverable inline errors.
 class InlineErrorBanner extends StatelessWidget {
   const InlineErrorBanner({
     super.key,
     required this.message,
     this.onRetry,
+    this.margin,
   });
 
   final String message;
   final VoidCallback? onRetry;
+  final EdgeInsetsGeometry? margin;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: margin,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: colors.lossContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCardInner),
       ),
       child: Row(
         children: [
           Icon(Icons.info_outline_rounded, size: 20, color: colors.loss),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               message,
-              style: AppTypography.callout.copyWith(
-                color: colors.loss,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
+              style: AppTypography.callout.copyWith(color: colors.loss),
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           if (onRetry != null) ...[
-            const SizedBox(width: 8),
-            TextButton(
-              onPressed: onRetry,
-              style: TextButton.styleFrom(
-                foregroundColor: colors.loss,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 32),
-              ),
+            const SizedBox(width: AppSpacing.sm),
+            GestureDetector(
+              onTap: onRetry,
               child: Text(
                 'Retry',
                 style: AppTypography.callout.copyWith(
