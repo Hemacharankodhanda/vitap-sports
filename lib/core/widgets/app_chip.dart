@@ -21,6 +21,7 @@ class AppChip extends StatelessWidget {
     this.onTap,
     this.icon,
     this.avatar,
+    this.compact = false,
   });
 
   final String label;
@@ -28,6 +29,7 @@ class AppChip extends StatelessWidget {
   final VoidCallback? onTap;
   final IconData? icon;
   final Widget? avatar;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -35,21 +37,34 @@ class AppChip extends StatelessWidget {
 
     final bgColor = isSelected ? colors.primaryFill : colors.fillSecondary;
     final textColor = isSelected ? colors.onPrimary : colors.textPrimary;
+    final chipHeight = compact ? 28.0 : 32.0;
+    final chipPadding = EdgeInsets.symmetric(horizontal: compact ? 10.0 : 14.0);
+    final minTarget = compact ? 36.0 : AppSpacing.minTouchTarget;
+
+    final textStyle = compact
+        ? AppTypography.footnote.copyWith(
+            color: textColor,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          )
+        : AppTypography.callout.copyWith(
+            color: textColor,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          );
 
     return Semantics(
       button: true,
       selected: isSelected,
       label: label,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: AppSpacing.minTouchTarget, minWidth: AppSpacing.minTouchTarget),
+        constraints: BoxConstraints(minHeight: minTarget, minWidth: minTarget),
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
           splashColor: Colors.transparent,
           highlightColor: textColor.withAlpha(20),
           child: Container(
-            height: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            height: chipHeight,
+            padding: chipPadding,
             decoration: BoxDecoration(
               color: bgColor,
               borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
@@ -63,15 +78,12 @@ class AppChip extends StatelessWidget {
                   const SizedBox(width: AppSpacing.xs),
                 ],
                 if (icon != null) ...[
-                  Icon(icon, size: 16, color: textColor),
+                  Icon(icon, size: compact ? 14 : 16, color: textColor),
                   const SizedBox(width: AppSpacing.xs),
                 ],
                 Text(
                   label,
-                  style: AppTypography.callout.copyWith(
-                    color: textColor,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
+                  style: textStyle,
                 ),
               ],
             ),

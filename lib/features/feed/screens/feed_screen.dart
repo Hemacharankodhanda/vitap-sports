@@ -46,7 +46,6 @@ class FeedScreen extends ConsumerWidget {
             color: colors.textPrimary,
           ),
         ],
-        bottom: const SportFilterBar(),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(
@@ -139,6 +138,8 @@ class FeedScreen extends ConsumerWidget {
 
           // ─── Activity Feed ────────────────────────────
           const SectionHeader(title: 'Recent Activity'),
+          const SizedBox(height: AppSpacing.sm),
+          const SportFilterBar(compact: true),
           const SizedBox(height: AppSpacing.md),
           const EmptyState(
             icon: Icons.dynamic_feed_rounded,
