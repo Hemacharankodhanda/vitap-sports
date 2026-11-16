@@ -21,28 +21,62 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> with WidgetsBindingObserver {
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isLoading) {
+      // If user returned to the app without completing auth,
+      // allow a brief moment for the OAuth deep link to arrive.
+      // If no session exists after 2s, restore button state.
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted && _isLoading && ref.read(authServiceProvider).currentSession == null) {
+          setState(() => _isLoading = false);
+        }
+      });
+    }
+  }
 
   Future<void> _handleSignIn() async {
     setState(() => _isLoading = true);
     try {
       final service = ref.read(authServiceProvider);
-      await service.signInWithGoogle();
+      final launched = await service.signInWithGoogle();
+      if (!launched && mounted) {
+        setState(() => _isLoading = false);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Sign in failed: ${e.toString()}')),
         );
+        setState(() => _isLoading = false);
       }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+
+    ref.listen(authStateProvider, (prev, next) {
+      if (next.valueOrNull?.session != null && mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
 
     return Scaffold(
       backgroundColor: colors.background,

@@ -887,10 +887,14 @@ class MatchCard extends StatelessWidget {
               color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
             ),
             const SizedBox(width: AppSpacing.xs),
-            Text(
-              AppDateUtils.formatSmartDateTime(match.scheduledAt),
-              style: AppTypography.caption.copyWith(
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            Flexible(
+              child: Text(
+                AppDateUtils.formatSmartDateTime(match.scheduledAt),
+                style: AppTypography.caption.copyWith(
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],

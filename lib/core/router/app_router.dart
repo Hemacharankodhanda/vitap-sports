@@ -4,10 +4,13 @@
 /// Each tab retains its own navigation stack per HIG guidelines.
 library;
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_colors.dart';
+import '../widgets/loading_indicator.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/onboarding_screen.dart';
@@ -38,6 +41,7 @@ class AppRoutes {
   AppRoutes._();
 
   static const String login = '/login';
+  static const String loginCallback = '/login-callback';
   static const String onboarding = '/onboarding';
   static const String home = '/home';
   static const String teams = '/teams';
@@ -60,6 +64,24 @@ class AppRoutes {
   static const String createTournament = '/tournaments/create';
 }
 
+/// Listenable that triggers router refresh whenever the auth state stream emits.
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    _subscription = stream.asBroadcastStream().listen(
+      (_) => notifyListeners(),
+      onError: (_) {},
+    );
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
+
 // Navigation keys for each tab's navigator
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
@@ -70,38 +92,75 @@ final _leaderboardNavigatorKey =
 final _profileNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  final refreshNotifier = GoRouterRefreshStream(authService.authStateChanges);
+  ref.onDispose(refreshNotifier.dispose);
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.home,
     debugLogDiagnostics: true,
+    refreshListenable: refreshNotifier,
     redirect: (context, state) {
       final location = state.uri.toString();
-      
-      // Handle Supabase OAuth callback deep link — let Supabase SDK
-      // process the token while we redirect to home.
-      if (location.contains('login-callback') || location.contains('callback')) {
-        return AppRoutes.home;
-      }
-
-      // Synchronously check if session exists to avoid redirecting during stream load
       final hasSession = ref.read(authServiceProvider).currentSession != null;
       
+      final isCallback = location.contains('login-callback') ||
+          location.contains('callback') ||
+          state.matchedLocation == AppRoutes.loginCallback;
       final isOnLoginPage = state.matchedLocation == AppRoutes.login;
       final isOnOnboarding = state.matchedLocation == AppRoutes.onboarding;
 
-      if (!hasSession && !isOnLoginPage && !isOnOnboarding) return AppRoutes.login;
-      if (hasSession && isOnLoginPage) return AppRoutes.home;
+      // Handle OAuth callback deep link:
+      // If the session has already been resolved by Supabase, proceed to home.
+      // If the session is still being extracted asynchronously, hold on the
+      // dedicated callback screen so we do not prematurely bounce back to login.
+      if (isCallback) {
+        if (hasSession) return AppRoutes.home;
+        if (state.matchedLocation == AppRoutes.loginCallback) return null;
+        return AppRoutes.loginCallback;
+      }
+
+      if (!hasSession && !isOnLoginPage && !isOnOnboarding) {
+        return AppRoutes.login;
+      }
+      if (hasSession && (isOnLoginPage || state.matchedLocation == AppRoutes.loginCallback)) {
+        return AppRoutes.home;
+      }
       return null;
     },
     onException: (_, GoRouterState state, GoRouter router) {
-      // Catch any unmatched routes and redirect to home
-      router.go(AppRoutes.home);
+      final loc = state.uri.toString();
+      if (loc.contains('login-callback') || loc.contains('callback')) {
+        router.go(AppRoutes.loginCallback);
+      } else {
+        router.go(AppRoutes.home);
+      }
     },
     routes: [
+      // ─── Root Route ──────────────────────────────────
+      GoRoute(
+        path: '/',
+        redirect: (_, __) => AppRoutes.home,
+      ),
+
       // ─── Auth Routes (outside shell) ─────────────────
       GoRoute(
         path: AppRoutes.login,
         builder: (_, __) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.loginCallback,
+        builder: (context, _) {
+          final colors = Theme.of(context).extension<AppColorsExtension>() ??
+              AppColorsExtension.light;
+          return Scaffold(
+            backgroundColor: colors.background,
+            body: const Center(
+              child: LoadingIndicator(),
+            ),
+          );
+        },
       ),
       GoRoute(
         path: AppRoutes.onboarding,
