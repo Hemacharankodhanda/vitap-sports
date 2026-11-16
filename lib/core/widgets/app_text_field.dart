@@ -10,7 +10,6 @@
 /// - Tabular figures on numeric inputs.
 library;
 
-import 'dart:ui' show FontFeature;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 

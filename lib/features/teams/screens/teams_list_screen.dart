@@ -57,7 +57,13 @@ class _TeamsListScreenState extends ConsumerState<TeamsListScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ─── Sport Filter Bar ───────────────────────
-          const SportFilterBar(),
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
+            child: SportFilterBar(
+              compact: true,
+              padding: EdgeInsets.symmetric(horizontal: padding),
+            ),
+          ),
 
           // ─── Team List ──────────────────────────────
           Expanded(
